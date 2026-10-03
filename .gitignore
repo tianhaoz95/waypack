@@ -12,3 +12,4 @@ packages/trip-sdk/assets/
 !.env.example
 test-results/
 playwright-report/
+supabase/functions/.env

@@ -3,7 +3,7 @@
  * free of supabase-js and makes it trivial to fake in tests.
  */
 export class Db {
-  constructor(private url: string, private key: string, private fetcher: typeof fetch = fetch) {}
+  constructor(private url: string, private key: string, private fetcher: typeof fetch = (input, init) => fetch(input, init)) {}
 
   private async req<T>(method: string, path: string, body?: unknown, prefer?: string): Promise<T> {
     const res = await this.fetcher(`${this.url}/rest/v1/${path}`, {
