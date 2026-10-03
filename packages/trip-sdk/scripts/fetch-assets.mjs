@@ -19,7 +19,8 @@ console.log(`fetching protomaps/basemaps-assets@${REF} …`);
 execSync(`curl -fsSL https://github.com/protomaps/basemaps-assets/archive/${REF}.tar.gz | tar xz -C "${tmp}"`, { stdio: "inherit" });
 const src = join(tmp, `basemaps-assets-${REF}`);
 mkdirSync(join(out, "sprites/v4"), { recursive: true });
-cpSync(join(src, "fonts"), join(out, "fonts"), { recursive: true });
+// Upstream stores some fontstacks as relative symlinks; -L copies real files.
+execSync(`cp -RL "${join(src, "fonts")}" "${out}/"`);
 for (const f of ["light", "dark"]) {
   for (const s of ["", "@2x"]) for (const ext of ["json", "png"]) cpSync(join(src, `sprites/v4/${f}${s}.${ext}`), join(out, `sprites/v4/${f}${s}.${ext}`));
 }

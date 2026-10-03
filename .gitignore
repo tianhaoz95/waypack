@@ -13,3 +13,5 @@ packages/trip-sdk/assets/
 test-results/
 playwright-report/
 supabase/functions/.env
+apps/mobile/assets/sdk.zip
+apps/mobile/assets/sdk_version.txt

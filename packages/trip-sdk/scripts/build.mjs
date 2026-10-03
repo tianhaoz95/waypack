@@ -35,6 +35,6 @@ await build({
   logLevel: "info",
 });
 rmSync(join(root, "dist/assets"), { recursive: true, force: true });
-cpSync(join(root, "assets"), join(root, "dist/assets"), { recursive: true });
+cpSync(join(root, "assets"), join(root, "dist/assets"), { recursive: true, dereference: true });
 writeFileSync(join(root, "dist/version.json"), JSON.stringify({ version: pkg.version, major: 1 }) + "\n");
 console.log("SDK built");

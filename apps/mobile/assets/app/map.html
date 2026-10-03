@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Map</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f6f7f9; font: 15px -apple-system, system-ui, sans-serif; }
+  @media (prefers-color-scheme: dark) { html, body { background: #0b1120; color: #e8edf6; } }
+  #map { position: fixed; inset: 0; }
+  #day { position: fixed; z-index: 3; left: 10px; top: 10px; max-width: calc(100% - 70px); min-height: 40px; border-radius: 10px; border: 0;
+         padding: 6px 10px; font: inherit; box-shadow: 0 1px 4px rgba(0,0,0,.25); background: #fff; color: #0f172a; }
+</style>
+<script src="/__waypack/sdk/v1/waypack.js"></script>
+</head>
+<body>
+<select id="day" aria-label="Day"><option value="">All days</option></select>
+<div id="map"></div>
+<script>
+  // Native "Map" view: the trip's places and routes on the offline basemap, independent of the bundle UI.
+  Waypack.manifest().then(function (m) {
+    var sel = document.getElementById("day");
+    m.days.forEach(function (d, i) {
+      var o = document.createElement("option");
+      o.value = d.date;
+      o.textContent = "Day " + (i + 1) + (d.title ? " · " + d.title : "");
+      sel.appendChild(o);
+    });
+    return Waypack.map("#map", { fit: "bbox" }).then(function (map) {
+      sel.addEventListener("change", function () { map.setDay(sel.value || null); });
+    });
+  }).catch(function (e) {
+    document.getElementById("map").textContent = "Map unavailable: " + e.message;
+  });
+</script>
+</body>
+</html>
