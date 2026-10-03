@@ -1,6 +1,6 @@
 // Downloads a seeded trip and checks offline serving end to end on a simulator/emulator.
 // Prereqs (host): local stack running and `node services/mcp/scripts/seed-dev.mjs dev@waypack.test`.
-//   flutter test integration_test/app_test.dart -d <device> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true
+//   flutter test integration_test/app_test.dart -d <device> --dart-define=NO_PERMISSION_PROMPTS=true
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,6 +13,7 @@ import 'package:waypack/config.dart';
 import 'package:waypack/main.dart';
 
 const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
+const password = String.fromEnvironment('TEST_PASSWORD', defaultValue: 'waypack-dev-password');
 
 Future<(int, Map<String, String>, List<int>)> get(Uri u, {Map<String, String> headers = const {}}) async {
   final c = HttpClient();
@@ -48,14 +49,20 @@ void main() {
 
     await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
     await t.pumpAndSettle();
-    // Only Apple and Google are offered (the dev sign-in exists only in DEV_SIGN_IN builds).
-    expect(find.text('Continue with Apple'), findsOneWidget);
-    expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.textContaining('code'), findsNothing);
+    // Email + password only.
+    expect(find.text('Forgot password?'), findsOneWidget);
+    expect(find.textContaining('Continue with'), findsNothing);
 
-    // Real Apple/Google need real accounts; tests use the dev-only sign-in against the local server.
-    await t.enterText(find.byKey(const Key('dev-email')), email);
-    await t.tap(find.text('Dev sign-in'));
+    // Wrong password first, then the seeded one.
+    await t.enterText(find.byKey(const Key('email')), email);
+    await t.enterText(find.byKey(const Key('password')), 'not the password');
+    await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await pumpUntil(t, find.text('Wrong email or password.'));
+    await t.tap(find.byKey(const Key('password')));
+    await t.pump(const Duration(milliseconds: 300));
+    await t.enterText(find.byKey(const Key('password')), password);
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await pumpUntil(t, find.text('Sequoia Winter Weekend'));
     expect(find.text('Not downloaded'), findsOneWidget);
 

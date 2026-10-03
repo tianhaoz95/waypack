@@ -25,8 +25,8 @@ Future<AppState> bootstrap() async {
   await Supabase.initialize(
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
-    // OAuth callbacks are handled by the system auth session (flutter_web_auth_2), not deep links.
-    authOptions: const FlutterAuthClientOptions(authFlowType: AuthFlowType.pkce, detectSessionInUri: false),
+    // Email + password only; no deep-link (magic link / OAuth) callbacks to handle.
+    authOptions: const FlutterAuthClientOptions(detectSessionInUri: false),
   );
   final store = await TripStore.open();
   final server = LocalServer(store);

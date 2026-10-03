@@ -17,4 +17,3 @@ supabase/functions/.env
 apps/mobile/assets/sdk.zip
 apps/mobile/assets/sdk_version.txt
 packages/cli/skill/
-supabase/.env

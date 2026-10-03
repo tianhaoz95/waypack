@@ -17,15 +17,11 @@ Everything runs locally today (see the root README). This is the checklist to go
 supabase link --project-ref <ref>
 supabase db push                                   # supabase/migrations
 ```
-Dashboard → Authentication → **Sign In / Providers**:
-- **Email: turn it off.** Waypack signs in only with Google and Apple.
-- **Google** (≈15 min): Google Cloud Console → APIs & Services → OAuth consent screen (External; app name, support email, logo, `waypack.app` as authorized domain; scopes `email`, `profile`, `openid`) → Publish. Credentials → Create OAuth client ID → *Web application* → authorized redirect URI `https://<ref>.supabase.co/auth/v1/callback`. Paste the client ID and secret into Supabase's Google provider. Basic scopes don't need Google's verification review.
-- **Apple** (≈30 min, needs the Apple Developer account):
-  1. Identifiers → your App ID `com.hejitech.waypack` → enable *Sign in with Apple*.
-  2. Identifiers → new **Services ID** (e.g. `com.hejitech.waypack.web`) → enable Sign in with Apple → domain `<ref>.supabase.co`, return URL `https://<ref>.supabase.co/auth/v1/callback`.
-  3. Keys → new key with Sign in with Apple → download the `.p8` (Key ID + Team ID).
-  4. Supabase Apple provider: **Client IDs** = `com.hejitech.waypack.web,com.hejitech.waypack` (web Services ID + app bundle id for the native iOS sheet); **Secret Key** = a client-secret JWT generated from the `.p8` (Supabase's Apple docs include a generator). **It expires after at most 6 months**: put a calendar reminder to regenerate it. Only web/Android Apple sign-in needs it; the native iPhone sheet doesn't.
-- **URL configuration**: Site URL `https://waypack.app`; redirect URLs `https://waypack.app/auth/callback` and `com.hejitech.waypack://login-callback`.
+Dashboard → Authentication:
+- **Sign In / Providers → Email**: enabled; **Confirm email: OFF** (no email at sign-up); secure password change on; minimum password length **8**. Leave all social providers off. Optionally enable leaked-password protection (Pro plan).
+- **Email templates → Reset password**: paste `supabase/templates/recovery.html` (it must contain `{{ .Token }}`: users type the 6-digit code; there are no links).
+- **SMTP**: only password-reset emails are sent, so volume is tiny, but Supabase's built-in sender is rate-limited to a few emails per hour. Configure a custom SMTP sender (e.g. Resend or Postmark free tiers) before launch.
+- **Rate limits**: defaults are fine; the Worker adds a 10-failures/15-minutes lockout per account.
 
 ## 2. Cloudflare
 ```sh
@@ -63,7 +59,7 @@ First planet mirror: trigger the monthly cron once (`npx wrangler triggers` / da
 
 Smoke test against production:
 ```sh
-WAYPACK_URL=https://waypack.app SUPABASE_URL=https://<ref>.supabase.co node scripts/e2e.mjs   # dev sign-in is disabled in production: sign in with a real Google/Apple test account and run the agent steps manually
+WAYPACK_URL=https://waypack.app SUPABASE_URL=https://<ref>.supabase.co node scripts/e2e.mjs   # needs an inbox for the reset-code step; or run the agent steps manually with a test account
 ```
 Then connect for real: `claude mcp add --transport http waypack https://waypack.app/mcp`, and add it as a claude.ai custom connector (design §6.1 says to test real clients early; MCP Inspector works too).
 
@@ -86,7 +82,7 @@ flutter build ipa --dart-define=SUPABASE_URL=https://<ref>.supabase.co --dart-de
   --dart-define=API_URL=https://waypack.app
 flutter build appbundle  …same defines…
 ```
-- iOS: team signing in Xcode, bundle id `com.hejitech.waypack`, capability **Sign in with Apple** (already in `Runner.entitlements`). The `local-testflight-setup` skill can script uploads.
+- iOS: team signing in Xcode, bundle id `com.hejitech.waypack`; no extra capabilities. The `local-testflight-setup` skill can script uploads.
 - Android: create an upload keystore and a `signingConfigs.release` (currently signs with debug keys).
 - The apps are **free with no in-app purchases** (App Store 3.1.3(f) companion app: no purchase buttons or links in the app). Listing copy, privacy labels and review notes: `docs/store-listing.md`. Privacy policy: `https://waypack.app/privacy.html`.
 
@@ -95,5 +91,4 @@ flutter build appbundle  …same defines…
 - [ ] Android emulator/device run of `integration_test/app_test.dart` (iOS passes; Android was only build-verified).
 - [ ] Rate limits in `lib/geo.ts` tuned to the ORS quota.
 - [ ] Legal review of `site/privacy.html` and `site/terms.html` (drafts).
-- [ ] Try real Google and Apple sign-in on a device, the portal and the agent sign-in page (locally only the redirects and dev sign-in are tested).
-- [ ] Calendar reminder: regenerate the Apple client secret every 6 months.
+- [ ] Custom SMTP configured and a real password-reset email received.

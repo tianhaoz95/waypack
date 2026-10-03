@@ -1,6 +1,6 @@
 // End-to-end test against a running stack:
 //   supabase start · docker run -p 8090:8080 waypack-tiler · npm run dev (services/mcp)
-// Exercises MCP OAuth (DCR + PKCE, Google/Apple sign-in redirects, dev sign-in), every tool, the upload
+// Exercises MCP OAuth (DCR + PKCE, email + password sign-in), every tool, the upload
 // pipeline, tile extraction, entitlement limits and the app download API.
 //
 //   node scripts/e2e.mjs [--bundle ../../examples/sequoia-winter]
@@ -32,12 +32,23 @@ function keep(res) {
 }
 const field = (html, name) => html.match(new RegExp(`name="${name}" value="([^"]*)"`))?.[1]?.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
-/** Dev-only sign-in (local server): returns a Supabase session and a portal cookie. */
-async function devSignIn(email) {
-  const r = await fetch(`${BASE}/api/auth/dev`, { method: "POST", headers: { "Content-Type": "application/json", "X-Waypack": "1" }, body: JSON.stringify({ email }) });
-  if (!r.ok) throw new Error(`dev sign-in failed: ${r.status}`);
-  const cookie = (r.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
-  return { ...(await r.json()), cookie };
+const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:55424";
+const PASSWORD = "correct horse battery";
+const JH = { "Content-Type": "application/json", "X-Waypack": "1" };
+const portal = (path, body, headers = JH) => fetch(`${BASE}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
+const cookieOf = (res) => (res.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
+
+async function latestCode(to) {
+  for (let i = 0; i < 30; i++) {
+    const l = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`)).json();
+    if (l.messages?.[0]) {
+      const m = await (await fetch(`${MAILPIT}/api/v1/message/${l.messages[0].ID}`)).json();
+      const c = (m.Text || m.HTML).match(/\b(\d{6})\b/)?.[1];
+      if (c) return c;
+    }
+    await sleep(500);
+  }
+  throw new Error("no reset email arrived");
 }
 
 // --- 1. discovery ---
@@ -58,7 +69,7 @@ const reg = await (await fetch(as.registration_endpoint, {
 })).json();
 ok(!!reg.client_id, `registered client ${reg.client_id}`);
 
-// --- 3. authorize: Google / Apple sign-in (no email) ---
+// --- 3. authorize: email + password ---
 const verifier = b64url(randomBytes(32));
 const challenge = b64url(createHash("sha256").update(verifier).digest());
 const state = b64url(randomBytes(8));
@@ -67,34 +78,26 @@ Object.entries({ response_type: "code", client_id: reg.client_id, redirect_uri: 
 let res = keep(await fetch(authUrl, { headers: { Cookie: cookieHeader() } }));
 let html = await res.text();
 ok(res.status === 200 && html.includes("Waypack E2E"), "authorize page shows the client name");
-ok(html.includes("Continue with Google") && html.includes("Continue with Apple"), "authorize page offers Google and Apple");
-ok(!/name="code"|Email me a code/.test(html), "no email-code sign-in on the authorize page");
+ok(html.includes('type="password"') && html.includes("Forgot password?"), "authorize page asks for email + password");
+ok(!/Continue with (Google|Apple)|Email me a code/.test(html), "no social or email-code sign-in");
 const post = async (form) => keep(await fetch(`${BASE}/authorize`, { method: "POST", redirect: "manual", headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookieHeader() }, body: new URLSearchParams(form) }));
 const handle = field(html, "handle"), details = field(html, "details");
-
-for (const provider of ["google", "apple"]) {
-  res = await post({ handle, details, step: "oauth", provider });
-  const loc = new URL(res.headers.get("Location") ?? "http://x/");
-  ok(res.status === 302 && loc.pathname === "/auth/v1/authorize" && loc.searchParams.get("provider") === provider && loc.searchParams.get("code_challenge_method") === "s256" && loc.searchParams.get("redirect_to") === `${BASE}/auth/callback`,
-    `${provider}: redirects to Supabase authorize with PKCE`);
-  const up = await fetch(loc, { redirect: "manual" });
-  const upLoc = up.headers.get("Location") ?? "";
-  ok(up.status === 302 && upLoc.startsWith(provider === "google" ? "https://accounts.google.com/" : "https://appleid.apple.com/"), `${provider}: Supabase forwards to ${new URL(upLoc).host}`);
-}
-const noState = await fetch(`${BASE}/auth/callback?code=abc`, { redirect: "manual" });
-ok(noState.status === 400 && (await noState.text()).includes("different browser"), "callback without the browser-bound state cookie is rejected");
-const badCode = await fetch(`${BASE}/auth/callback?code=not-a-real-code`, { redirect: "manual", headers: { Cookie: cookieHeader() } });
-ok(badCode.status === 400 && (await badCode.text()).includes("Sign-in failed"), "callback with an invalid code is rejected");
-const cancelled = await fetch(`${BASE}/auth/callback?error=access_denied&error_description=User+cancelled`, { redirect: "manual" });
-ok(cancelled.status === 400 && (await cancelled.text()).includes("User cancelled"), "provider cancellation shows a clear message");
-
-// Real Google/Apple can't run here; finish with the dev-only sign-in (refused outside local development).
 const email = `e2e+${Date.now()}@example.com`;
-res = await post({ handle, details, email, step: "dev" });
+
+res = await post({ handle, details, step: "show_signup" });
+ok((await res.text()).includes("Create account and allow"), "create-account mode");
+res = await post({ handle, details, step: "signup", email, password: "short" });
+ok((await res.text()).includes("at least 8 characters"), "short passwords are rejected");
+res = await post({ handle, details, step: "signin", email, password: PASSWORD });
+ok((await res.text()).includes("Wrong email or password"), "unknown account → wrong email or password");
+await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
+res = await post({ handle, details, step: "signup", email, password: PASSWORD });
 const loc = res.headers.get("Location") ?? "";
-ok(res.status === 302 && loc.startsWith(redirect), `redirected to client (${res.status})`);
+ok(res.status === 302 && loc.startsWith(redirect), `sign up on the authorize page → redirected to client (${res.status})`);
 const cb = new URL(loc);
 ok(cb.searchParams.get("state") === state, "state round-trips");
+const mails = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json();
+ok((mails.messages ?? []).length === 0, "sign-up sends no email");
 
 // --- 4. token exchange ---
 const tok = await (await fetch(as.token_endpoint, {
@@ -207,8 +210,9 @@ const gt = await call("get_trip", { trip_id: tripId });
 ok(gt.structuredContent.manifest.trip_id === tripId, "get_trip manifest carries trip_id");
 
 // --- 6. app API with a Supabase session (the mobile app's path) ---
-const sess = await devSignIn(email);
-ok(!!sess.access_token && !!sess.refresh_token, "app sign-in session (dev path)");
+// The app signs in with Supabase's password grant directly.
+const sess = await (await fetch(`${SUPA}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, password: PASSWORD }) })).json();
+ok(!!sess.access_token, "app sign-in with email + password");
 const H = { Authorization: `Bearer ${sess.access_token}` };
 const me = await (await fetch(`${BASE}/api/me`, { headers: H })).json();
 ok(me.plan?.tier === "annual", `/api/me → ${me.plan?.tier}`);
@@ -235,13 +239,34 @@ const acct = await fetch(`${BASE}/account`);
 ok(acct.status === 200 && (await acct.text()).includes("Your account"), "/account portal page is served by the Worker");
 const home = await fetch(`${BASE}/`);
 ok(home.status === 200 && (await home.text()).includes("Waypack keeps it working offline"), "landing page is served by the Worker");
-const portalPost = (path, body, headers = {}) => fetch(`${BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
-ok((await portalPost("/api/auth/dev", { email })).status === 403, "portal auth requires the X-Waypack header (CSRF)");
-ok((await portalPost("/api/auth/send-code", { email }, { "X-Waypack": "1" })).status === 404, "email-code sign-in endpoint no longer exists");
-const startApple = await fetch(`${BASE}/auth/start?provider=apple&return=%2Faccount`, { redirect: "manual" });
-ok(startApple.status === 302 && (startApple.headers.get("Location") ?? "").includes("provider=apple") && (startApple.headers.getSetCookie?.() ?? []).some((c) => c.startsWith("wp_oauth=")), "portal 'Continue with Apple' starts OAuth with a state cookie");
-const cookieHdr = (await devSignIn(email)).cookie;
-ok(cookieHdr.includes("wp_session="), "portal sign-in sets a session cookie");
+ok((await portal("/api/auth/signin", { email, password: PASSWORD }, { "Content-Type": "application/json" })).status === 403, "portal auth requires the X-Waypack header (CSRF)");
+ok((await portal("/api/auth/send-code", { email })).status === 404, "email-code sign-in endpoint does not exist");
+ok((await portal("/api/auth/signin", { email, password: "wrong password" })).status === 401, "portal: wrong password → 401");
+ok((await portal("/api/auth/signup", { email, password: PASSWORD })).status === 409, "portal: signing up twice → 409");
+let pr = await portal("/api/auth/signin", { email, password: PASSWORD });
+let cookieHdr = cookieOf(pr);
+ok(pr.ok && cookieHdr.includes("wp_session="), "portal sign-in sets a session cookie");
+
+// Forgot password: one email with a 6-digit code (never a sign-in link).
+await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
+const rq = await (await portal("/api/auth/reset/request", { email })).json();
+ok(/If an account exists/.test(rq.message), "reset request doesn't reveal whether an account exists");
+const resetCode = await latestCode(email);
+ok((await portal("/api/auth/reset/confirm", { email, code: "000000", password: "brand new password" })).status === 400, "wrong reset code is rejected");
+const NEWPW = "brand new password 2";
+pr = await portal("/api/auth/reset/confirm", { email, code: resetCode, password: NEWPW });
+ok(pr.ok, "reset with the emailed code sets a new password and signs in");
+ok((await portal("/api/auth/signin", { email, password: PASSWORD })).status === 401, "old password no longer works");
+pr = await portal("/api/auth/signin", { email, password: NEWPW });
+ok(pr.ok, "new password works");
+cookieHdr = cookieOf(pr);
+
+// Lockout after repeated failures (separate account so the rest of the run isn't affected).
+const victim = `lock+${Date.now()}@example.com`;
+await portal("/api/auth/signup", { email: victim, password: PASSWORD });
+let last;
+for (let i = 0; i < 11; i++) last = await portal("/api/auth/signin", { email: victim, password: "nope nope nope" });
+ok(last.status === 429, "10 failed sign-ins lock the account for 15 minutes");
 const pme = await (await fetch(`${BASE}/api/me`, { headers: { Cookie: cookieHdr } })).json();
 ok(pme.plan?.tier === "annual" && pme.billing?.has_subscription === true, `portal /api/me → ${pme.plan?.tier}, subscription linked`);
 const csrf = await fetch(`${BASE}/api/tokens`, { method: "POST", headers: { Cookie: cookieHdr, "Content-Type": "application/json" }, body: "{}" });

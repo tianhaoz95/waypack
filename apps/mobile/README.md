@@ -12,7 +12,7 @@ docker run -d -p 8090:8080 waypack-tiler         # docker build -t waypack-tiler
 node services/mcp/scripts/seed-dev.mjs dev@waypack.test   # optional: account with a published trip
 cd apps/mobile && flutter run
 ```
-Sign-in is Apple or Google. For local development build with `--dart-define=DEV_SIGN_IN=true` to get a dev sign-in (any email; only works against a local development server).
+Sign-in is email + password. `node services/mcp/scripts/seed-dev.mjs dev@waypack.test` creates `dev@waypack.test` / `waypack-dev-password` with a published trip. Password-reset codes land in Mailpit: http://127.0.0.1:55424
 
 ## Build-time config (`--dart-define`)
 | Key | Default | |
@@ -20,11 +20,10 @@ Sign-in is Apple or Google. For local development build with `--dart-define=DEV_
 | `SUPABASE_URL` | `http://127.0.0.1:55421` | Android emulator rewrites 127.0.0.1 → 10.0.2.2 automatically |
 | `SUPABASE_ANON_KEY` | local demo key | publishable key in production |
 | `API_URL` | `http://127.0.0.1:8787` | the Worker (`https://waypack.app`) |
-| `DEV_SIGN_IN` | `false` | dev-only sign-in for local servers and tests |
 
 ## Tests
 ```sh
 flutter test test/unit_test.dart                                         # pure logic
-flutter test integration_test/app_test.dart -d <device> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true
+flutter test integration_test/app_test.dart -d <device> --dart-define=NO_PERMISSION_PROMPTS=true
 ```
-The integration test checks the sign-in screen offers only Apple/Google, signs in with the dev path, downloads the seeded trip, and checks the local server (token gate, CSP, Range, traversal, DNS-rebinding guard), the WebView, native Today and the offline Map.
+The integration test signs in with email + password (a wrong password first), downloads the seeded trip, and checks the local server (token gate, CSP, Range, traversal, DNS-rebinding guard), the WebView, native Today and the offline Map.

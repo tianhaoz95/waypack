@@ -7,7 +7,7 @@ import { join } from "node:path";
 const [udid, out] = process.argv.slice(2);
 const fakeNow = process.argv.includes("--fake-now") ? process.argv[process.argv.indexOf("--fake-now") + 1] : "";
 mkdirSync(out, { recursive: true });
-const args = ["test", "integration_test/screenshots_test.dart", "-d", udid, "--dart-define=NO_PERMISSION_PROMPTS=true", "--dart-define=DEV_SIGN_IN=true"];
+const args = ["test", "integration_test/screenshots_test.dart", "-d", udid, "--dart-define=NO_PERMISSION_PROMPTS=true"];
 if (fakeNow) args.push(`--dart-define=FAKE_NOW=${fakeNow}`);
 const p = spawn("flutter", args, { cwd: new URL("..", import.meta.url).pathname });
 let buf = "";
