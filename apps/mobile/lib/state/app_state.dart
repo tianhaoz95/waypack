@@ -12,7 +12,6 @@ import '../services/api.dart';
 import '../services/downloader.dart';
 import '../services/local_server.dart';
 import '../services/notifications.dart';
-import '../services/purchases.dart';
 import '../services/trip_store.dart';
 
 class TripEntry {
@@ -177,7 +176,6 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await Billing.logOut();
     await Supabase.instance.client.auth.signOut();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('remote_trips');
@@ -188,9 +186,5 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onSignedIn() {
-    final uid = user?.id;
-    if (uid != null) unawaited(Billing.identify(uid));
-    unawaited(init());
-  }
+  void onSignedIn() => unawaited(init());
 }

@@ -4,7 +4,7 @@
 // pipeline, tile extraction, entitlement limits and the app download API.
 //
 //   node scripts/e2e.mjs [--bundle ../../examples/sequoia-winter]
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
@@ -163,15 +163,24 @@ ok(again.isError, "upload ids are single-use");
 const second = await call("upload_bundle_inline", { files });
 ok(second.isError && second.structuredContent.upgrade_required && /Upgrade/.test(second.text), "free plan: 2nd active trip → clear upgrade message");
 
-// Upgrade (as RevenueCat would) → new version gets an offline map.
+// Upgrade through a signed Stripe webhook (what Checkout triggers in production).
 const uid = (await (await fetch(`${SUPA}/rest/v1/trips?select=user_id&id=eq.${tripId}`, { headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` } })).json())[0].user_id;
-await fetch(`${SUPA}/rest/v1/entitlements?user_id=eq.${uid}`, {
-  method: "PATCH",
-  headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" },
-  body: JSON.stringify({ tier: "annual", active: true, expires_at: new Date(Date.now() + 365 * 86400000).toISOString() }),
-});
+async function stripeEvent(type, object) {
+  const payload = JSON.stringify({ id: `evt_${randomBytes(6).toString("hex")}`, type, data: { object } });
+  const t = Math.floor(Date.now() / 1000);
+  const sig = createHmac("sha256", env.STRIPE_WEBHOOK_SECRET).update(`${t}.${payload}`).digest("hex");
+  return fetch(`${BASE}/stripe/webhook`, { method: "POST", headers: { "Stripe-Signature": `t=${t},v1=${sig}`, "Content-Type": "application/json" }, body: payload });
+}
+const forged = await fetch(`${BASE}/stripe/webhook`, { method: "POST", headers: { "Stripe-Signature": "t=1,v1=00" }, body: "{}" });
+ok(forged.status === 400, "Stripe webhook rejects bad signatures");
+const subObj = { id: "sub_e2e", status: "active", customer: `cus_e2e_${Date.now()}`, metadata: { user_id: uid }, items: { data: [{ current_period_end: Math.floor(Date.now() / 1000) + 365 * 86400 }] } };
+const wh = await (await stripeEvent("customer.subscription.created", subObj)).json();
+ok(wh.tier === "annual", `Stripe subscription.created → ${wh.tier}`);
+const afterUpgrade = await call("get_trip_status", { trip_id: tripId });
+ok(["processing", "ready"].includes(afterUpgrade.structuredContent.tiles_status), `trip published on free plan gets an offline map after upgrade (${afterUpgrade.structuredContent.tiles_status})`);
+
 const v2 = await call("upload_bundle_inline", { trip_id: tripId, files });
-ok(!v2.isError && v2.structuredContent.version === 2 && v2.structuredContent.tiles_status === "processing", `inline update → v2, tiles ${v2.structuredContent.tiles_status}`);
+ok(!v2.isError && v2.structuredContent.version === 2 && ["processing", "ready"].includes(v2.structuredContent.tiles_status), `inline update → v2, tiles ${v2.structuredContent.tiles_status}`);
 
 let st;
 for (let i = 0; i < 60; i++) {
@@ -218,7 +227,30 @@ const pat = await (await fetch(`${BASE}/api/tokens`, { method: "POST", headers: 
 const viaPat = await call("list_trips", {}, pat.token);
 ok(viaPat.structuredContent.trips.length === 1, "personal API token works for MCP");
 
-// --- 7. delete ---
+// --- 7. web portal (same origin: site + API) ---
+const acct = await fetch(`${BASE}/account`);
+ok(acct.status === 200 && (await acct.text()).includes("Your account"), "/account portal page is served by the Worker");
+const home = await fetch(`${BASE}/`);
+ok(home.status === 200 && (await home.text()).includes("Waypack keeps it working offline"), "landing page is served by the Worker");
+const portalPost = (path, body, headers = {}) => fetch(`${BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+ok((await portalPost("/api/auth/send-code", { email })).status === 403, "portal auth requires the X-Waypack header (CSRF)");
+await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
+await portalPost("/api/auth/send-code", { email }, { "X-Waypack": "1" });
+const pv = await portalPost("/api/auth/verify", { email, code: await latestCode(email) }, { "X-Waypack": "1" });
+const cookieHdr = (pv.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
+ok(pv.ok && cookieHdr.includes("wp_session="), "portal sign-in sets a session cookie");
+const pme = await (await fetch(`${BASE}/api/me`, { headers: { Cookie: cookieHdr } })).json();
+ok(pme.plan?.tier === "annual" && pme.billing?.has_subscription === true, `portal /api/me → ${pme.plan?.tier}, subscription linked`);
+const csrf = await fetch(`${BASE}/api/tokens`, { method: "POST", headers: { Cookie: cookieHdr, "Content-Type": "application/json" }, body: "{}" });
+ok(csrf.status === 401, "cookie-authenticated POST without X-Waypack is refused");
+const co = await fetch(`${BASE}/api/billing/checkout`, { method: "POST", headers: { Cookie: cookieHdr, "X-Waypack": "1", "Content-Type": "application/json" }, body: JSON.stringify({ plan: "annual" }) });
+ok(co.status === 503 || co.ok, `checkout without Stripe keys → ${co.status} (billing not configured)`);
+const cancel = await (await stripeEvent("customer.subscription.deleted", { ...subObj, status: "canceled" })).json();
+ok(cancel.tier === "free", "Stripe subscription.deleted → free");
+const life = await (await stripeEvent("checkout.session.completed", { mode: "payment", payment_status: "paid", customer: subObj.customer, client_reference_id: uid, metadata: { user_id: uid, plan: "lifetime" } })).json();
+ok(life.tier === "lifetime", "Stripe lifetime payment → lifetime");
+
+// --- 8. delete ---
 const delNo = await call("delete_trip", { trip_id: tripId, confirm: false });
 ok(delNo.isError, "delete_trip requires confirm: true");
 const del = await call("delete_trip", { trip_id: tripId, confirm: true });

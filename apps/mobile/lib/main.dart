@@ -10,7 +10,6 @@ import 'screens/trips_screen.dart';
 import 'services/api.dart';
 import 'services/local_server.dart';
 import 'services/notifications.dart';
-import 'services/purchases.dart';
 import 'services/trip_store.dart';
 import 'state/app_state.dart';
 
@@ -27,7 +26,6 @@ Future<AppState> bootstrap() async {
   final server = LocalServer(store);
   await server.start();
   await Reminders.init();
-  await Billing.init(Supabase.instance.client.auth.currentUser?.id);
 
   final state = AppState(store: store, server: server, api: Api());
   await state.init();

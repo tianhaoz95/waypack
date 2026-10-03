@@ -11,8 +11,8 @@ export const PLANS: Record<Tier, Plan> = {
   lifetime: { tier: "lifetime", activeTrips: 10, offlineMaps: true, maxAreas: 4 },
 };
 
-export const UPGRADE_HINT =
-  "Upgrade in the Waypack app (Settings → Waypack Pro: $14.99/yr, or $39.99 lifetime for founding members) to unlock offline maps and up to 10 active trips.";
+export const upgradeHint = (publicUrl: string) =>
+  `Upgrade to Waypack Pro at ${publicUrl}/account to unlock offline maps and up to 10 active trips.`;
 
 interface EntRow { tier: Tier; active: boolean; expires_at: string | null }
 

@@ -62,7 +62,7 @@ create table public.entitlements (
   tier text not null default 'free' check (tier in ('free', 'annual', 'lifetime')),
   active boolean not null default true,
   expires_at timestamptz,
-  source text,                         -- 'revenuecat' | 'manual'
+  source text,                         -- 'stripe' | 'manual'
   updated_at timestamptz not null default now()
 );
 
@@ -89,7 +89,7 @@ create table public.uploads (
   expires_at timestamptz not null
 );
 
--- RevenueCat webhook idempotency log.
+-- Billing webhook (Stripe) idempotency log.
 create table public.billing_events (
   id text primary key,
   user_id uuid,

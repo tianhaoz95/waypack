@@ -2,7 +2,7 @@ import { formatResult, mapAreas, validateZip, zipBundle, type BundleFile, type I
 import type { Env } from "../env.js";
 import { sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
-import { activeTripCount, planFor, UPGRADE_HINT, type Plan } from "./entitlements.js";
+import { activeTripCount, planFor, upgradeHint, type Plan } from "./entitlements.js";
 import { keys } from "./storage.js";
 import { resolvePlanet } from "./planet.js";
 
@@ -109,7 +109,7 @@ export async function publishBundle(
   if (endsInFuture && !wasActive) {
     const active = await activeTripCount(db, userId, trip?.id);
     if (active >= plan.activeTrips) {
-      const msg = `Your ${plan.tier} plan allows ${plan.activeTrips} active trip${plan.activeTrips === 1 ? "" : "s"} and you have ${active}. ${UPGRADE_HINT} Or delete a trip with delete_trip.`;
+      const msg = `Your ${plan.tier} plan allows ${plan.activeTrips} active trip${plan.activeTrips === 1 ? "" : "s"} and you have ${active}. ${upgradeHint(env.PUBLIC_URL)} Or delete a trip with delete_trip.`;
       return { ok: false, errors: [{ path: "account", message: msg }], warnings: v.warnings, message: msg, upgrade: true };
     }
   }
@@ -162,7 +162,7 @@ export async function publishBundle(
       ? "Offline map is being prepared (usually 1–3 minutes) — poll get_trip_status until ready."
       : tilesStatus === "ready"
         ? "Offline map ready."
-        : "No offline map on the free plan (the map needs a connection). " + UPGRADE_HINT;
+        : "No offline map on the free plan (the map needs a connection). " + upgradeHint(env.PUBLIC_URL);
   return {
     ok: true,
     trip_id: tripId,
@@ -233,6 +233,29 @@ async function planExtracts(env: Env, db: Db, plan: Plan, trip: TripRow, version
   const states = await db.select<ExtractRow>("map_extracts", `select=status&trip_id=${eq(trip.id)}&status=in.(pending,processing,ready)`);
   const tilesStatus = states.some((s) => s.status !== "ready") ? ("processing" as const) : ("ready" as const);
   return { tilesStatus, mapHash, warnings };
+}
+
+/**
+ * Cuts offline maps for a published trip that doesn't have them yet — e.g. after the
+ * user upgrades from free. No-op if the plan has no offline maps or extracts already exist.
+ */
+export async function ensureTripExtracts(env: Env, db: Db, userId: string, tripId: string): Promise<"processing" | "ready" | "not_included"> {
+  const plan = await planFor(db, userId);
+  const trip = await db.one<TripRow>("trips", `select=*&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
+  if (!trip || !plan.offlineMaps || trip.current_version < 1) return "not_included";
+  const v = await db.one<{ manifest: Manifest }>("trip_versions", `select=manifest&trip_id=${eq(tripId)}&version=${eq(trip.current_version)}`);
+  if (!v) return "not_included";
+  const r = await planExtracts(env, db, plan, trip, trip.current_version, v.manifest);
+  await db.update("trips", `id=${eq(tripId)}`, { status: r.tilesStatus === "processing" ? "processing" : "ready" });
+  return r.tilesStatus;
+}
+
+/** After an upgrade: provision maps for every trip that hasn't ended yet. */
+export async function ensureExtractsForUser(env: Env, db: Db, userId: string): Promise<number> {
+  const today = new Date().toISOString().slice(0, 10);
+  const trips = await db.select<{ id: string }>("trips", `select=id&user_id=${eq(userId)}&deleted_at=is.null&or=(end_date.is.null,end_date.gte.${today})`);
+  for (const t of trips) await ensureTripExtracts(env, db, userId, t.id);
+  return trips.length;
 }
 
 /** Recomputes a trip's status after an extract changes. */

@@ -6,8 +6,17 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
 
-  // Production custom domain (uncomment when deploying):
-  // "routes": [{ "pattern": "mcp.waypack.app", "custom_domain": true }],
+  // One deployment serves the landing page + account portal (site/), the app API and MCP.
+  "assets": {
+    "directory": "../../site",
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "none",
+    "run_worker_first": ["/mcp", "/mcp/*", "/api/*", "/authorize", "/token", "/register", "/.well-known/*", "/upload/*", "/files/*", "/stripe/*", "/healthz"]
+  },
+
+  // Production custom domains (uncomment when deploying). Site, portal, API and MCP share one origin.
+  // "routes": [{ "pattern": "waypack.app", "custom_domain": true }],
 
   "vars": {
     "PUBLIC_URL": "http://127.0.0.1:8787",

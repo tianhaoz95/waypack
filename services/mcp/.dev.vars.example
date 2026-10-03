@@ -5,4 +5,8 @@ SUPABASE_ANON_KEY=
 SIGNING_SECRET=dev-only-signing-secret-change-me-0123456789
 # Optional. Without it, geocode/compute_route use keyless dev providers (Nominatim + OSRM demo).
 ORS_API_KEY=
-# RevenueCat REST secret is only needed by the Supabase edge function.
+# Stripe (test mode). Without STRIPE_SECRET_KEY the portal shows "billing not configured".
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=whsec_dev_only
+STRIPE_PRICE_ANNUAL=
+STRIPE_PRICE_LIFETIME=

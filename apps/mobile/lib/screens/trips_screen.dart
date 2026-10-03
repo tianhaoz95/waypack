@@ -114,7 +114,7 @@ class _TripCard extends StatelessWidget {
             if (r?.tilesStatus == 'not_included' && !downloading)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text('Offline map needs Waypack Pro — the map will need a connection.',
+                child: Text('No offline map for this trip — the map will need a connection.',
                     style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
               ),
             if (err != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(err, style: TextStyle(color: t.colorScheme.error))),

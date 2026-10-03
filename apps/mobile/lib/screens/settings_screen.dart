@@ -6,7 +6,6 @@ import '../config.dart';
 import '../services/handoff.dart';
 import '../state/app_state.dart';
 import '../util/format.dart';
-import 'paywall_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.scrollToConnect = false});
@@ -81,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (d) => AlertDialog(
         title: const Text('Delete account?'),
-        content: const Text('This permanently deletes your account, all trips and offline maps on our servers. Subscriptions must be cancelled in the App Store / Google Play.'),
+        content: const Text('This permanently deletes your account, all trips and offline maps on our servers, and cancels any subscription.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Cancel')),
           FilledButton(style: FilledButton.styleFrom(backgroundColor: Theme.of(d).colorScheme.error), onPressed: () => Navigator.pop(d, true), child: const Text('Delete')),
@@ -120,8 +119,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.workspace_premium_outlined),
           title: Text(plan == 'free' ? 'Free plan' : plan == 'lifetime' ? 'Waypack Pro · Lifetime' : 'Waypack Pro · Annual'),
+          // The app is a free viewer: plans live on the user's account (no purchasing in the app).
           subtitle: Text(plan == 'free' ? '1 active trip · maps need a connection' : 'Offline maps · up to 10 active trips'),
-          trailing: plan == 'free' ? FilledButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaywallScreen())), child: const Text('Upgrade')) : null,
         ),
         ListTile(
           leading: const Icon(Icons.sd_storage_outlined),

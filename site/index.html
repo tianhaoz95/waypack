@@ -93,7 +93,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
       <a href="#connect">Connect your agent</a>
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
-      <a class="cta" href="#download">Get the app</a>
+      <a href="/account">Sign in</a>
+      <a class="cta" href="/account">Start free</a>
     </div>
   </div>
 </nav>
@@ -105,8 +106,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
       <h1>Your AI agent plans the trip.<br>Waypack keeps it working offline.</h1>
       <p class="lead">Ask Claude, Cursor or any MCP agent to plan a trip “with Waypack”. It researches, builds a detailed mobile guide, and publishes it to your phone, with an offline map of trails and roads, your GPS position, and one-tap hand-off to Google or Apple Maps.</p>
       <div class="actions">
-        <a class="btn" href="#connect">Connect your agent</a>
-        <a class="btn ghost" href="#download">Get the app</a>
+        <a class="btn" href="/account">Start free</a>
+        <a class="btn ghost" href="#connect">Connect your agent</a>
       </div>
     </div>
     <div class="phone"><img src="img/today.jpg" alt="Waypack Today view: Sledding & snow play now, day 2 of a Sequoia winter trip" width="528" height="1142"></div>
@@ -161,20 +162,20 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
     </div>
     <div class="panel" id="p-cc" role="tabpanel">
       <p>Add the server, then install the skill:</p>
-      <pre><code>claude mcp add --transport http waypack https://mcp.waypack.app/mcp
+      <pre><code>claude mcp add --transport http waypack https://waypack.app/mcp
 npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
-      <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
+      <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Sign in with your Waypack email when Claude opens the browser. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
     </div>
     <div class="panel" id="p-claude" role="tabpanel" hidden>
       <p>Settings → Connectors → Add custom connector, and paste:</p>
-      <pre><code>https://mcp.waypack.app/mcp</code><button type="button">Copy</button></pre>
+      <pre><code>https://waypack.app/mcp</code><button type="button">Copy</button></pre>
       <p>No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
     </div>
     <div class="panel" id="p-cursor" role="tabpanel" hidden>
       <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
       <pre><code>{
   "mcpServers": {
-    "waypack": { "url": "https://mcp.waypack.app/mcp" }
+    "waypack": { "url": "https://waypack.app/mcp" }
   }
 }</code><button type="button">Copy</button></pre>
       <p>Headless or no OAuth? Create a personal API token in the app (Settings → API tokens) and send it as <code class="inline">Authorization: Bearer wpk_…</code>.</p>
@@ -185,14 +186,17 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
 <section id="pricing">
   <div class="wrap">
     <h2>Pricing</h2>
-    <p class="sub">Plans you've published stay yours on every tier.</p>
+    <p class="sub">You pay for the cloud part: storing your trips and cutting offline maps. The iPhone and Android apps are free. Subscribe and manage billing from <a href="/account">your account</a>.</p>
     <div class="pricing">
       <div class="card"><h3>Free</h3><div class="price">$0</div><p>Try the whole flow.</p>
-        <ul><li>1 active trip</li><li>Full trip guide offline</li><li>Map works with a connection</li></ul></div>
+        <ul><li>1 active trip</li><li>Full trip guide offline</li><li>Map works with a connection</li></ul>
+        <p style="margin-top:16px"><a class="btn ghost" href="/account">Start free</a></p></div>
       <div class="card featured"><h3>Pro · Annual</h3><div class="price">$14.99 <small>/ year</small></div><p>For people who travel off-grid.</p>
-        <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul></div>
+        <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul>
+        <p style="margin-top:16px"><a class="btn" href="/account">Subscribe</a></p></div>
       <div class="card"><h3>Pro · Lifetime</h3><div class="price">$39.99 <small>once</small></div><p>Founding members, limited.</p>
-        <ul><li>Everything in Pro</li><li>Pay once</li></ul></div>
+        <ul><li>Everything in Pro</li><li>Pay once</li></ul>
+        <p style="margin-top:16px"><a class="btn ghost" href="/account">Buy lifetime</a></p></div>
     </div>
   </div>
 </section>
@@ -200,7 +204,7 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
 <section id="download">
   <div class="wrap">
     <h2>Get the app</h2>
-    <p class="sub">Waypack for iPhone and Android is in beta. Join to get the TestFlight / Play testing link.</p>
+    <p class="sub">The Waypack app is a free viewer for iPhone and Android: sign in with your account email and download your trips. It's in beta. Join to get the TestFlight / Play testing link.</p>
     <div class="actions">
       <a class="btn" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(iOS)">iPhone beta</a>
       <a class="btn ghost" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(Android)">Android beta</a>
@@ -216,6 +220,7 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
     <details><summary>Does Waypack do turn-by-turn navigation?</summary><p>No. Tap Navigate to hand off to Google Maps or Apple Maps. For offline turn-by-turn, also download their offline area (your trip's checklist reminds you).</p></details>
     <details><summary>Can I edit a trip in the app?</summary><p>Edits happen in your agent: “move the Sherman Tree visit to the morning”. It re-publishes and the app shows <em>Update available</em>.</p></details>
     <details><summary>Where does the map data come from?</summary><p>OpenStreetMap, via the Protomaps basemap. © OpenStreetMap contributors, available under the Open Database License.</p></details>
+    <details><summary>How does billing work?</summary><p>Subscriptions are handled on the web by Stripe from <a href="/account">your account page</a>, where you can also change your card, download invoices or cancel. The mobile apps are free and never charge you. Cancelling keeps Pro until the end of the paid period; trips you've published stay yours.</p></details>
     <details><summary>What happens to my data?</summary><p>See the <a href="privacy.html">privacy policy</a>. Short version: your trips are private to your account, we don't sell data, and deleting your account deletes your trips and maps.</p></details>
   </div>
 </section>

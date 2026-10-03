@@ -1,6 +1,6 @@
 # Waypack mobile app (Flutter)
 
-iOS + Android viewer for offline trip bundles: sign-in, trips list, resumable download with SHA-256 verification, loopback server + WebView, native Today and Map, reminders, RevenueCat paywall.
+Free iOS + Android viewer for offline trip bundles: sign-in, trips list, resumable download with SHA-256 verification, loopback server + WebView, native Today and Map, reminders. No in-app purchases. Plans are bought on the web (waypack.app/account) and the app only shows the current plan (App Store 3.1.3(f)).
 
 ## Run locally
 ```sh
@@ -19,8 +19,7 @@ Sign-in codes for local accounts land in Mailpit: http://127.0.0.1:55424
 |---|---|---|
 | `SUPABASE_URL` | `http://127.0.0.1:55421` | Android emulator rewrites 127.0.0.1 → 10.0.2.2 automatically |
 | `SUPABASE_ANON_KEY` | local demo key | publishable key in production |
-| `API_URL` | `http://127.0.0.1:8787` | the MCP Worker (`https://mcp.waypack.app`) |
-| `REVENUECAT_APPLE_KEY` / `REVENUECAT_GOOGLE_KEY` | empty → purchases disabled | |
+| `API_URL` | `http://127.0.0.1:8787` | the Worker (`https://waypack.app`) |
 | `ENABLE_OAUTH_PROVIDERS` | `false` | shows Apple/Google sign-in once configured in Supabase |
 
 ## Tests

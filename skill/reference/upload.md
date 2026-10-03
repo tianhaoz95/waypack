@@ -1,6 +1,6 @@
 # Uploading a bundle
 
-All tools are on the Waypack MCP server (`https://mcp.waypack.app/mcp`). Sign-in happens via OAuth the first time a tool is used.
+All tools are on the Waypack MCP server (`https://waypack.app/mcp`). Sign-in happens via OAuth the first time a tool is used.
 
 ## CLI agents (filesystem + shell)
 1. `npx @waypack/cli validate ./waypack/<slug>` → fix errors.
@@ -23,4 +23,4 @@ If `finalize_upload` returns validation errors, fix, re-zip, and repeat from ste
 - Map tiles are re-cut only if `map` changed.
 
 ## Limits (free tier)
-Free accounts get 1 active trip and no offline map extract (the map needs a connection). If a tool returns a limit message, show it to the user; don't retry.
+Free accounts get 1 active trip and no offline map extract (the map needs a connection). Plans are managed at https://waypack.app/account. If a tool returns a limit message, show it to the user verbatim; don’t retry.

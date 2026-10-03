@@ -6,7 +6,7 @@
 **Bundle / package id:** `com.hejitech.waypack`
 **Category:** Travel (secondary: Navigation)
 **Age rating:** 4+ / Everyone
-**Price:** Free with in-app purchases (Waypack Pro annual, Waypack Pro lifetime)
+**Price:** Free. No in-app purchases (Waypack Pro is sold on waypack.app; the app is a companion viewer).
 
 ## Description
 Your AI agent plans the trip. Waypack keeps it working when the signal drops.
@@ -23,7 +23,7 @@ Ask Claude, Cursor or any AI agent that supports MCP to plan a trip “with Wayp
 
 Waypack is a viewer for your own plans: planning and edits happen in your AI agent, and updates arrive in the app with one tap.
 
-Waypack Pro unlocks offline maps and up to 10 active trips. Annual subscription or lifetime purchase. The free plan includes one active trip, available offline (the map needs a connection).
+The app is free. A Waypack account is required.
 
 Map data © OpenStreetMap contributors (ODbL). Basemap by Protomaps.
 
@@ -35,7 +35,8 @@ First release: download trips from your AI agent, offline maps with GPS, native 
 
 ## Review notes (App Store)
 - Waypack displays trip guides the user created with their own AI agent (via our MCP server). Bundles are documents (HTML/CSS/JS + JSON) rendered in a sandboxed WebView from a local loopback server; they cannot change native functionality, access the network (CSP `connect-src 'self'`), or reach other trips.
-- Native features: offline download manager with integrity checks, native Today view, GPS map, trip reminders, share sheet, purchases.
+- Native features: offline download manager with integrity checks, native Today view, GPS map, trip reminders, share sheet.
+- **Guideline 3.1.3(f):** Waypack is a free stand-alone companion to a paid web service (cloud storage of trip plans + offline map generation, sold at waypack.app). The app contains no purchasing and no calls to action for purchasing outside the app; it only displays the account's current plan.
 - Demo account: `review@waypack.app` (sign-in code is sent by email; we'll provide a fixed review code via App Review notes), pre-loaded with a sample Sequoia trip.
 - Location is used only to show the user's position on the offline map (When In Use).
 
@@ -44,7 +45,6 @@ First release: download trips from your AI agent, offline maps with GPS, native 
 |---|---|---|---|---|
 | Email address | Yes | Yes | No | App functionality (sign-in) |
 | User content (trip plans) | Yes | Yes | No | App functionality |
-| Purchase history | Yes (via RevenueCat) | Yes | No | App functionality |
 | Precise location | No (stays on device) | — | — | — |
 | Diagnostics | No | — | — | — |
 
@@ -54,6 +54,6 @@ First release: download trips from your AI agent, offline maps with GPS, native 
 3. Day plan with "why this order" notes
 4. Guide: packing list with checkboxes
 5. Trips list: "Available offline"
-6. Connect your agent (Claude Code command)
+6. Settings: connect your agent
 
 Capture at device resolution from the simulator (`xcrun simctl io booted screenshot`) using the seeded dev account (`services/mcp/scripts/seed-dev.mjs`).
