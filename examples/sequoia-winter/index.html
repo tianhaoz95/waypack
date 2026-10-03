@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sequoia Winter Weekend</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- Waypack SDK: offline maps, Navigate buttons, share. Served by the app; never bundle MapLibre yourself. -->
+  <script src="/__waypack/sdk/v1/waypack.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1 id="trip-title">Trip</h1>
+      <p id="trip-dates" class="muted"></p>
+    </div>
+    <span id="net" class="net" hidden>Offline</span>
+  </header>
+
+  <main id="app">
+    <!-- Rendered from manifest.json by assets/app.js -->
+    <section id="tab-today" class="tab" data-tab="today"></section>
+    <section id="tab-plan" class="tab" data-tab="plan" hidden></section>
+    <section id="tab-map" class="tab tab-map" data-tab="map" hidden>
+      <div class="map-tools">
+        <select id="map-day" aria-label="Show day on map"><option value="">All days</option></select>
+      </div>
+      <div id="map" class="map"></div>
+    </section>
+    <section id="tab-places" class="tab" data-tab="places" hidden></section>
+
+    <!-- ===================================================================
+         GUIDE — authored by the agent as plain HTML. Keep every section
+         (write "N/A — reason" rather than deleting one). Cards with
+         class="card" get consistent styling. Use <details> for long lists.
+         =================================================================== -->
+    <section id="tab-guide" class="tab" data-tab="guide" hidden>
+      <nav class="chips" aria-label="Guide sections">
+        <a href="#g-overview">Overview</a><a href="#g-conditions">Conditions</a><a href="#g-safety">Safety</a>
+        <a href="#g-toddler">Toddler</a><a href="#g-packing">Packing</a><a href="#g-budget">Budget</a><a href="#g-backup">Backup plans</a><a href="#g-offline">Offline prep</a>
+      </nav>
+
+      <article id="g-overview" class="card">
+        <h2>Overview</h2>
+        <p>Three relaxed days in Sequoia's Giant Forest over Christmas: sledding at Wolverton, the General Sherman Tree, and easy walks among the giant sequoias, with a nap break every afternoon. Two nights at Wuksachi Lodge, the only lodging open in the Giant Forest area in winter.</p>
+        <ul class="kv">
+          <li><span>Dates</span><b>Thu Dec 24 – Sat Dec 26, 2026</b></li>
+          <li><span>Travelers</span><b>2 adults · 1 toddler (2)</b></li>
+          <li><span>Lodging</span><b>Wuksachi Lodge · 2 nights · #REPLACE-ME</b></li>
+          <li><span>Dinner</span><b>The Peaks · Dec 24 &amp; 25 · reserve</b></li>
+          <li><span>Park entry</span><b>$35 / vehicle (7 days) or annual pass</b></li>
+          <li><span>Vehicle</span><b>Own car + chains (required to carry)</b></li>
+        </ul>
+        <h3>Assumptions</h3>
+        <p class="muted">Arriving from the Visalia side via CA-198 on the morning of Dec 24. Car is ≤ 22 ft. Lodge confirmation number still to be added. Replace any of these and re-publish.</p>
+      </article>
+
+      <article id="g-conditions" class="card">
+        <h2>Conditions &amp; live checks</h2>
+        <p>Winter in the Giant Forest (6,400–7,300 ft) usually means snow on the ground and nights well below freezing. Storms can close or slow Generals Highway for hours, and <b>tire chains can be required at any time — carry them even with AWD/4WD</b> (it's the rule, not a suggestion). Holiday week is one of the busiest of the year: expect lines at the entrance and full parking lots by late morning.</p>
+        <div class="callout">Conditions change daily. Check these before you leave home and whenever you get Wi-Fi at the lodge — nothing in this guide replaces them.</div>
+        <div id="live-checks" class="link-list"></div>
+      </article>
+
+      <article id="g-safety" class="card">
+        <h2>Emergency &amp; safety</h2>
+        <div id="emergency"></div>
+        <h3>No-service zones</h3>
+        <p>Assume no signal from the Ash Mountain entrance until you're back in Three Rivers, except near Wuksachi Lodge and Lodgepole (Wi-Fi/landline). Tell the front desk your plan if you head out in a storm.</p>
+        <h3>Winter driving</h3>
+        <ul>
+          <li>Practice fitting the chains at home once — doing it first time on ice with a toddler in the car is miserable.</li>
+          <li>Downhill: low gear, not brakes. Use pullouts to let faster traffic pass.</li>
+          <li>Shaded curves stay icy all day, especially after 3pm.</li>
+        </ul>
+        <h3>Cold &amp; altitude</h3>
+        <p>Toddlers lose heat fast. Watch for shivering, fussiness, pale or clumsy hands. Warm up in the car every 30 minutes of snow play, keep them dry, and snack often. Sunburn is easy at 7,000 ft on snow — sunscreen and sunglasses.</p>
+      </article>
+
+      <article id="g-toddler" class="card">
+        <h2>With a toddler</h2>
+        <ul>
+          <li><b>Carrier &gt; stroller</b> on snow. The Sherman Tree main trail has stairs.</li>
+          <li><b>Naps:</b> 1–3pm at the lodge each day. The drive up is a good morning nap too.</li>
+          <li><b>Carsickness:</b> the climb from Foothills has ~130 curves. Light breakfast, window cracked, stop at a pullout if needed.</li>
+          <li><b>Meals:</b> The Peaks is the only sit-down option in winter. Pack a cooler with toddler-friendly food for lunches and emergencies.</li>
+          <li><b>Sledding:</b> feet-first, on your lap. Stay away from the road and parking lot.</li>
+        </ul>
+      </article>
+
+      <article id="g-packing" class="card">
+        <h2>Packing list</h2>
+        <details open><summary>Car &amp; driving</summary>
+          <ul class="checklist" data-store="car">
+            <li>Tire chains that fit your tires (+ gloves, kneeling pad)</li>
+            <li>Full tank (last gas in Three Rivers)</li>
+            <li>Ice scraper, small shovel</li>
+            <li>Blankets, water, snacks in the car</li>
+            <li>Phone mount + car charger</li>
+          </ul>
+        </details>
+        <details><summary>Toddler</summary>
+          <ul class="checklist" data-store="toddler">
+            <li>One-piece snow suit + spare</li>
+            <li>Waterproof mittens (2 pairs), warm hat, neck gaiter</li>
+            <li>Snow boots + wool socks</li>
+            <li>Carrier (soft-structured) with weather cover</li>
+            <li>Toddler sled (or buy at Lodgepole if open)</li>
+            <li>Diapers/wipes for 3 days + extra</li>
+            <li>Sunscreen, sunglasses</li>
+            <li>Sleep sack, white-noise app, favorite toy</li>
+            <li>Kids' fever reducer, thermometer</li>
+          </ul>
+        </details>
+        <details><summary>Adults</summary>
+          <ul class="checklist" data-store="adults">
+            <li>Waterproof jackets and pants</li>
+            <li>Insulated boots, microspikes</li>
+            <li>Warm layers, hats, gloves</li>
+            <li>Headlamps (dark by 5pm)</li>
+            <li>Power banks (charged)</li>
+            <li>Park pass / payment for entry</li>
+            <li>Printed lodge confirmation</li>
+          </ul>
+        </details>
+      </article>
+
+      <article id="g-budget" class="card">
+        <h2>Budget</h2>
+        <table class="table">
+          <thead><tr><th>Category</th><th class="num">Estimate</th></tr></thead>
+          <tbody>
+            <tr><td>Wuksachi Lodge, 2 nights (holiday rate)</td><td class="num">$500–$700</td></tr>
+            <tr><td>Park entry (vehicle, 7 days)</td><td class="num">$35</td></tr>
+            <tr><td>Dinners at The Peaks ×2</td><td class="num">$180–$250</td></tr>
+            <tr><td>Breakfasts &amp; lunches</td><td class="num">$120–$160</td></tr>
+            <tr><td>Gas (from Visalia, round trip)</td><td class="num">$40</td></tr>
+            <tr><td>Sled / snow gear / chains (if buying)</td><td class="num">$0–$150</td></tr>
+          </tbody>
+          <tfoot><tr><th>Total</th><th class="num">≈ $875–$1,335</th></tr></tfoot>
+        </table>
+        <p class="muted">Rough estimates — verify current rates when booking.</p>
+      </article>
+
+      <article id="g-backup" class="card">
+        <h2>Backup plans</h2>
+        <h3>Dec 24 — storm or chain controls on the way up</h3>
+        <p>Wait it out in Three Rivers (coffee, River View Grill), call the road line, and go up when it clears. If Generals Highway closes, rebook the first night in Three Rivers and drive up Dec 25 morning.</p>
+        <h3>Dec 25 — Wolverton road not plowed yet</h3>
+        <p>Swap the morning and afternoon: General Sherman (accessible lot on Generals Hwy is plowed first) in the morning, sledding after the nap. The snowy meadow by the Giant Forest Museum is fine for gentle play (not sledding).</p>
+        <h3>Too cold / toddler unwell</h3>
+        <p>Short outings only: the Sherman Tree from the accessible lot, lodge fireplace, early dinner. If symptoms are serious, call 911 or drive down to Kaweah Health in Visalia (≈ 1.5–2 h).</p>
+        <h3>Dec 26 — storm forecast</h3>
+        <p>Skip the morning snow session and leave right after breakfast so you're below the snow line before it starts.</p>
+      </article>
+
+      <article id="g-offline" class="card">
+        <h2>Offline prep</h2>
+        <ul class="checklist" data-store="offline">
+          <li>Download this trip in Waypack — check it says “Available offline”</li>
+          <li>Google Maps: download offline area Visalia → Lodgepole</li>
+          <li>Charge phones and power banks the night before</li>
+          <li>Screenshot the lodge confirmation and dinner reservations</li>
+          <li>Save the road line (559) 565-3341 in contacts</li>
+          <li>Check road conditions &amp; chain controls before leaving Three Rivers</li>
+        </ul>
+      </article>
+    </section>
+
+    <div hidden>
+      <div data-day-notes="2026-12-24"><p><b>Why this order:</b> the climb is easiest in the morning before holiday traffic peaks, and the museum + Big Trees Trail are the gentlest introduction to the giant sequoias. Shade on the road ices up mid-afternoon, so you're at the lodge by 4pm.</p></div>
+      <div data-day-notes="2026-12-25"><p><b>Christmas morning in the snow.</b> Wolverton is the park's only designated sledding area. Go early — lots fill by late morning on holidays. The Sherman Tree is best in the late-afternoon light, and quieter than at midday.</p></div>
+      <div data-day-notes="2026-12-26"><p><b>Unhurried exit.</b> Leave by 11am to be in Three Rivers for lunch. Hospital Rock is usually below the snow line — a good place for a toddler to run around after the descent.</p></div>
+    </div>
+  </main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
+    <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
+    <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
+    <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
+    <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+  </nav>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Decisions & deviations from the design doc
+
+The design (`docs/design.md`) was written with the working name *Tripfold*. Deviations are recorded here, newest last.
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | **Name: Waypack** (waypoints + packed to go). App IDs `com.hejitech.waypack`; domain placeholder `waypack.app`; MCP at `mcp.waypack.app/mcp`; SDK path `/__waypack/sdk/v1/waypack.js`; global `window.Waypack`; npm scope `@waypack/*`. | Owner asked for a real name under `com.hejitech.*`. Search-and-replace `waypack`/`Waypack` to rename. |
+| 2 | **Local-first, deploy-ready.** Everything runs locally (wrangler dev, `supabase start`, Docker tiler, Flutter simulator). No cloud resources created; `docs/DEPLOY.md` lists the secrets/commands. | Owner choice. |
+| 3 | **Tiler on Cloudflare Containers** (`services/tiler`), invoked from the Worker's queue consumer via a Durable-Object-backed container binding. Dockerfile is portable to Fly/Cloud Run. | One vendor with Worker/R2/Queues. |
+| 4 | **Ajv runs at build time** (standalone code, bundled with esbuild) instead of at runtime. | Workers forbid `new Function`/`eval`. Same validator runs in CLI, Worker and browser. |
+| 5 | **MapLibre GL JS v6** is ESM-only and spawns a separate worker module. The SDK ships `waypack.js` (IIFE) **plus** `waypack-worker.js` and calls `setWorkerUrl()`. | Keeps everything same-origin and offline; satisfies CSP `worker-src 'self' blob:`. |
+| 6 | **Multiple map extracts → one basemap source** via a custom `wpk://` protocol that serves each tile from the first PMTiles archive covering it. | Avoids duplicating ~100 style layers per extract. |
+| 7 | **Glyphs:** Protomaps Noto Sans fontstacks (~14 MB) ship with the SDK. CJK/Hangul labels are rendered from device fonts (`localIdeographFontFamily`), so they work offline without glyph PBFs. | Offline labels without a 100 MB font payload. |
+| 8 | Basemap max zoom is **15** (Protomaps builds stop there); `max_zoom: 16` in a manifest is accepted but clamped by the tiler, and MapLibre overzooms. | Matches the data. |
+| 9 | **Planet source:** daily builds at `https://build.protomaps.com/YYYYMMDD.pmtiles` (listed at `build-metadata.protomaps.dev/builds.json`). Dev/preview read them directly via HTTP range; production mirrors monthly to R2 (`services/tiler` `mirror` job) per design §6.6. | Open question 5: mirror for production, direct for dev. Check Protomaps' usage terms before relying on direct reads in production. |
+| 10 | `waypack preview` **proxies** range requests to the planet so the page stays same-origin under the real CSP. | Faithful preview of in-app behavior. |
+| 11 | Manifest gains optional **`nav_app`** (`google`/`apple`) and place **`hours`/`cost`**. Extra properties are allowed by schema. | Interview asks for preferred navigation app; template displays hours/cost. Additive, non-breaking. |
+| 12 | Routing/geocoding default provider is **OpenRouteService** (per design), behind an interface; the Worker also supports a keyless **dev mode** (Nominatim + OSRM demo servers) when `ORS_API_KEY` is unset. | Lets the full flow run locally without keys. Public demo servers are not for production. |
+| 13 | Local server auth: per-launch token passed once as `?k=` on the first navigation, exchanged for an `HttpOnly; SameSite=Strict` cookie scoped to the loopback origin. | The SDK uses absolute `/__waypack/...` paths, so a path-prefix token wouldn't work. |

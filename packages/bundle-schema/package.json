@@ -1,0 +1,29 @@
+{
+  "name": "@waypack/bundle-schema",
+  "version": "1.0.0",
+  "description": "Waypack trip bundle manifest schema and validator (shared by CLI and MCP Worker)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./manifest.v1.schema.json": "./manifest.v1.schema.json"
+  },
+  "files": ["dist", "manifest.v1.schema.json"],
+  "scripts": {
+    "gen": "node scripts/gen-validator.mjs",
+    "build": "npm run gen && tsc -p tsconfig.json && cp src/generated/*.js dist/generated/ 2>/dev/null; true",
+    "test": "vitest run",
+    "typecheck": "npm run gen && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.3"
+  }
+}

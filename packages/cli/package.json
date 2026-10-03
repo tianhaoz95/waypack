@@ -1,0 +1,22 @@
+{
+  "name": "@waypack/cli",
+  "version": "1.0.0",
+  "description": "Validate, preview and zip Waypack trip bundles",
+  "type": "module",
+  "bin": { "waypack": "dist/cli.js" },
+  "files": ["dist", "templates"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@waypack/bundle-schema": "1.0.0",
+    "@waypack/trip-sdk": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.3"
+  }
+}

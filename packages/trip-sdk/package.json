@@ -1,0 +1,26 @@
+{
+  "name": "@waypack/trip-sdk",
+  "version": "1.0.0",
+  "description": "window.Waypack — the JavaScript SDK that trip bundles use for offline maps and native hand-offs",
+  "type": "module",
+  "main": "dist/waypack.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "assets": "node scripts/fetch-assets.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@protomaps/basemaps": "^5.7.2",
+    "@waypack/bundle-schema": "1.0.0",
+    "esbuild": "^0.28.2",
+    "maplibre-gl": "^6.11.2",
+    "pmtiles": "^4.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.3"
+  }
+}

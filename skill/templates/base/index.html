@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Trip</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- Waypack SDK: offline maps, Navigate buttons, share. Served by the app; never bundle MapLibre yourself. -->
+  <script src="/__waypack/sdk/v1/waypack.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1 id="trip-title">Trip</h1>
+      <p id="trip-dates" class="muted"></p>
+    </div>
+    <span id="net" class="net" hidden>Offline</span>
+  </header>
+
+  <main id="app">
+    <!-- Rendered from manifest.json by assets/app.js -->
+    <section id="tab-today" class="tab" data-tab="today"></section>
+    <section id="tab-plan" class="tab" data-tab="plan" hidden></section>
+    <section id="tab-map" class="tab tab-map" data-tab="map" hidden>
+      <div class="map-tools">
+        <select id="map-day" aria-label="Show day on map"><option value="">All days</option></select>
+      </div>
+      <div id="map" class="map"></div>
+    </section>
+    <section id="tab-places" class="tab" data-tab="places" hidden></section>
+
+    <!-- ===================================================================
+         GUIDE — authored by the agent as plain HTML. Keep every section
+         (write "N/A — reason" rather than deleting one). Cards with
+         class="card" get consistent styling. Use <details> for long lists.
+         =================================================================== -->
+    <section id="tab-guide" class="tab" data-tab="guide" hidden>
+      <nav class="chips" aria-label="Guide sections">
+        <a href="#g-overview">Overview</a><a href="#g-conditions">Conditions</a><a href="#g-safety">Safety</a>
+        <a href="#g-packing">Packing</a><a href="#g-budget">Budget</a><a href="#g-backup">Backup plans</a><a href="#g-offline">Offline prep</a>
+      </nav>
+
+      <article id="g-overview" class="card">
+        <h2>Overview</h2>
+        <p>SAMPLE — replace with a one-screen summary: who's going, the shape of each day, and the reservations that matter.</p>
+        <ul class="kv">
+          <li><span>Lodging</span><b>Yosemite Valley Lodge · Conf. #SAMPLE</b></li>
+          <li><span>Park entry</span><b>Reservation may be required — verify</b></li>
+        </ul>
+      </article>
+
+      <article id="g-conditions" class="card">
+        <h2>Conditions &amp; live checks</h2>
+        <p>Seasonal risks to plan around. Conditions change — check the links below before leaving and whenever you get signal.</p>
+        <div id="live-checks" class="link-list"><!-- filled from manifest.live_checks --></div>
+      </article>
+
+      <article id="g-safety" class="card">
+        <h2>Emergency &amp; safety</h2>
+        <div id="emergency"><!-- filled from manifest.emergency --></div>
+        <p>Cell service is limited in most of the valley outside Yosemite Village.</p>
+      </article>
+
+      <article id="g-packing" class="card">
+        <h2>Packing list</h2>
+        <ul class="checklist" data-store="packing">
+          <li>Layers + rain shell</li>
+          <li>Headlamp</li>
+          <li>Water bottles</li>
+          <li>Power bank (charged)</li>
+        </ul>
+      </article>
+
+      <article id="g-budget" class="card">
+        <h2>Budget</h2>
+        <table class="table">
+          <thead><tr><th>Category</th><th class="num">Estimate</th></tr></thead>
+          <tbody>
+            <tr><td>Lodging (1 night)</td><td class="num">$300</td></tr>
+            <tr><td>Park entry</td><td class="num">$35</td></tr>
+            <tr><td>Food</td><td class="num">$120</td></tr>
+          </tbody>
+          <tfoot><tr><th>Total</th><th class="num">≈ $455</th></tr></tfoot>
+        </table>
+      </article>
+
+      <article id="g-backup" class="card">
+        <h2>Backup plans</h2>
+        <h3>If it rains</h3>
+        <p>Visitor center exhibits and the Ansel Adams Gallery.</p>
+        <h3>If a trail is closed</h3>
+        <p>Walk the flat valley loop instead.</p>
+      </article>
+
+      <article id="g-offline" class="card">
+        <h2>Offline prep</h2>
+        <ul class="checklist" data-store="offline">
+          <li>Download this trip in Waypack (map included)</li>
+          <li>Download a Google/Apple Maps offline area for the drive</li>
+          <li>Charge phones and power banks</li>
+          <li>Screenshot or print key confirmations</li>
+        </ul>
+      </article>
+    </section>
+
+    <!-- Optional rich notes per day: app.js moves each block into that day in the Plan tab. -->
+    <div hidden>
+      <div data-day-notes="2026-06-12"><p>Rich per-day notes (tips, photos, why this order) go here.</p></div>
+    </div>
+  </main>
+
+  <nav class="tabbar" aria-label="Sections">
+    <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
+    <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
+    <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
+    <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
+    <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+  </nav>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
