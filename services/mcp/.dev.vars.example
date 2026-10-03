@@ -1,0 +1,8 @@
+# Copy to .dev.vars for `wrangler dev`. Values for `supabase start` are printed by `supabase status`.
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_ANON_KEY=
+# HMAC secret for signed upload/download URLs and session cookies (32+ random chars).
+SIGNING_SECRET=dev-only-signing-secret-change-me-0123456789
+# Optional. Without it, geocode/compute_route use keyless dev providers (Nominatim + OSRM demo).
+ORS_API_KEY=
+# RevenueCat REST secret is only needed by the Supabase edge function.

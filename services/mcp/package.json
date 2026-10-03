@@ -1,0 +1,23 @@
+{
+  "name": "@waypack/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/gen-guide.mjs", "dev": "wrangler dev",
+    "deploy": "node scripts/gen-guide.mjs && wrangler deploy",
+    "pretest": "node scripts/gen-guide.mjs", "test": "vitest run",
+    "typecheck": "node scripts/gen-guide.mjs && tsc --noEmit",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "@cloudflare/workers-oauth-provider": "^1.2.1",
+    "@waypack/bundle-schema": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.3",
+    "wrangler": "^4.147.0"
+  }
+}
