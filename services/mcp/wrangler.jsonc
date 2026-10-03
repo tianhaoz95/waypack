@@ -26,7 +26,11 @@
     { "binding": "OAUTH_KV", "id": "REPLACE_WITH_KV_ID" },
     { "binding": "CACHE_KV", "id": "REPLACE_WITH_KV_ID_2" }
   ],
-  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "waypack" }],
+  "r2_buckets": [
+    { "binding": "BUCKET", "bucket_name": "waypack" },
+    // Public bucket (custom domain = BASEMAP_PUBLIC_URL) for the monthly planet mirror.
+    { "binding": "BASEMAP", "bucket_name": "waypack-basemap" }
+  ],
   "queues": {
     "producers": [{ "binding": "TILE_QUEUE", "queue": "waypack-tiles" }],
     "consumers": [{ "queue": "waypack-tiles", "max_batch_size": 1, "max_retries": 3, "dead_letter_queue": "waypack-tiles-dlq" }]

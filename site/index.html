@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Waypack — offline trip plans from your AI agent</title>
+<meta name="description" content="Your AI agent plans the trip. Waypack keeps it working when the signal drops: itinerary, lodging, routes on an offline map with GPS, and one-tap navigation.">
+<meta property="og:title" content="Waypack — offline trip plans from your AI agent">
+<meta property="og:description" content="Itinerary, lodging and routes on an offline map with GPS — planned by Claude, Cursor or any MCP agent.">
+<meta property="og:image" content="img/today.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d6fe0'/%3E%3Cpath d='M8 22l5-12 4 8 3-5 4 9z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
+  --accent: #1d6fe0; --accent-ink: #fff; --soft: #eaf1fd; --code: #0f172a; --code-ink: #e5edff;
+  --radius: 18px; --max: 1080px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f1c; --surface: #121a2c; --text: #e8edf6; --muted: #9aa6bb; --line: #222c42;
+    --accent: #5b9bff; --accent-ink: #06122a; --soft: #142443; --code: #060a14; --code-ink: #dbe6ff;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 var(--font); }
+a { color: var(--accent); }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+nav.top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+.brand i { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-style: normal; }
+nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: .95rem; }
+nav.top .links a { color: var(--muted); text-decoration: none; }
+nav.top .links a:hover { color: var(--text); }
+@media (max-width: 640px) { nav.top .links a:not(.cta) { display: none; } }
+.cta, .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 10px 18px; border-radius: 12px; background: var(--accent); color: var(--accent-ink) !important; font-weight: 700; text-decoration: none; }
+.btn.ghost { background: transparent; color: var(--text) !important; border: 1px solid var(--line); }
+header.hero { padding: 64px 0 40px; }
+.hero .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
+@media (max-width: 860px) { .hero .grid { grid-template-columns: 1fr; } }
+.eyebrow { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--soft); padding: 4px 12px; border-radius: 999px; }
+h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.02em; margin: 16px 0; }
+.lead { font-size: 1.2rem; color: var(--muted); max-width: 36em; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.phone { width: min(320px, 80vw); margin: 0 auto; border-radius: 36px; padding: 10px; background: #0b0f19; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .45); }
+.phone img { display: block; width: 100%; border-radius: 28px; }
+section { padding: 56px 0; }
+section h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; margin: 0 0 12px; }
+section .sub { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
+@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.steps .card::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 800; margin-bottom: 10px; }
+.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
+.card p { margin: 0; color: var(--muted); }
+.gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
+.gallery figure { margin: 0; }
+.gallery img { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; }
+.gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 8px; text-align: center; }
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .features { grid-template-columns: 1fr; } }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tabs button { min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .92rem var(--font); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.panel[hidden] { display: none; }
+pre { position: relative; background: var(--code); color: var(--code-ink); border-radius: 14px; padding: 40px 18px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 10px 0 16px; }
+pre button { position: absolute; top: 8px; right: 8px; border: 0; border-radius: 8px; background: rgba(255,255,255,.12); color: inherit; font: 600 12px var(--font); padding: 6px 10px; cursor: pointer; }
+code.inline { font-family: var(--mono); background: var(--soft); padding: 2px 6px; border-radius: 6px; font-size: .92em; }
+.pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .pricing { grid-template-columns: 1fr; } }
+.price { font-size: 2rem; font-weight: 800; margin: 8px 0; }
+.price small { font-size: .95rem; color: var(--muted); font-weight: 600; }
+.pricing ul { padding-left: 18px; margin: 12px 0 0; color: var(--muted); }
+.pricing .featured { border: 2px solid var(--accent); }
+details { border-top: 1px solid var(--line); padding: 14px 0; }
+details summary { cursor: pointer; font-weight: 700; }
+details p { color: var(--muted); margin: 8px 0 0; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted); font-size: .9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+</style>
+</head>
+<body>
+<nav class="top" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#"><i aria-hidden="true">◈</i>Waypack</a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#connect">Connect your agent</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a class="cta" href="#download">Get the app</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap grid">
+    <div>
+      <span class="eyebrow">For trips beyond the signal</span>
+      <h1>Your AI agent plans the trip.<br>Waypack keeps it working offline.</h1>
+      <p class="lead">Ask Claude, Cursor or any MCP agent to plan a trip “with Waypack”. It researches, builds a detailed mobile guide, and publishes it to your phone, with an offline map of trails and roads, your GPS position, and one-tap hand-off to Google or Apple Maps.</p>
+      <div class="actions">
+        <a class="btn" href="#connect">Connect your agent</a>
+        <a class="btn ghost" href="#download">Get the app</a>
+      </div>
+    </div>
+    <div class="phone"><img src="img/today.jpg" alt="Waypack Today view: Sledding & snow play now, day 2 of a Sequoia winter trip" width="528" height="1142"></div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="sub">Planning happens where you already think: in your AI agent. Waypack turns the plan into something you can use on a mountain road with zero bars.</p>
+    <div class="steps">
+      <div class="card"><h3>Ask your agent</h3><p>“Plan 3 days in Sequoia over Christmas with a toddler, using Waypack.” It asks a few questions, researches, geocodes every place and computes real routes.</p></div>
+      <div class="card"><h3>It publishes a trip bundle</h3><p>A self-contained mobile guide (itinerary, lodging, food, safety, packing, backup plans) plus an offline vector map cut to your trip area.</p></div>
+      <div class="card"><h3>Download, then go</h3><p>Open Waypack and tap Download while you have signal. Everything (pages, map, your location) works in airplane mode.</p></div>
+    </div>
+  </div>
+</section>
+
+<section aria-label="Screenshots">
+  <div class="wrap">
+    <div class="gallery">
+      <figure><img src="img/today.jpg" alt="Today view" loading="lazy"><figcaption>What's next, one tap away</figcaption></figure>
+      <figure><img src="img/plan.jpg" alt="Day-by-day plan" loading="lazy"><figcaption>Day-by-day, with the why</figcaption></figure>
+      <figure><img src="img/map.jpg" alt="Offline map with routes and places" loading="lazy"><figcaption>Offline map + GPS</figcaption></figure>
+      <figure><img src="img/guide.jpg" alt="Guide with packing list" loading="lazy"><figcaption>Packing, budget, safety</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Built for no-service places</h2>
+    <div class="features">
+      <div class="card"><h3>A real offline map</h3><p>OpenStreetMap trails, roads and labels for your trip area, your planned routes drawn on top, and the blue dot from your phone's GPS. No signal needed.</p></div>
+      <div class="card"><h3>As detailed as your agent</h3><p>Not a fixed form. Your agent writes the guide: why this order, where the last gas is, what to do if the road closes, what a toddler needs at 7,000 ft.</p></div>
+      <div class="card"><h3>Navigate with your maps app</h3><p>Every place has a Navigate button that hands off to Google Maps or Apple Maps. Download their offline area too, and turn-by-turn works as well.</p></div>
+      <div class="card"><h3>Native Today view</h3><p>The app reads the trip's structured data to show what's now and next, even if a guide's layout is unusual.</p></div>
+      <div class="card"><h3>Reminders before you go</h3><p>If a trip starts in 3 days and isn't downloaded yet, Waypack reminds you while you still have signal.</p></div>
+      <div class="card"><h3>Private by default</h3><p>Trips are private to your account, encrypted in transit, and reachable only through short-lived links. No ads, no tracking in your trip pages.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="connect">
+  <div class="wrap">
+    <h2>Connect your agent</h2>
+    <p class="sub">Waypack is a remote MCP server with OAuth sign-in. Use the same email as the app. For the best plans, also install the Waypack skill. It teaches your agent the interview, coverage checklist and bundle format.</p>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-panel="p-cc">Claude Code</button>
+      <button role="tab" aria-selected="false" data-panel="p-claude">Claude (web &amp; desktop)</button>
+      <button role="tab" aria-selected="false" data-panel="p-cursor">Cursor &amp; others</button>
+    </div>
+    <div class="panel" id="p-cc" role="tabpanel">
+      <p>Add the server, then install the skill:</p>
+      <pre><code>claude mcp add --transport http waypack https://mcp.waypack.app/mcp
+npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
+      <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
+    </div>
+    <div class="panel" id="p-claude" role="tabpanel" hidden>
+      <p>Settings → Connectors → Add custom connector, and paste:</p>
+      <pre><code>https://mcp.waypack.app/mcp</code><button type="button">Copy</button></pre>
+      <p>No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
+    </div>
+    <div class="panel" id="p-cursor" role="tabpanel" hidden>
+      <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
+      <pre><code>{
+  "mcpServers": {
+    "waypack": { "url": "https://mcp.waypack.app/mcp" }
+  }
+}</code><button type="button">Copy</button></pre>
+      <p>Headless or no OAuth? Create a personal API token in the app (Settings → API tokens) and send it as <code class="inline">Authorization: Bearer wpk_…</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <h2>Pricing</h2>
+    <p class="sub">Plans you've published stay yours on every tier.</p>
+    <div class="pricing">
+      <div class="card"><h3>Free</h3><div class="price">$0</div><p>Try the whole flow.</p>
+        <ul><li>1 active trip</li><li>Full trip guide offline</li><li>Map works with a connection</li></ul></div>
+      <div class="card featured"><h3>Pro · Annual</h3><div class="price">$14.99 <small>/ year</small></div><p>For people who travel off-grid.</p>
+        <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul></div>
+      <div class="card"><h3>Pro · Lifetime</h3><div class="price">$39.99 <small>once</small></div><p>Founding members, limited.</p>
+        <ul><li>Everything in Pro</li><li>Pay once</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <h2>Get the app</h2>
+    <p class="sub">Waypack for iPhone and Android is in beta. Join to get the TestFlight / Play testing link.</p>
+    <div class="actions">
+      <a class="btn" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(iOS)">iPhone beta</a>
+      <a class="btn ghost" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(Android)">Android beta</a>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <details><summary>Which AI agents work with Waypack?</summary><p>Any MCP client that supports remote servers: Claude Code, Claude (web, desktop, mobile) custom connectors, Cursor, and others. The skill improves results in agents that support Agent Skills.</p></details>
+    <details><summary>Does the map really work without signal?</summary><p>Yes, on Pro. When you tap Download, Waypack saves a vector map of your trip area (trails, roads, labels) to your phone. Your location comes from GPS, which doesn't need cell service.</p></details>
+    <details><summary>Does Waypack do turn-by-turn navigation?</summary><p>No. Tap Navigate to hand off to Google Maps or Apple Maps. For offline turn-by-turn, also download their offline area (your trip's checklist reminds you).</p></details>
+    <details><summary>Can I edit a trip in the app?</summary><p>Edits happen in your agent: “move the Sherman Tree visit to the morning”. It re-publishes and the app shows <em>Update available</em>.</p></details>
+    <details><summary>Where does the map data come from?</summary><p>OpenStreetMap, via the Protomaps basemap. © OpenStreetMap contributors, available under the Open Database License.</p></details>
+    <details><summary>What happens to my data?</summary><p>See the <a href="privacy.html">privacy policy</a>. Short version: your trips are private to your account, we don't sell data, and deleting your account deletes your trips and maps.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Hejitech · Waypack</span>
+    <span><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, <a href="https://protomaps.com">Protomaps</a></span>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('[role="tab"]').forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll('[role="tab"]').forEach(function (t) { t.setAttribute("aria-selected", String(t === tab)); });
+      document.querySelectorAll(".panel").forEach(function (p) { p.hidden = p.id !== tab.dataset.panel; });
+    });
+  });
+  document.querySelectorAll("pre button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var text = b.parentElement.querySelector("code").innerText;
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+        b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1500);
+      }).catch(function () {});
+    });
+  });
+</script>
+</body>
+</html>

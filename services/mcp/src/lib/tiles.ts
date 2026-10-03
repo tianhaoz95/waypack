@@ -7,18 +7,33 @@ import { refreshTripStatus, type ExtractRow } from "./pipeline.js";
 import { resolvePlanet } from "./planet.js";
 
 /** Cloudflare Container running services/tiler (pmtiles extract behind a tiny HTTP API). */
-export class TilerContainer extends Container {
+export class TilerContainer extends Container<Env> {
   defaultPort = 8080;
   sleepAfter = "5m";
+
+  constructor(ctx: DurableObjectState<{}>, env: Env) {
+    super(ctx, env);
+    // rclone reads its remote from env (RCLONE_CONFIG_R2_*); only needed for /mirror.
+    this.envVars = {
+      MIRROR_TOKEN: env.MIRROR_TOKEN ?? "",
+      RCLONE_CONFIG_R2_TYPE: "s3",
+      RCLONE_CONFIG_R2_PROVIDER: "Cloudflare",
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: env.R2_ACCESS_KEY_ID ?? "",
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: env.R2_SECRET_ACCESS_KEY ?? "",
+      RCLONE_CONFIG_R2_ENDPOINT: env.R2_ACCOUNT_ID ? `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "",
+    };
+  }
 }
 
-async function callTiler(env: Env, body: unknown): Promise<Response> {
-  const init: RequestInit = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
-  if (env.TILER_URL) return fetch(`${env.TILER_URL.replace(/\/$/, "")}/extract`, init);
+export async function callTiler(env: Env, body: unknown, path: "/extract" | "/mirror" = "/extract"): Promise<Response> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (path === "/mirror") headers.Authorization = `Bearer ${env.MIRROR_TOKEN ?? ""}`;
+  const init: RequestInit = { method: "POST", headers, body: JSON.stringify(body) };
+  if (env.TILER_URL) return fetch(`${env.TILER_URL.replace(/\/$/, "")}${path}`, init);
   if (!env.TILER) throw new Error("no tiler configured (set TILER_URL or the TILER container binding)");
-  // Spread jobs over a few instances; each extract is independent.
-  const instance = getContainer(env.TILER as never, `tiler-${Math.floor(Math.random() * 3)}`);
-  return instance.fetch(new Request("http://tiler/extract", init));
+  // Spread extracts over a few instances; the long-running mirror gets its own.
+  const name = path === "/mirror" ? "tiler-mirror" : `tiler-${Math.floor(Math.random() * 3)}`;
+  return getContainer(env.TILER as never, name).fetch(new Request(`http://tiler${path}`, init));
 }
 
 /** Queue consumer: cut one PMTiles extract and store it in R2. */

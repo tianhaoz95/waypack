@@ -15,6 +15,7 @@ Usage:
   waypack preview <dir> [--port 4173] [--tiles extract.pmtiles] [--no-online] [--host 127.0.0.1]
                                                 Serve the bundle like the app does (CSP, SDK, tiles)
   waypack init <dir> [--title "My Trip"]        Start a bundle from the base template
+  waypack skill install [--dir ~/.claude/skills] Install the Waypack Agent Skill (SKILL.md + references + template)
 
 Docs: https://waypack.app/docs  ·  Schema: packages/bundle-schema/manifest.v1.schema.json`;
 
@@ -30,11 +31,13 @@ function validatePath(p: string): ValidationResult & { files?: { path: string; d
   return validateZip(new Uint8Array(readFileSync(p)));
 }
 
-function templateDir(): string {
+function skillDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
-  for (const c of [join(here, "../templates/base"), join(here, "../../../skill/templates/base")]) if (existsSync(c)) return c;
-  throw new Error("base template not found");
+  for (const c of [join(here, "../skill"), join(here, "../../../skill")]) if (existsSync(join(c, "SKILL.md"))) return c;
+  throw new Error("skill files not found");
 }
+
+const templateDir = () => join(skillDir(), "templates/base");
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -57,6 +60,7 @@ async function main(argv: string[]): Promise<number> {
       "no-online": { type: "boolean" },
       online: { type: "string" },
       title: { type: "string" },
+      dir: { type: "string" },
       force: { type: "boolean" },
     },
   });
@@ -109,6 +113,16 @@ async function main(argv: string[]): Promise<number> {
         writeFileSync(mp, JSON.stringify(m, null, 2) + "\n");
       }
       console.log(`Created ${target} from the base template. Next: edit manifest.json, then \`waypack preview ${target}\`.`);
+      return 0;
+    }
+    case "skill": {
+      if (target !== "install") throw new Error("usage: waypack skill install [--dir ~/.claude/skills]");
+      const home = process.env.HOME ?? process.env.USERPROFILE ?? ".";
+      const base = (values.dir ?? join(home, ".claude/skills")).replace(/^~(?=$|\/)/, home);
+      const dest = join(base, "waypack");
+      mkdirSync(dest, { recursive: true });
+      cpSync(skillDir(), dest, { recursive: true });
+      console.log(`Installed the Waypack skill to ${dest}\nRestart your agent, then ask it to "plan a trip with Waypack".`);
       return 0;
     }
     default:

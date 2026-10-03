@@ -4,9 +4,10 @@
   "description": "Validate, preview and zip Waypack trip bundles",
   "type": "module",
   "bin": { "waypack": "dist/cli.js" },
-  "files": ["dist", "templates"],
+  "files": ["dist", "skill"],
   "scripts": {
     "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "prepack": "rm -rf skill && cp -R ../../skill skill",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

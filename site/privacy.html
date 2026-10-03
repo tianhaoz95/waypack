@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Privacy Policy · Waypack</title>
+<style>
+:root { --bg: #f7f8fa; --text: #0f172a; --muted: #586174; --line: #e1e5ec; --accent: #1d6fe0; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0a0f1c; --text: #e8edf6; --muted: #9aa6bb; --line: #222c42; --accent: #5b9bff; } }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+a { color: var(--accent); }
+h1 { font-size: 2rem; margin-bottom: 4px; }
+h2 { font-size: 1.25rem; margin-top: 2em; }
+.muted { color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+</style>
+</head>
+<body>
+<main>
+<p><a href="index.html">← Waypack</a></p>
+<h1>Privacy Policy</h1>
+<p class="muted">Effective 2026-12-01 · Draft for review before launch</p>
+
+<p>Waypack (“we”) is operated by Hejitech. This policy explains what we collect when you use the Waypack apps, the Waypack MCP server used by AI agents, and waypack.app.</p>
+
+<h2>What we collect</h2>
+<table>
+  <tr><th>Data</th><th>Why</th><th>Kept</th></tr>
+  <tr><td>Email address</td><td>Sign-in (one-time codes) and account recovery</td><td>Until you delete your account</td></tr>
+  <tr><td>Trip bundles your agent uploads (itinerary, places, notes, confirmation numbers you include)</td><td>To deliver them to your devices</td><td>Until you delete the trip or account</td></tr>
+  <tr><td>Offline map extracts for your trip areas</td><td>Offline maps</td><td>Deleted 30 days after the trip ends (re-created on request)</td></tr>
+  <tr><td>Places and coordinates sent to <code>geocode</code> / <code>compute_route</code></td><td>Sent to our routing provider (OpenRouteService) to answer the request; cached without your identity</td><td>Cache up to 30 days</td></tr>
+  <tr><td>Purchase status (via RevenueCat, Apple, Google)</td><td>Unlock Pro features</td><td>As required for billing records</td></tr>
+  <tr><td>Basic server logs (IP, timestamps, errors)</td><td>Security and abuse prevention</td><td>Up to 30 days</td></tr>
+</table>
+
+<h2>What we don't do</h2>
+<ul>
+  <li>We don't sell or rent your data, and we don't use it for advertising.</li>
+  <li>Trip pages run on your phone with no analytics or trackers, and can't send data to the internet.</li>
+  <li>Your location (GPS) stays on your device; it's used only to draw the blue dot on your map.</li>
+  <li>We don't train AI models on your trips.</li>
+</ul>
+
+<h2>Your AI agent</h2>
+<p>Your agent (e.g. Claude, Cursor) is a separate service with its own privacy terms. Waypack only receives what the agent sends to the Waypack MCP server while you're signed in.</p>
+
+<h2>Where data lives</h2>
+<p>Account and trip records: Supabase (Postgres). Files: Cloudflare R2. Server code: Cloudflare Workers. These providers process data on our behalf under their data-processing terms. Data may be processed in the United States.</p>
+
+<h2>Security</h2>
+<p>Trips are private to your account and reachable only through short-lived signed links. On your phone, trips are served only to the Waypack app over a local, token-protected connection.</p>
+
+<h2>Your choices</h2>
+<ul>
+  <li><b>Delete a trip</b>: ask your agent (<code>delete_trip</code>).</li>
+  <li><b>Delete your account</b>: in the app, Settings → Delete account. This deletes your account, trips and maps from our servers. Cancel subscriptions in your App Store / Google Play settings.</li>
+  <li><b>Access or export</b>: email <a href="mailto:privacy@waypack.app">privacy@waypack.app</a>.</li>
+</ul>
+
+<h2>Children</h2>
+<p>Waypack isn't directed to children under 13 and we don't knowingly collect their data. Trips may mention children's ages when you include them in a plan; that information is stored as part of your trip.</p>
+
+<h2>Changes</h2>
+<p>We'll post changes here and update the date above. Material changes will be announced in the app.</p>
+
+<h2>Contact</h2>
+<p><a href="mailto:privacy@waypack.app">privacy@waypack.app</a></p>
+</main>
+</body>
+</html>

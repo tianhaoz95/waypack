@@ -1,0 +1,59 @@
+# Store listing copy (App Store + Google Play)
+
+**App name:** Waypack: Offline Trip Plans
+**Subtitle (iOS, 30):** Agent-made trips, offline
+**Short description (Play, 80):** Trip plans from your AI agent, with an offline map, GPS and itinerary.
+**Bundle / package id:** `com.hejitech.waypack`
+**Category:** Travel (secondary: Navigation)
+**Age rating:** 4+ / Everyone
+**Price:** Free with in-app purchases (Waypack Pro annual, Waypack Pro lifetime)
+
+## Description
+Your AI agent plans the trip. Waypack keeps it working when the signal drops.
+
+Ask Claude, Cursor or any AI agent that supports MCP to plan a trip “with Waypack”. It interviews you, researches, and publishes a detailed trip guide to your Waypack account. Open the app, tap Download while you have signal, and everything works in airplane mode:
+
+• Today view: what's happening now and next, one tap away
+• Day-by-day itinerary with times, drive durations and the reasons behind the plan
+• Lodging, confirmation numbers, check-in times, phone numbers
+• Offline map (Pro): trails, roads and labels for your trip area, your planned routes, and your live GPS position, no cell service needed
+• Navigate buttons that hand off to Google Maps or Apple Maps
+• Packing list, budget, emergency info, backup plans, live-check links for road and park conditions
+• Reminder to download before you go
+
+Waypack is a viewer for your own plans: planning and edits happen in your AI agent, and updates arrive in the app with one tap.
+
+Waypack Pro unlocks offline maps and up to 10 active trips. Annual subscription or lifetime purchase. The free plan includes one active trip, available offline (the map needs a connection).
+
+Map data © OpenStreetMap contributors (ODbL). Basemap by Protomaps.
+
+## Keywords (iOS, 100)
+offline map,itinerary,trip planner,national park,hiking,road trip,AI,Claude,travel guide,GPS
+
+## What's New (1.0)
+First release: download trips from your AI agent, offline maps with GPS, native Today view.
+
+## Review notes (App Store)
+- Waypack displays trip guides the user created with their own AI agent (via our MCP server). Bundles are documents (HTML/CSS/JS + JSON) rendered in a sandboxed WebView from a local loopback server; they cannot change native functionality, access the network (CSP `connect-src 'self'`), or reach other trips.
+- Native features: offline download manager with integrity checks, native Today view, GPS map, trip reminders, share sheet, purchases.
+- Demo account: `review@waypack.app` (sign-in code is sent by email; we'll provide a fixed review code via App Review notes), pre-loaded with a sample Sequoia trip.
+- Location is used only to show the user's position on the offline map (When In Use).
+
+## Privacy nutrition label / Data safety
+| Data | Collected | Linked to user | Tracking | Purpose |
+|---|---|---|---|---|
+| Email address | Yes | Yes | No | App functionality (sign-in) |
+| User content (trip plans) | Yes | Yes | No | App functionality |
+| Purchase history | Yes (via RevenueCat) | Yes | No | App functionality |
+| Precise location | No (stays on device) | — | — | — |
+| Diagnostics | No | — | — | — |
+
+## Screenshots (6.9" and 6.5", Play phone)
+1. Today: "Now · Sledding & snow play" (`site/img/today.jpg`)
+2. Offline map with routes and blue dot
+3. Day plan with "why this order" notes
+4. Guide: packing list with checkboxes
+5. Trips list: "Available offline"
+6. Connect your agent (Claude Code command)
+
+Capture at device resolution from the simulator (`xcrun simctl io booted screenshot`) using the seeded dev account (`services/mcp/scripts/seed-dev.mjs`).

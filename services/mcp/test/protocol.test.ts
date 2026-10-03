@@ -11,29 +11,32 @@ const call = (body: unknown, method = "POST") =>
     name: "t", version: "1", instructions: "i", tools, ctx: { n: 7 },
   });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const j = async (r: Promise<Response>): Promise<any> => (await r).json();
+
 describe("MCP protocol", () => {
   it("negotiates protocol version", async () => {
-    const r = await (await call({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } })).json();
+    const r = await j(call({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } }));
     expect(r.result.protocolVersion).toBe("2025-03-26");
-    const r2 = await (await call({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "1999-01-01" } })).json();
+    const r2 = await j(call({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "1999-01-01" } }));
     expect(r2.result.protocolVersion).toBe("2025-11-25");
   });
   it("accepts notifications with 202", async () => {
     expect((await call({ jsonrpc: "2.0", method: "notifications/initialized" })).status).toBe(202);
   });
   it("lists and calls tools", async () => {
-    const l = await (await call({ jsonrpc: "2.0", id: 2, method: "tools/list" })).json();
+    const l = await j(call({ jsonrpc: "2.0", id: 2, method: "tools/list" }));
     expect(l.result.tools.map((t: { name: string }) => t.name)).toEqual(["echo", "fail"]);
-    const c = await (await call({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "echo", arguments: { x: "hi" } } })).json();
+    const c = await j(call({ jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "echo", arguments: { x: "hi" } } }));
     expect(c.result).toEqual({ content: [{ type: "text", text: "hi:7" }], structuredContent: { x: "hi" }, isError: false });
   });
   it("reports tool errors in-band", async () => {
-    const c = await (await call({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "fail" } })).json();
+    const c = await j(call({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "fail" } }));
     expect(c.result.isError).toBe(true);
     expect(c.result.content[0].text).toMatch(/call geocode/);
   });
   it("handles batches, unknown methods and parse errors", async () => {
-    const b = await (await call([{ jsonrpc: "2.0", id: 5, method: "ping" }, { jsonrpc: "2.0", id: 6, method: "nope" }])).json();
+    const b = await j(call([{ jsonrpc: "2.0", id: 5, method: "ping" }, { jsonrpc: "2.0", id: 6, method: "nope" }]));
     expect(b[0].result).toEqual({});
     expect(b[1].error.code).toBe(-32601);
     const bad = await handleMcpRequest(new Request("http://x/mcp", { method: "POST", body: "{" }), { name: "t", version: "1", instructions: "", tools, ctx: { n: 1 } });

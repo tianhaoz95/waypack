@@ -3,7 +3,8 @@ import type { AuthProps, Env, TileJob } from "./env.js";
 import { handleApp } from "./api.js";
 import { resolveApiToken } from "./auth/tokens.js";
 import { Db } from "./lib/db.js";
-import { runExpiry, runTileJob } from "./lib/tiles.js";
+import { callTiler, runExpiry, runTileJob } from "./lib/tiles.js";
+import { checkPlanetMirror, startPlanetMirror } from "./lib/planet.js";
 import { handleMcpRequest } from "./mcp/protocol.js";
 import { INSTRUCTIONS, tools, type ToolCtx } from "./mcp/tools.js";
 
@@ -67,7 +68,10 @@ export default {
   },
 
   async scheduled(event: ScheduledController, env: Env): Promise<void> {
-    if (event.cron === "17 3 * * *") console.log("expiry", await runExpiry(env));
-    // "0 4 2 * *": planet mirror refresh is run by the tiler (services/tiler/README.md).
+    if (event.cron === "17 3 * * *") {
+      console.log("expiry", await runExpiry(env));
+      console.log("planet mirror", await checkPlanetMirror(env));
+    }
+    if (event.cron === "0 4 2 * *") console.log("planet mirror", await startPlanetMirror(env, (b) => callTiler(env, b, "/mirror")));
   },
 } satisfies ExportedHandler<Env, TileJob>;
