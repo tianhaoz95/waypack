@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../dev_flags.dart';
 import '../services/handoff.dart';
 
 /// Renders a trip bundle from the local server with the SDK's native bridge (design §7.2, §8.2).
@@ -30,7 +31,7 @@ class _BundleWebViewState extends State<BundleWebView> {
 
   Future<void> _ensureLocationPermission() async {
     // Integration tests can't tap system dialogs.
-    if (const bool.fromEnvironment('NO_LOCATION_PROMPT')) return;
+    if (DevFlags.noPermissionPrompts) return;
     try {
       var p = await Geolocator.checkPermission();
       if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
@@ -42,7 +43,12 @@ class _BundleWebViewState extends State<BundleWebView> {
   String get _hostScript {
     final platform = Platform.isIOS ? 'ios' : 'android';
     final nav = widget.navApp == null ? '' : ", navApp: '${widget.navApp}'";
-    return "window.__WAYPACK_HOST__ = Object.freeze({ platform: '$platform'$nav });";
+    final host = "window.__WAYPACK_HOST__ = Object.freeze({ platform: '$platform'$nav });";
+    final t = DevFlags.fakeNowTime;
+    if (t == null) return host;
+    // Screenshot mode: shift the page clock (Date) to the fake moment.
+    final ms = t.millisecondsSinceEpoch;
+    return "$host{const T=$ms,S=Date.now(),D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:[T+(D.now()-S)]))}static now(){return T+(D.now()-S)}}}";
   }
 
   @override

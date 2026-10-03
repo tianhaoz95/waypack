@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config.dart';
+import 'dev_flags.dart';
 import 'screens/sign_in_screen.dart';
 import 'screens/trips_screen.dart';
 import 'services/api.dart';
@@ -70,7 +71,7 @@ class _AuthGateState extends State<_AuthGate> {
       if (!mounted) return;
       if (e.event == AuthChangeEvent.signedIn) {
         context.read<AppState>().onSignedIn();
-        Reminders.requestPermission();
+        if (!DevFlags.noPermissionPrompts) Reminders.requestPermission();
       }
       setState(() {});
     });

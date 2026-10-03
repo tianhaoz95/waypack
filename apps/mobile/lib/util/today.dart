@@ -1,5 +1,6 @@
 import 'package:timezone/timezone.dart' as tz;
 
+import '../dev_flags.dart';
 import '../models/manifest.dart';
 
 enum TripPhase { before, during, after }
@@ -40,7 +41,7 @@ String _two(int n) => n.toString().padLeft(2, '0');
 (String, String) nowIn(String timezone, {DateTime? at}) {
   DateTime t;
   try {
-    t = tz.TZDateTime.from(at ?? DateTime.now(), tz.getLocation(timezone));
+    t = tz.TZDateTime.from(at ?? DevFlags.fakeNowTime ?? DateTime.now(), tz.getLocation(timezone));
   } catch (_) {
     t = at ?? DateTime.now();
   }
