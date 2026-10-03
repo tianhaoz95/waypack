@@ -10,7 +10,7 @@
   "scripts": {
     "assets": "node scripts/fetch-assets.mjs",
     "build": "node scripts/build.mjs",
-    "test": "vitest run",
+    "test": "playwright test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

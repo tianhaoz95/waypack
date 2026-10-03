@@ -23,3 +23,8 @@ The design (`docs/design.md`) was written with the working name *Tripfold*. Devi
 | 17 | Extracts retired by a manifest change are marked `skipped`; `expired` is reserved for the 30-day post-trip expiry, which entitled users can re-cut on demand when downloading. | Keeps on-demand re-cut from resurrecting areas the trip no longer uses. |
 | 18 | Local Supabase uses ports **554xx** (`supabase/config.toml`). | Another local Supabase project on this machine owns the default 543xx ports. |
 | 19 | RevenueCat entitlement id **`pro`**; products **`waypack_annual`**, **`waypack_lifetime`**. Webhook is idempotent on event id and, when `REVENUECAT_API_KEY` is set, refreshes from RevenueCat's subscriber API (authoritative) instead of trusting event order. | Design §11, renamed. |
+| 20 | App local server uses **`dart:io` `HttpServer`** directly instead of `shelf`. | Needs only static files + Range + cookies; fewer deps, easier to audit the security checks. |
+| 21 | The SDK ships in the app as **one asset (`assets/sdk.zip`)**, unpacked to app support storage once per SDK version. | Flutter assets aren't recursive; ~1,000 glyph files with spaces in paths are awkward to declare. |
+| 22 | **`flutter_inappwebview 6.2.0-beta.3`** — the stable 6.1.5 Android plugin fails on AGP 9 (`proguard-android.txt`). | Move to stable 6.2.x when released. |
+| 23 | Local downloads record the **owner (Supabase user id)**; another account signing in on the same device doesn't see them. | Privacy on shared devices. |
+| 24 | Native "Map" overlay is a built-in SDK page (`assets/app/map.html`) served at `/t/{trip}/__waypack_map.html`, not a native map widget. | Same offline renderer and styling as bundles, zero extra native map deps. |
