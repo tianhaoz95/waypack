@@ -154,7 +154,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
 <section id="connect">
   <div class="wrap">
     <h2>Connect your agent</h2>
-    <p class="sub">Waypack is a remote MCP server with OAuth sign-in. Use the same email as the app. For the best plans, also install the Waypack skill. It teaches your agent the interview, coverage checklist and bundle format.</p>
+    <p class="sub">Waypack is a remote MCP server; you sign in with Google or Apple, the same account as the app. For the best plans, also install the Waypack skill. It teaches your agent the interview, coverage checklist and bundle format.</p>
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-panel="p-cc">Claude Code</button>
       <button role="tab" aria-selected="false" data-panel="p-claude">Claude (web &amp; desktop)</button>
@@ -164,7 +164,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
       <p>Add the server, then install the skill:</p>
       <pre><code>claude mcp add --transport http waypack https://waypack.app/mcp
 npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
-      <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Sign in with your Waypack email when Claude opens the browser. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
+      <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Sign in with Google or Apple when Claude opens the browser. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
     </div>
     <div class="panel" id="p-claude" role="tabpanel" hidden>
       <p>Settings → Connectors → Add custom connector, and paste:</p>
@@ -204,7 +204,7 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
 <section id="download">
   <div class="wrap">
     <h2>Get the app</h2>
-    <p class="sub">The Waypack app is a free viewer for iPhone and Android: sign in with your account email and download your trips. It's in beta. Join to get the TestFlight / Play testing link.</p>
+    <p class="sub">The Waypack app is a free viewer for iPhone and Android: sign in with Google or Apple and download your trips. It's in beta. Join to get the TestFlight / Play testing link.</p>
     <div class="actions">
       <a class="btn" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(iOS)">iPhone beta</a>
       <a class="btn ghost" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(Android)">Android beta</a>

@@ -6,7 +6,6 @@ import { join, relative } from "node:path";
 
 const BASE = process.env.WAYPACK_URL ?? "http://127.0.0.1:8787";
 const SUPA = process.env.SUPABASE_URL ?? "http://127.0.0.1:55421";
-const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:55424";
 const args = process.argv.slice(2);
 const email = args.find((a) => a.includes("@")) ?? "dev@waypack.test";
 const free = args.includes("--free");
@@ -15,22 +14,10 @@ const env = Object.fromEntries(readFileSync(new URL("../.dev.vars", import.meta.
 const svc = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function code() {
-  for (let i = 0; i < 30; i++) {
-    const l = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json();
-    if (l.messages?.[0]) {
-      const m = await (await fetch(`${MAILPIT}/api/v1/message/${l.messages[0].ID}`)).json();
-      const c = (m.Text || m.HTML).match(/\b(\d{6})\b/)?.[1];
-      if (c) return c;
-    }
-    await sleep(500);
-  }
-  throw new Error("no OTP email");
-}
-
-await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
-await fetch(`${SUPA}/auth/v1/otp`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, create_user: true }) });
-const sess = await (await fetch(`${SUPA}/auth/v1/verify`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ type: "email", email, token: await code() }) })).json();
+const signin = await fetch(`${BASE}/api/auth/dev`, { method: "POST", headers: { "Content-Type": "application/json", "X-Waypack": "1" }, body: JSON.stringify({ email }) });
+if (!signin.ok) throw new Error(`dev sign-in failed (${signin.status}) — is wrangler dev running with ENVIRONMENT=development?`);
+const sess = await signin.json();
+sess.user = { id: sess.userId };
 const uid = sess.user.id;
 await fetch(`${SUPA}/rest/v1/entitlements?user_id=eq.${uid}`, {
   method: "PATCH",
@@ -54,5 +41,4 @@ for (let i = 0; i < 60; i++) {
   if (s.structuredContent.status !== "processing") { console.error(s.content[0].text); break; }
   await sleep(3000);
 }
-await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
 console.log(JSON.stringify({ email, user_id: uid, trip_id: tripId }));

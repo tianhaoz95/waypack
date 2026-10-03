@@ -1,6 +1,6 @@
 // End-to-end test against a running stack:
 //   supabase start · docker run -p 8090:8080 waypack-tiler · npm run dev (services/mcp)
-// Exercises MCP OAuth (DCR + PKCE + email OTP via Mailpit), every tool, the upload
+// Exercises MCP OAuth (DCR + PKCE, Google/Apple sign-in redirects, dev sign-in), every tool, the upload
 // pipeline, tile extraction, entitlement limits and the app download API.
 //
 //   node scripts/e2e.mjs [--bundle ../../examples/sequoia-winter]
@@ -11,7 +11,6 @@ import { execSync } from "node:child_process";
 
 const BASE = process.env.WAYPACK_URL ?? "http://127.0.0.1:8787";
 const SUPA = process.env.SUPABASE_URL ?? "http://127.0.0.1:55421";
-const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:55424";
 const bundleDir = process.argv.includes("--bundle") ? process.argv[process.argv.indexOf("--bundle") + 1] : new URL("../../../examples/sequoia-winter", import.meta.url).pathname;
 const env = Object.fromEntries(readFileSync(new URL("../.dev.vars", import.meta.url), "utf8").split("\n").filter((l) => l.includes("=")).map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]));
 
@@ -33,18 +32,12 @@ function keep(res) {
 }
 const field = (html, name) => html.match(new RegExp(`name="${name}" value="([^"]*)"`))?.[1]?.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
-async function latestCode(email) {
-  for (let i = 0; i < 20; i++) {
-    const list = await (await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json();
-    const msg = list.messages?.[0];
-    if (msg) {
-      const full = await (await fetch(`${MAILPIT}/api/v1/message/${msg.ID}`)).json();
-      const code = (full.Text || full.HTML).match(/\b(\d{6})\b/)?.[1];
-      if (code) return code;
-    }
-    await sleep(500);
-  }
-  throw new Error("no OTP email arrived");
+/** Dev-only sign-in (local server): returns a Supabase session and a portal cookie. */
+async function devSignIn(email) {
+  const r = await fetch(`${BASE}/api/auth/dev`, { method: "POST", headers: { "Content-Type": "application/json", "X-Waypack": "1" }, body: JSON.stringify({ email }) });
+  if (!r.ok) throw new Error(`dev sign-in failed: ${r.status}`);
+  const cookie = (r.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
+  return { ...(await r.json()), cookie };
 }
 
 // --- 1. discovery ---
@@ -65,7 +58,7 @@ const reg = await (await fetch(as.registration_endpoint, {
 })).json();
 ok(!!reg.client_id, `registered client ${reg.client_id}`);
 
-// --- 3. authorize with email OTP ---
+// --- 3. authorize: Google / Apple sign-in (no email) ---
 const verifier = b64url(randomBytes(32));
 const challenge = b64url(createHash("sha256").update(verifier).digest());
 const state = b64url(randomBytes(8));
@@ -74,17 +67,30 @@ Object.entries({ response_type: "code", client_id: reg.client_id, redirect_uri: 
 let res = keep(await fetch(authUrl, { headers: { Cookie: cookieHeader() } }));
 let html = await res.text();
 ok(res.status === 200 && html.includes("Waypack E2E"), "authorize page shows the client name");
-const email = `e2e+${Date.now()}@example.com`;
+ok(html.includes("Continue with Google") && html.includes("Continue with Apple"), "authorize page offers Google and Apple");
+ok(!/name="code"|Email me a code/.test(html), "no email-code sign-in on the authorize page");
 const post = async (form) => keep(await fetch(`${BASE}/authorize`, { method: "POST", redirect: "manual", headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookieHeader() }, body: new URLSearchParams(form) }));
 const handle = field(html, "handle"), details = field(html, "details");
-res = await post({ handle, details, email, step: "send_code" });
-html = await res.text();
-ok(html.includes("Enter your code"), "code page after sending OTP");
-const code = await latestCode(email);
-ok(/^\d{6}$/.test(code), `received OTP via Mailpit`);
-res = await post({ handle, details, email, code: "000000", step: "verify" });
-{ const t = await res.text(); ok(t.includes("didn&#39;t work") || t.includes("didn.t work"), "wrong code is rejected"); }
-res = await post({ handle, details, email, code, step: "verify" });
+
+for (const provider of ["google", "apple"]) {
+  res = await post({ handle, details, step: "oauth", provider });
+  const loc = new URL(res.headers.get("Location") ?? "http://x/");
+  ok(res.status === 302 && loc.pathname === "/auth/v1/authorize" && loc.searchParams.get("provider") === provider && loc.searchParams.get("code_challenge_method") === "s256" && loc.searchParams.get("redirect_to") === `${BASE}/auth/callback`,
+    `${provider}: redirects to Supabase authorize with PKCE`);
+  const up = await fetch(loc, { redirect: "manual" });
+  const upLoc = up.headers.get("Location") ?? "";
+  ok(up.status === 302 && upLoc.startsWith(provider === "google" ? "https://accounts.google.com/" : "https://appleid.apple.com/"), `${provider}: Supabase forwards to ${new URL(upLoc).host}`);
+}
+const noState = await fetch(`${BASE}/auth/callback?code=abc`, { redirect: "manual" });
+ok(noState.status === 400 && (await noState.text()).includes("different browser"), "callback without the browser-bound state cookie is rejected");
+const badCode = await fetch(`${BASE}/auth/callback?code=not-a-real-code`, { redirect: "manual", headers: { Cookie: cookieHeader() } });
+ok(badCode.status === 400 && (await badCode.text()).includes("Sign-in failed"), "callback with an invalid code is rejected");
+const cancelled = await fetch(`${BASE}/auth/callback?error=access_denied&error_description=User+cancelled`, { redirect: "manual" });
+ok(cancelled.status === 400 && (await cancelled.text()).includes("User cancelled"), "provider cancellation shows a clear message");
+
+// Real Google/Apple can't run here; finish with the dev-only sign-in (refused outside local development).
+const email = `e2e+${Date.now()}@example.com`;
+res = await post({ handle, details, email, step: "dev" });
 const loc = res.headers.get("Location") ?? "";
 ok(res.status === 302 && loc.startsWith(redirect), `redirected to client (${res.status})`);
 const cb = new URL(loc);
@@ -201,11 +207,8 @@ const gt = await call("get_trip", { trip_id: tripId });
 ok(gt.structuredContent.manifest.trip_id === tripId, "get_trip manifest carries trip_id");
 
 // --- 6. app API with a Supabase session (the mobile app's path) ---
-await fetch(`${SUPA}/auth/v1/otp`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
-await sleep(1200);
-const code2 = await latestCode(email);
-const sess = await (await fetch(`${SUPA}/auth/v1/verify`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ type: "email", email, token: code2 }) })).json();
-ok(!!sess.access_token, "app sign-in via Supabase OTP");
+const sess = await devSignIn(email);
+ok(!!sess.access_token && !!sess.refresh_token, "app sign-in session (dev path)");
 const H = { Authorization: `Bearer ${sess.access_token}` };
 const me = await (await fetch(`${BASE}/api/me`, { headers: H })).json();
 ok(me.plan?.tier === "annual", `/api/me → ${me.plan?.tier}`);
@@ -233,12 +236,12 @@ ok(acct.status === 200 && (await acct.text()).includes("Your account"), "/accoun
 const home = await fetch(`${BASE}/`);
 ok(home.status === 200 && (await home.text()).includes("Waypack keeps it working offline"), "landing page is served by the Worker");
 const portalPost = (path, body, headers = {}) => fetch(`${BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
-ok((await portalPost("/api/auth/send-code", { email })).status === 403, "portal auth requires the X-Waypack header (CSRF)");
-await fetch(`${MAILPIT}/api/v1/messages`, { method: "DELETE" });
-await portalPost("/api/auth/send-code", { email }, { "X-Waypack": "1" });
-const pv = await portalPost("/api/auth/verify", { email, code: await latestCode(email) }, { "X-Waypack": "1" });
-const cookieHdr = (pv.headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
-ok(pv.ok && cookieHdr.includes("wp_session="), "portal sign-in sets a session cookie");
+ok((await portalPost("/api/auth/dev", { email })).status === 403, "portal auth requires the X-Waypack header (CSRF)");
+ok((await portalPost("/api/auth/send-code", { email }, { "X-Waypack": "1" })).status === 404, "email-code sign-in endpoint no longer exists");
+const startApple = await fetch(`${BASE}/auth/start?provider=apple&return=%2Faccount`, { redirect: "manual" });
+ok(startApple.status === 302 && (startApple.headers.get("Location") ?? "").includes("provider=apple") && (startApple.headers.getSetCookie?.() ?? []).some((c) => c.startsWith("wp_oauth=")), "portal 'Continue with Apple' starts OAuth with a state cookie");
+const cookieHdr = (await devSignIn(email)).cookie;
+ok(cookieHdr.includes("wp_session="), "portal sign-in sets a session cookie");
 const pme = await (await fetch(`${BASE}/api/me`, { headers: { Cookie: cookieHdr } })).json();
 ok(pme.plan?.tier === "annual" && pme.billing?.has_subscription === true, `portal /api/me → ${pme.plan?.tier}, subscription linked`);
 const csrf = await fetch(`${BASE}/api/tokens`, { method: "POST", headers: { Cookie: cookieHdr, "Content-Type": "application/json" }, body: "{}" });

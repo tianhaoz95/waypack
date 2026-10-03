@@ -1,6 +1,7 @@
 import type { Env } from "./env.js";
-import { handleAuthorize } from "./auth/authorize.js";
-import { sendOtp, userFromAccessToken, verifyOtp } from "./auth/supabase.js";
+import { completeGrant, errorPage, handleAuthorize } from "./auth/authorize.js";
+import { devSession, devSignInAllowed, finishOAuth, isProvider, OAuthCallbackError, safeReturnPath, startOAuth } from "./auth/oauth.js";
+import { userFromAccessToken } from "./auth/supabase.js";
 import { clearSessionCookie, makeSessionCookie, readSession } from "./auth/session.js";
 import { availablePlans, createCheckout, createPortal, handleStripeWebhook, stripe, StripeError, type Plan } from "./lib/stripe.js";
 import { createApiToken, resolveApiToken } from "./auth/tokens.js";
@@ -25,6 +26,24 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
   if (path === "/stripe/webhook" && req.method === "POST") return handleStripeWebhook(env, req);
   if (path === "/authorize") return handleAuthorize(req, env);
 
+  // Sign in with Google / Apple (portal). The MCP authorize page starts the same flow via POST.
+  if (path === "/auth/start" && req.method === "GET") {
+    const provider = url.searchParams.get("provider");
+    if (!isProvider(provider)) return jsonErr(400, "provider must be google or apple");
+    return startOAuth(env, req, { purpose: "portal", provider, returnTo: safeReturnPath(url.searchParams.get("return")) });
+  }
+  if (path === "/auth/callback" && req.method === "GET") {
+    try {
+      const r = await finishOAuth(env, req);
+      if (r.pending.purpose === "mcp" && r.pending.handle) return completeGrant(env, req, r.pending.handle, r.userId, r.email, r.headers);
+      r.headers.set("Location", safeReturnPath(r.pending.returnTo));
+      return new Response(null, { status: 302, headers: r.headers });
+    } catch (e) {
+      if (!(e instanceof OAuthCallbackError)) throw e;
+      return new Response(errorPage(`${e.message}`), { status: 400, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+  }
+
   // Signed, credential-less upload of a bundle zip (from `curl -T`).
   const up = path.match(/^\/upload\/([0-9a-f-]{36})$/);
   if (up && req.method === "PUT") return handleUpload(req, env, up[1], url);
@@ -43,26 +62,19 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
   return jsonErr(404, "not found");
 }
 
-/** Web portal sign-in: emailed 6-digit code → signed HttpOnly session cookie (shared with the MCP authorize page). */
+/** Portal session endpoints. Sign-in itself is Google/Apple via /auth/start. */
 async function handlePortalAuth(req: Request, env: Env, path: string): Promise<Response> {
   if (req.method !== "POST") return jsonErr(405, "POST only");
   if (!sameOrigin(req, env)) return jsonErr(403, "cross-origin request refused");
-  const body = (await req.json().catch(() => ({}))) as { email?: string; code?: string };
-  const email = String(body.email ?? "").trim().toLowerCase();
   if (path === "/api/auth/signout") return Response.json({ ok: true }, { headers: { "Set-Cookie": clearSessionCookie() } });
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonErr(400, "enter a valid email address");
-  try {
-    if (path === "/api/auth/send-code") {
-      await sendOtp(env, email);
-      return Response.json({ ok: true });
-    }
-    if (path === "/api/auth/verify") {
-      const u = await verifyOtp(env, email, String(body.code ?? "").replace(/\s+/g, ""));
-      const cookie = await makeSessionCookie(env.SIGNING_SECRET, u.id, u.email ?? email, new URL(req.url).protocol === "https:");
-      return Response.json({ ok: true, email: u.email ?? email }, { headers: { "Set-Cookie": cookie } });
-    }
-  } catch (e) {
-    return jsonErr(400, (e as Error).message);
+  // Local development and automated tests only: refused unless ENVIRONMENT=development on a loopback URL.
+  if (path === "/api/auth/dev" && devSignInAllowed(env)) {
+    const body = (await req.json().catch(() => ({}))) as { email?: string };
+    const email = String(body.email ?? "").trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonErr(400, "email required");
+    const s = await devSession(env, email);
+    const cookie = await makeSessionCookie(env.SIGNING_SECRET, s.userId, s.email, new URL(req.url).protocol === "https:");
+    return Response.json(s, { headers: { "Set-Cookie": cookie } });
   }
   return jsonErr(404, "not found");
 }
@@ -110,7 +122,7 @@ async function authUser(req: Request, env: Env): Promise<{ userId: string; email
 
 async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   const user = await authUser(req, env);
-  if (!user) return jsonErr(401, "sign in required");
+  if (!user) return jsonErr(401, "sign in required", devSignInAllowed(env) ? { dev_sign_in: true } : {});
   const db = new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   const path = url.pathname;
   const m = (re: RegExp) => path.match(re);

@@ -22,7 +22,12 @@ Future<void> main() async {
 
 /// Initializes services; shared by main() and integration tests.
 Future<AppState> bootstrap() async {
-  await Supabase.initialize(url: Config.supabaseUrl, publishableKey: Config.supabaseAnonKey);
+  await Supabase.initialize(
+    url: Config.supabaseUrl,
+    publishableKey: Config.supabaseAnonKey,
+    // OAuth callbacks are handled by the system auth session (flutter_web_auth_2), not deep links.
+    authOptions: const FlutterAuthClientOptions(authFlowType: AuthFlowType.pkce, detectSessionInUri: false),
+  );
   final store = await TripStore.open();
   final server = LocalServer(store);
   await server.start();
@@ -63,16 +68,21 @@ class _AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<_AuthGate> {
   StreamSubscription<AuthState>? _sub;
+  bool _signedIn = false;
 
   @override
   void initState() {
     super.initState();
+    _signedIn = Supabase.instance.client.auth.currentSession != null;
     _sub = Supabase.instance.client.auth.onAuthStateChange.listen((e) {
       if (!mounted) return;
-      if (e.event == AuthChangeEvent.signedIn) {
+      // Any transition to a session counts (OAuth, Apple ID token, or a restored session).
+      final now = e.session != null;
+      if (now && !_signedIn) {
         context.read<AppState>().onSignedIn();
         if (!DevFlags.noPermissionPrompts) Reminders.requestPermission();
       }
+      _signedIn = now;
       setState(() {});
     });
   }

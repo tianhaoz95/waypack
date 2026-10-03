@@ -14,19 +14,6 @@ async function authFetch(env: Env, path: string, init: RequestInit & { bearer?: 
   });
 }
 
-/** Emails a 6-digit sign-in code (creates the account on first use). */
-export async function sendOtp(env: Env, email: string): Promise<void> {
-  const res = await authFetch(env, "otp", { method: "POST", body: JSON.stringify({ email, create_user: true }) });
-  if (!res.ok) throw new Error(await errorText(res));
-}
-
-export async function verifyOtp(env: Env, email: string, token: string): Promise<SupaUser> {
-  const res = await authFetch(env, "verify", { method: "POST", body: JSON.stringify({ type: "email", email, token }) });
-  if (!res.ok) throw new Error(await errorText(res));
-  const j = (await res.json()) as { user: { id: string; email?: string } };
-  return { id: j.user.id, email: j.user.email };
-}
-
 /** Validates a Supabase access token (from the mobile app) and returns its user. */
 export async function userFromAccessToken(env: Env, jwt: string): Promise<SupaUser | null> {
   const res = await authFetch(env, "user", { bearer: jwt });

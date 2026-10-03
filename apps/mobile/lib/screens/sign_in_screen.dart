@@ -1,9 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:http/http.dart' as http;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
+import '../dev_flags.dart';
 
-/// Email + 6-digit code (same flow as the MCP authorize page), optionally Apple/Google.
+/// One tap: Sign in with Apple (native sheet on iPhone) or Google (system sign-in pop-up).
+/// No email or codes.
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -12,9 +23,6 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  final _email = TextEditingController();
-  final _code = TextEditingController();
-  bool _codeSent = false;
   bool _busy = false;
   String? _error;
 
@@ -27,33 +35,79 @@ class _SignInScreenState extends State<SignInScreen> {
     });
     try {
       await fn();
+    } on _Cancelled {
+      // User closed the sheet: nothing to report.
     } on AuthException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Something went wrong: $e');
+      setState(() => _error = 'Sign-in failed. Please try again.\n($e)');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _sendCode() => _run(() async {
-        final email = _email.text.trim();
-        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) throw const AuthException('Enter a valid email address.');
-        await _sb.auth.signInWithOtp(email: email, shouldCreateUser: true);
-        setState(() => _codeSent = true);
-      });
+  /// Google everywhere, and Apple on Android: Supabase OAuth (PKCE) in the system auth session.
+  Future<void> _webOAuth(OAuthProvider provider) async {
+    final res = await _sb.auth.getOAuthSignInUrl(provider: provider, redirectTo: Config.authRedirect);
+    final String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(url: res.url, callbackUrlScheme: Config.authScheme);
+    } on PlatformException catch (e) {
+      if (e.code == 'CANCELED') throw _Cancelled();
+      rethrow;
+    }
+    final uri = Uri.parse(result);
+    final code = uri.queryParameters['code'];
+    if (code == null) {
+      final err = uri.queryParameters['error_description'] ?? uri.queryParameters['error'];
+      if (err == null || err.contains('cancel')) throw _Cancelled();
+      throw AuthException(err.replaceAll('+', ' '));
+    }
+    await _sb.auth.exchangeCodeForSession(code);
+  }
 
-  Future<void> _verify() => _run(() async {
-        await _sb.auth.verifyOTP(type: OtpType.email, email: _email.text.trim(), token: _code.text.replaceAll(' ', ''));
-      });
+  /// Native Sign in with Apple on iOS (Face ID sheet), verified by Supabase with a nonce.
+  Future<void> _appleNative() async {
+    final rawNonce = _nonce();
+    final AuthorizationCredentialAppleID cred;
+    try {
+      cred = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) throw _Cancelled();
+      rethrow;
+    }
+    final idToken = cred.identityToken;
+    if (idToken == null) throw const AuthException('Apple didn\'t return an identity token.');
+    await _sb.auth.signInWithIdToken(provider: OAuthProvider.apple, idToken: idToken, nonce: rawNonce);
+  }
 
-  Future<void> _oauth(OAuthProvider p) => _run(() async {
-        await _sb.auth.signInWithOAuth(p, redirectTo: Config.authRedirect);
+  static String _nonce([int length = 32]) {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final r = Random.secure();
+    return List.generate(length, (_) => chars[r.nextInt(chars.length)]).join();
+  }
+
+  Future<void> _apple() => _run(() => Platform.isIOS ? _appleNative() : _webOAuth(OAuthProvider.apple));
+  Future<void> _google() => _run(() => _webOAuth(OAuthProvider.google));
+
+  /// Local development / tests only (build with --dart-define=DEV_SIGN_IN=true).
+  Future<void> _dev(String email) => _run(() async {
+        final res = await http.post(
+          Uri.parse('${Config.apiUrl}/api/auth/dev'),
+          headers: {'Content-Type': 'application/json', 'X-Waypack': '1'},
+          body: jsonEncode({'email': email}),
+        );
+        if (res.statusCode != 200) throw AuthException('Dev sign-in refused (${res.statusCode})');
+        await _sb.auth.setSession((jsonDecode(res.body) as Map)['refresh_token'] as String);
       });
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
+    final dark = t.brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -70,47 +124,22 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 8),
                   Text('Trips planned by your AI agent, ready when the signal isn\'t.',
                       textAlign: TextAlign.center, style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 32),
-                  if (!_codeSent) ...[
-                    TextField(
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      textInputAction: TextInputAction.go,
-                      onSubmitted: (_) => _sendCode(),
-                      decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(onPressed: _busy ? null : _sendCode, child: const Text('Email me a sign-in code')),
-                  ] else ...[
-                    Text('Enter the 6-digit code sent to ${_email.text.trim()}', style: t.textTheme.bodyLarge),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _code,
-                      keyboardType: TextInputType.number,
-                      autofillHints: const [AutofillHints.oneTimeCode],
-                      textInputAction: TextInputAction.go,
-                      onSubmitted: (_) => _verify(),
-                      style: t.textTheme.headlineSmall?.copyWith(letterSpacing: 6),
-                      decoration: const InputDecoration(labelText: 'Code', border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(onPressed: _busy ? null : _verify, child: const Text('Sign in')),
-                    TextButton(onPressed: _busy ? null : () => setState(() => _codeSent = false), child: const Text('Use a different email')),
-                  ],
-                  if (Config.enableOAuthProviders) ...[
-                    const SizedBox(height: 24),
-                    const Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('or')), Expanded(child: Divider())]),
-                    const SizedBox(height: 16),
-                    OutlinedButton.icon(onPressed: _busy ? null : () => _oauth(OAuthProvider.apple), icon: const Icon(Icons.apple), label: const Text('Continue with Apple')),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(onPressed: _busy ? null : () => _oauth(OAuthProvider.google), icon: const Icon(Icons.g_mobiledata), label: const Text('Continue with Google')),
-                  ],
-                  if (_busy) const Padding(padding: EdgeInsets.only(top: 16), child: Center(child: CircularProgressIndicator())),
+                  const SizedBox(height: 40),
+                  SignInWithAppleButton(
+                    onPressed: _busy ? () {} : _apple,
+                    text: 'Continue with Apple',
+                    height: 52,
+                    style: dark ? SignInWithAppleButtonStyle.white : SignInWithAppleButtonStyle.black,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                  const SizedBox(height: 12),
+                  _GoogleButton(onPressed: _busy ? null : _google),
+                  if (_busy) const Padding(padding: EdgeInsets.only(top: 20), child: Center(child: CircularProgressIndicator())),
                   if (_error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_error!, style: TextStyle(color: t.colorScheme.error))),
-                  const SizedBox(height: 24),
-                  Text('Use the same email as your AI agent\'s Waypack connection.',
+                  const SizedBox(height: 28),
+                  Text('Use the same account as your AI agent\'s Waypack connection.',
                       textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  if (DevFlags.devSignIn) _DevSignIn(onSubmit: _dev, busy: _busy),
                 ],
               ),
             ),
@@ -119,4 +148,86 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     );
   }
+}
+
+class _Cancelled implements Exception {}
+
+/// Google-branded button (white, "G" logo) per Google's sign-in branding guidelines.
+class _GoogleButton extends StatelessWidget {
+  const _GoogleButton({required this.onPressed});
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 52,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1F1F1F),
+            side: const BorderSide(color: Color(0xFF747775)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          ),
+          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _GoogleG(),
+            SizedBox(width: 10),
+            Text('Continue with Google'),
+          ]),
+        ),
+      );
+}
+
+class _GoogleG extends StatelessWidget {
+  const _GoogleG();
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GPainter()));
+}
+
+/// Draws the four-colour Google "G".
+class _GPainter extends CustomPainter {
+  const _GPainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final stroke = s * 0.2;
+    final rect = Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2 - stroke / 2);
+    Paint p(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    const deg = pi / 180;
+    canvas.drawArc(rect, -40 * deg, -100 * deg, false, p(const Color(0xFFEA4335))); // red (top)
+    canvas.drawArc(rect, -140 * deg, -80 * deg, false, p(const Color(0xFFFBBC05))); // yellow (left)
+    canvas.drawArc(rect, -220 * deg, -95 * deg, false, p(const Color(0xFF34A853))); // green (bottom)
+    canvas.drawArc(rect, -315 * deg, -45 * deg, false, p(const Color(0xFF4285F4))); // blue (right)
+    canvas.drawLine(Offset(s / 2, s / 2), Offset(s - stroke / 2, s / 2), p(const Color(0xFF4285F4))..strokeCap = StrokeCap.butt);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _DevSignIn extends StatefulWidget {
+  const _DevSignIn({required this.onSubmit, required this.busy});
+  final Future<void> Function(String email) onSubmit;
+  final bool busy;
+  @override
+  State<_DevSignIn> createState() => _DevSignInState();
+}
+
+class _DevSignInState extends State<_DevSignIn> {
+  final _email = TextEditingController(text: 'dev@waypack.test');
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 32),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Divider(),
+          Text('Dev sign-in (local server only)', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 8),
+          TextField(key: const Key('dev-email'), controller: _email, decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true)),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: widget.busy ? null : () => widget.onSubmit(_email.text.trim()), child: const Text('Dev sign-in')),
+        ]),
+      );
 }

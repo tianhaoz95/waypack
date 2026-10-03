@@ -159,7 +159,7 @@ site_url = "http://127.0.0.1:8787"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://127.0.0.1:8787/**", "com.hejitech.waypack://login-callback"]
+additional_redirect_urls = ["http://127.0.0.1:8787/auth/callback", "com.hejitech.waypack://login-callback"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -216,7 +216,9 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
+# Email sign-in is NOT offered to users. It stays enabled locally only so the dev-only
+# sign-in (services/mcp, ENVIRONMENT=development) can mint sessions for tests.
+# Disable the Email provider in the hosted project.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -241,16 +243,6 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
-
-# Waypack signs in with a 6-digit code everywhere (app + MCP authorize page), so
-# the magic-link template must include {{ .Token }}.
-[auth.email.template.magic_link]
-subject = "Your Waypack sign-in code"
-content_path = "./supabase/templates/magic_link.html"
-
-[auth.email.template.confirmation]
-subject = "Your Waypack sign-in code"
-content_path = "./supabase/templates/magic_link.html"
 
 # [auth.email.template.invite]
 # subject = "You have been invited"
@@ -327,9 +319,22 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+# Waypack signs in with Google and Apple only (no email/password, no email codes).
+# Locally these use placeholder credentials from supabase/.env so redirects can be tested;
+# real credentials are configured in the hosted project (docs/DEPLOY.md).
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
+email_optional = false
+
 [auth.external.apple]
-enabled = false
-client_id = ""
+enabled = true
+# Comma-separated: the Services ID (web) and the app bundle id (native iOS sign-in).
+client_id = "env(SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID)"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth callback URL derived from auth.external_url.

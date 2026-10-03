@@ -1,9 +1,6 @@
 // Walks the main screens and prints `SHOT:<name>` markers; tool/screenshots.mjs captures
 // the simulator screen at each marker (so WebView content is included).
 //   node tool/screenshots.mjs <simulator-udid> <out-dir>
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -12,21 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/main.dart';
 
 const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
-
-Future<String> otp() async {
-  final c = HttpClient();
-  for (var i = 0; i < 40; i++) {
-    final r = await (await c.getUrl(Uri.parse('http://127.0.0.1:55424/api/v1/search?query=${Uri.encodeQueryComponent('to:"$email"')}'))).close();
-    final msgs = ((jsonDecode(await r.transform(utf8.decoder).join()) as Map)['messages'] as List?) ?? [];
-    if (msgs.isNotEmpty) {
-      final r2 = await (await c.getUrl(Uri.parse('http://127.0.0.1:55424/api/v1/message/${msgs.first['ID']}'))).close();
-      final code = RegExp(r'\b(\d{6})\b').firstMatch('${(jsonDecode(await r2.transform(utf8.decoder).join()) as Map)['Text']}')?.group(1);
-      if (code != null) return code;
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-  }
-  throw StateError('no OTP');
-}
 
 Future<void> settle(WidgetTester t, [int ms = 1500]) async {
   for (var i = 0; i < ms ~/ 100; i++) {
@@ -59,12 +41,8 @@ void main() {
     await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
     await shot(t, '01-sign-in');
 
-    await t.enterText(find.byType(TextField), email);
-    await t.tap(find.text('Email me a sign-in code'));
-    await until(t, find.text('Sign in'));
-    await t.enterText(find.byType(TextField), await otp());
-    await shot(t, '02-sign-in-code', waitMs: 300);
-    await t.tap(find.text('Sign in'));
+    await t.enterText(find.byKey(const Key('dev-email')), email);
+    await t.tap(find.text('Dev sign-in'));
     await until(t, find.text('Not downloaded'));
     await shot(t, '03-trips-not-downloaded');
 

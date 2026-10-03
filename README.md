@@ -11,7 +11,7 @@ Design: [`docs/design.md`](docs/design.md) · Deviations: [`docs/DECISIONS.md`](
 apps/mobile/               Flutter app (iOS + Android), a free viewer: downloads, loopback server, WebView, Today, Map
 services/mcp/              Cloudflare Worker: MCP (11 tools) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
 services/tiler/            Go + pmtiles container: extract trip areas; mirror the planet monthly
-supabase/                  Schema + RLS, OTP email template
+supabase/                  Schema + RLS, Google/Apple auth config
 packages/bundle-schema/    manifest v1 JSON Schema + validator (CLI, Worker, browser)
 packages/trip-sdk/         window.Waypack: MapLibre + PMTiles + offline glyphs, native bridge
 packages/cli/              @waypack/cli: validate · zip · preview · init · skill install
@@ -25,7 +25,8 @@ Prereqs: Node 20+, Docker, Supabase CLI, Flutter 3.4x, Xcode / Android SDK.
 ```sh
 npm install
 npm run build                                        # schema, SDK (fetches fonts/sprites once), CLI
-supabase start                                       # ports 554xx; emails → Mailpit http://127.0.0.1:55424
+cp supabase/.env.example supabase/.env               # placeholder Google/Apple provider config
+supabase start                                       # ports 554xx
 docker build -t waypack-tiler services/tiler && docker run -d --name waypack-tiler -p 8090:8080 waypack-tiler
 cp services/mcp/.dev.vars.example services/mcp/.dev.vars   # fill keys from `supabase status`
 (cd services/mcp && npm run dev)                     # http://127.0.0.1:8787  site · /account portal · /mcp
@@ -35,7 +36,7 @@ Connect Claude Code to your local server:
 claude mcp add --transport http waypack-dev http://127.0.0.1:8787/mcp
 npx waypack skill install            # or: node packages/cli/dist/cli.js skill install
 ```
-Sign in with any email; the code shows up in Mailpit. New accounts are on the free plan. To test offline maps, upgrade one with `node services/mcp/scripts/seed-dev.mjs you@example.com`, which also publishes the Sequoia example. The account portal is at http://127.0.0.1:8787/account. To test Stripe locally, set test keys in `.dev.vars` and run `stripe listen --forward-to 127.0.0.1:8787/stripe/webhook`.
+Sign-in is Google or Apple only. Locally, use the **dev sign-in** (any email) on the portal or the agent sign-in page; it's only available on a local development server. New accounts are on the free plan. To test offline maps, upgrade one with `node services/mcp/scripts/seed-dev.mjs you@example.com`, which also publishes the Sequoia example. The account portal is at http://127.0.0.1:8787/account. To test Stripe locally, set test keys in `.dev.vars` and run `stripe listen --forward-to 127.0.0.1:8787/stripe/webhook`.
 
 The app: see [`apps/mobile/README.md`](apps/mobile/README.md).
 
@@ -52,9 +53,9 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | Validator (25) | `npm test -w @waypack/bundle-schema` | ✅ |
 | CLI + preview server (7) | `npm test -w @waypack/cli` | ✅ |
 | SDK in a phone browser, offline extract only (4, Playwright) | `npm test -w @waypack/trip-sdk` | ✅ |
-| Worker protocol, signing, Stripe (12) | `npm test -w @waypack/mcp` | ✅ |
-| **End-to-end backend (57 checks)**: OAuth DCR+PKCE+OTP, all tools, real tile extraction, limits, Stripe webhooks, portal auth + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
+| Worker protocol, signing, Stripe, OAuth (16) | `npm test -w @waypack/mcp` | ✅ |
+| **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
 | App unit (14) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
-| **App integration on iOS simulator**: UI sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=NO_LOCATION_PROMPT=true` | ✅ |
+| **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |
 
 Map data © OpenStreetMap contributors (ODbL) · Basemap © Protomaps · MapLibre GL JS (BSD-3-Clause).

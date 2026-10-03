@@ -1,6 +1,6 @@
 // Downloads a seeded trip and checks offline serving end to end on a simulator/emulator.
 // Prereqs (host): local stack running and `node services/mcp/scripts/seed-dev.mjs dev@waypack.test`.
-//   flutter test integration_test/app_test.dart -d <device>
+//   flutter test integration_test/app_test.dart -d <device> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true
 import 'dart:convert';
 import 'dart:io';
 
@@ -13,24 +13,6 @@ import 'package:waypack/config.dart';
 import 'package:waypack/main.dart';
 
 const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
-
-Future<String> otpFromMailpit() async {
-  final host = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
-  final c = HttpClient();
-  for (var i = 0; i < 40; i++) {
-    final req = await c.getUrl(Uri.parse('http://$host:55424/api/v1/search?query=${Uri.encodeQueryComponent('to:"$email"')}'));
-    final list = jsonDecode(await (await req.close()).transform(utf8.decoder).join()) as Map;
-    final msgs = (list['messages'] as List?) ?? [];
-    if (msgs.isNotEmpty) {
-      final r2 = await c.getUrl(Uri.parse('http://$host:55424/api/v1/message/${msgs.first['ID']}'));
-      final m = jsonDecode(await (await r2.close()).transform(utf8.decoder).join()) as Map;
-      final code = RegExp(r'\b(\d{6})\b').firstMatch('${m['Text']}')?.group(1);
-      if (code != null) return code;
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-  }
-  throw StateError('no OTP');
-}
 
 Future<(int, Map<String, String>, List<int>)> get(Uri u, {Map<String, String> headers = const {}}) async {
   final c = HttpClient();
@@ -66,14 +48,14 @@ void main() {
 
     await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
     await t.pumpAndSettle();
-    expect(find.text('Email me a sign-in code'), findsOneWidget);
+    // Only Apple and Google are offered (the dev sign-in exists only in DEV_SIGN_IN builds).
+    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.textContaining('code'), findsNothing);
 
-    // Sign in through the real UI.
-    await t.enterText(find.byType(TextField), email);
-    await t.tap(find.text('Email me a sign-in code'));
-    await pumpUntil(t, find.text('Sign in'));
-    await t.enterText(find.byType(TextField), await otpFromMailpit());
-    await t.tap(find.text('Sign in'));
+    // Real Apple/Google need real accounts; tests use the dev-only sign-in against the local server.
+    await t.enterText(find.byKey(const Key('dev-email')), email);
+    await t.tap(find.text('Dev sign-in'));
     await pumpUntil(t, find.text('Sequoia Winter Weekend'));
     expect(find.text('Not downloaded'), findsOneWidget);
 
