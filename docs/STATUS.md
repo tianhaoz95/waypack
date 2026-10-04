@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: Mac app)
+# Build status — 2026-10-04 (updated: live previews)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,12 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Live previews (2026-10-04)
+- MCP `push_preview` / `publish_preview` / `delete_preview` (14 tools now); drafts listed in `list_trips`; `create_upload {preview: true}` for shell agents; portal "Previews" section (Open / Publish / Delete).
+- Preview origin (`PREVIEW_URL`) serves drafts with live reload, the SDK and online map tiles; nothing else.
+- Verified: `scripts/e2e-preview.mjs` 43/43 (push, merge, delete, isolation, traversal, tiles proxy, publish v1→v2, zip path, portal API), `scripts/e2e-preview-browser.mjs` 11/11 (phone page reloads ~2 s after a push, new days appear, tab and scroll kept, desktop map loads online tiles, no console errors), Worker unit tests 31, original `e2e.mjs` still all green.
+- Needs for production: a second domain for previews (DEPLOY.md §2).
 
 ## Mac app (2026-10-04)
 - The Flutter app now builds for macOS (universal) and passes the full screenshot walkthrough on this Mac: dev sign-in, download, desktop plan layout (rail + pinned map), native Today, calendar sheet, offline map, Settings.

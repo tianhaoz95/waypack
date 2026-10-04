@@ -42,6 +42,7 @@ Edit `wrangler.jsonc`:
 - `vars.PUBLIC_URL = "https://waypack.app"`, `vars.SUPABASE_URL = "https://<ref>.supabase.co"`
 - `vars.TILER_URL = ""` (use the container binding), `vars.PLANET_URL = "mirror"`, `vars.BASEMAP_PUBLIC_URL = "https://planet.waypack.app"`, `vars.ENVIRONMENT = "production"`
 - uncomment `routes` for `waypack.app` (serves the site, `/account`, `/api`, OAuth and `/mcp`)
+- **Live previews need a second domain.** Previews are agent-written HTML, so they're served from their own origin with no cookies, API or portal. Register a separate domain (e.g. `waypackpreview.com`, like GitHub's `githubusercontent.com`), add it to `routes`, and set `vars.PREVIEW_URL = "https://waypackpreview.com"`. A subdomain such as `preview.waypack.app` also works (the session cookie is host-only and API writes check `Origin`), but a separate domain keeps previews out of `waypack.app`'s same-site context. Leave `PREVIEW_URL` empty to turn previews off; the Worker refuses a `PREVIEW_URL` on the same host as `PUBLIC_URL`.
 
 Secrets:
 ```sh
@@ -63,6 +64,7 @@ First planet mirror: trigger the monthly cron once (`npx wrangler triggers` / da
 
 Smoke test against production:
 ```sh
+WAYPACK_URL=https://waypack.app WAYPACK_PREVIEW_URL=https://waypackpreview.com node scripts/e2e-preview.mjs   # dev sign-in only; run against staging
 WAYPACK_URL=https://waypack.app SUPABASE_URL=https://<ref>.supabase.co node scripts/e2e.mjs   # dev sign-in is disabled in production: sign in with a real Google/Apple test account and run the agent steps manually
 ```
 Then connect for real: `claude mcp add --transport http waypack https://waypack.app/mcp`, and add it as a claude.ai custom connector (design §6.1 says to test real clients early; MCP Inspector works too).

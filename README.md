@@ -9,7 +9,7 @@ Design: [`docs/design.md`](docs/design.md) · Deviations: [`docs/DECISIONS.md`](
 ## Repository
 ```
 apps/mobile/               Flutter app (iOS, Android, macOS), a free viewer: downloads, loopback server, WebView, Today, Map
-services/mcp/              Cloudflare Worker: MCP (11 tools) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
+services/mcp/              Cloudflare Worker: MCP (14 tools, incl. live previews) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
 services/tiler/            Go + pmtiles container: extract trip areas; mirror the planet monthly
 supabase/                  Schema + RLS, Google/Apple auth config
 packages/bundle-schema/    manifest v1 JSON Schema + validator (CLI, Worker, browser)
@@ -50,12 +50,14 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 ## Tests
 | What | Command | Result |
 |---|---|---|
-| Validator (25) | `npm test -w @waypack/bundle-schema` | ✅ |
+| Validator (26) | `npm test -w @waypack/bundle-schema` | ✅ |
 | CLI + preview server (7) | `npm test -w @waypack/cli` | ✅ |
-| SDK in a phone browser, offline extract only (4, Playwright) | `npm test -w @waypack/trip-sdk` | ✅ |
-| Worker protocol, signing, Stripe, OAuth (16) | `npm test -w @waypack/mcp` | ✅ |
+| SDK: calendar + maps choice (6) and in a phone browser, offline extract only (6, Playwright) | `npm test -w @waypack/trip-sdk` | ✅ |
+| Worker protocol, signing, Stripe, OAuth, Mac downloads, previews (31) | `npm test -w @waypack/mcp` | ✅ |
 | **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
-| App unit (14) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
+| **Live previews (43 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
+| **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |
+| App unit (19) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |
 
 Map data © OpenStreetMap contributors (ODbL) · Basemap © Protomaps · MapLibre GL JS (BSD-3-Clause).

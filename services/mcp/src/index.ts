@@ -1,6 +1,7 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import type { AuthProps, Env, TileJob } from "./env.js";
 import { handleApp } from "./api.js";
+import { expirePreviews, handlePreviewHost, isPreviewHost } from "./lib/previews.js";
 import { resolveApiToken } from "./auth/tokens.js";
 import { Db } from "./lib/db.js";
 import { callTiler, runExpiry, runTileJob } from "./lib/tiles.js";
@@ -52,6 +53,8 @@ function getProvider(env: Env): OAuthProvider<Env> {
 
 export default {
   fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // The preview origin serves only previews: no OAuth, MCP, API, portal or cookies.
+    if (isPreviewHost(req, env)) return handlePreviewHost(req, env);
     return getProvider(env).fetch(req, env, ctx);
   },
 
@@ -70,6 +73,7 @@ export default {
   async scheduled(event: ScheduledController, env: Env): Promise<void> {
     if (event.cron === "17 3 * * *") {
       console.log("expiry", await runExpiry(env));
+      console.log("previews expired", await expirePreviews(env, new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)));
       console.log("planet mirror", await checkPlanetMirror(env));
     }
     if (event.cron === "0 4 2 * *") console.log("planet mirror", await startPlanetMirror(env, (b) => callTiler(env, b, "/mirror")));

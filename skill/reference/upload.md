@@ -2,6 +2,17 @@
 
 All tools are on the Waypack MCP server (`https://waypack.app/mcp`). Sign-in happens via OAuth the first time a tool is used.
 
+## Live preview (recommended while building)
+A preview is a **draft** with its own link that anyone can open on any device; open pages reload themselves when you push. It isn't in the app, doesn't count toward trip limits and doesn't cut offline maps (the page uses the online map).
+
+- **Push:** `push_preview { "files": [...] }` → `{ preview_id, preview_url, rev, validation }`. Show the user `preview_url`.
+- **Push changes:** `push_preview { "preview_id": "...", "files": [only the changed files], "delete"?: ["old/file.css"] }`. `"replace": true` drops every file not in this push.
+- **Revise a published trip:** `push_preview { "trip_id": "...", "files": [...] }` (reuses that trip's preview if it has one).
+- **CLI agents:** push the whole zip as a preview: `create_upload { "size_bytes": n, "preview": true, "preview_id"?: "..." }` → `curl -T` → `finalize_upload` (replaces all the preview's files).
+- **Publish:** `publish_preview { "preview_id": "..." }` → same response as `finalize_upload`. Fails with the validation errors if the bundle isn't valid yet.
+- **Clean up:** `delete_preview { "preview_id": "..." }`. Unpublished previews expire 14 days after the last push.
+- Limits: 4 MB per `push_preview` call, 25 MB / 2,000 files per preview, 10 open previews per account.
+
 ## CLI agents (filesystem + shell)
 1. `npx @waypack/cli validate ./waypack/<slug>` → fix errors.
 2. `npx @waypack/cli zip ./waypack/<slug> -o ./waypack/<slug>.zip` (prints `size_bytes`).

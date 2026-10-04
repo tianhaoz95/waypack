@@ -130,7 +130,13 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
     <section class="card">
       <h2>Trips</h2>
       <div id="trips"><p class="empty">Loading…</p></div>
-      <p class="muted small">Open the Waypack app on your phone and tap <b>Download</b> before you lose signal.</p>
+      <p class="muted small">Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p>
+    </section>
+
+    <section class="card" id="previews-card" hidden>
+      <h2>Previews</h2>
+      <p class="muted small">Drafts your agent pushed while building. They update live, aren't in the app yet, and expire 14 days after the last change.</p>
+      <div id="previews"></div>
     </section>
 
     <section class="card">
@@ -216,6 +222,7 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
       $("who").textContent = m.email || "";
       renderPlan();
       loadTrips();
+      loadPreviews();
       loadTokens();
       $("mcp-url").textContent = m.mcp_url;
       $("cc-cmd").textContent = "claude mcp add --transport http waypack " + m.mcp_url;
@@ -258,6 +265,18 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
     if (del && confirm("Delete \"" + del.getAttribute("data-title") + "\"? This removes it and its offline map from your account and devices' next sync.")) {
       api("DELETE", "/api/trips/" + del.getAttribute("data-delete-trip")).then(loadTrips).catch(function (err) { banner("err", err.message); });
     }
+    var pub = e.target.closest("[data-publish-preview]");
+    if (pub && confirm("Publish this draft to the Waypack app? It becomes a new trip version and its offline map is prepared.")) {
+      pub.disabled = true;
+      api("POST", "/api/previews/" + pub.getAttribute("data-publish-preview") + "/publish").then(function (r) {
+        banner("ok", r.message || "Published.");
+        loadTrips(); loadPreviews();
+      }).catch(function (err) { banner("err", (err.body && err.body.message) || err.message); pub.disabled = false; });
+    }
+    var dp = e.target.closest("[data-delete-preview]");
+    if (dp && confirm("Delete the draft \"" + dp.getAttribute("data-title") + "\"? Its link stops working. Published trips aren't affected.")) {
+      api("DELETE", "/api/previews/" + dp.getAttribute("data-delete-preview")).then(loadPreviews).catch(function (err) { banner("err", err.message); });
+    }
     var rev = e.target.closest("[data-revoke]");
     if (rev && confirm("Revoke this token? Clients using it will stop working.")) {
       api("DELETE", "/api/tokens/" + rev.getAttribute("data-revoke")).then(loadTokens);
@@ -287,6 +306,27 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
             "<td><button class='danger' data-delete-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Delete</button></td></tr>";
         }).join("") + "</tbody></table>";
     }).catch(function (err) { $("trips").innerHTML = '<p class="error">' + esc(err.message) + "</p>"; });
+  }
+
+  function loadPreviews() {
+    api("GET", "/api/previews").then(function (r) {
+      $("previews-card").hidden = !r.previews.length;
+      if (!r.previews.length) return;
+      $("previews").innerHTML = '<table><thead><tr><th>Draft</th><th class="hide-sm">Updated</th><th>Status</th><th></th></tr></thead><tbody>' +
+        r.previews.map(function (p) {
+          var status = p.errors ? "<span class='status-processing'>" + p.errors + " issue" + (p.errors === 1 ? "" : "s") + "</span>"
+            : "<span class='status-ready'>ready to publish</span>";
+          var pub = p.published_version ? "published as v" + p.published_version : "not published";
+          return "<tr><td><b>" + esc(p.title || "Untitled trip") + "</b><div class='muted small'>revision " + esc(p.rev) + " · " + esc(pub) + "</div></td>" +
+            "<td class='hide-sm'>" + esc(fmtDate(p.updated_at)) + "</td>" +
+            "<td>" + status + "</td>" +
+            "<td><div class='row' style='justify-content:flex-end'>" +
+            "<a class='btn secondary' href='" + esc(p.preview_url) + "' target='_blank' rel='noopener noreferrer'>Open</a>" +
+            "<button data-publish-preview='" + esc(p.preview_id) + "'" + (p.errors ? " disabled title='Fix the issues first (ask your agent)'" : "") + ">Publish</button>" +
+            "<button class='danger' data-delete-preview='" + esc(p.preview_id) + "' data-title='" + esc(p.title || "this draft") + "'>Delete</button>" +
+            "</div></td></tr>";
+        }).join("") + "</tbody></table>";
+    }).catch(function () { $("previews-card").hidden = true; });
   }
 
   function loadTokens() {

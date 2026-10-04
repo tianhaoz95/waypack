@@ -14,6 +14,8 @@ export interface Env {
   ASSETS?: Fetcher;
   // vars
   PUBLIC_URL: string;
+  /** Origin for live previews (agent-written HTML). Must be a different host from PUBLIC_URL; unset = previews off. */
+  PREVIEW_URL?: string;
   SUPABASE_URL: string;
   PLANET_URL: string;
   BASEMAP_MAX_ZOOM: string;

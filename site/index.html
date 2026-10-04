@@ -51,8 +51,9 @@ h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -
 section { padding: 56px 0; }
 section h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; margin: 0 0 12px; }
 section .sub { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: s; }
-@media (max-width: 860px) { .steps { grid-template-columns: 1fr; } }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: s; }
+@media (max-width: 1060px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .steps { grid-template-columns: 1fr; } }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
 .steps .card::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 800; margin-bottom: 10px; }
 .card h3 { margin: 0 0 6px; font-size: 1.1rem; }
@@ -120,7 +121,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
     <p class="sub">Planning happens where you already think: in your AI agent. Waypack turns the plan into something you can use on a mountain road with zero bars.</p>
     <div class="steps">
       <div class="card"><h3>Ask your agent</h3><p>“Plan 3 days in Sequoia over Christmas with a toddler, using Waypack.” It asks a few questions, researches, geocodes every place and computes real routes.</p></div>
-      <div class="card"><h3>It publishes a trip bundle</h3><p>A self-contained mobile guide (itinerary, lodging, food, safety, packing, backup plans) plus an offline vector map cut to your trip area.</p></div>
+      <div class="card"><h3>Watch it take shape</h3><p>Your agent sends a live preview link right away. Open it on your phone or computer: it updates by itself as each day is planned, so you can steer early.</p></div>
+      <div class="card"><h3>It publishes a trip bundle</h3><p>When you're happy, a self-contained mobile guide (itinerary, lodging, food, safety, packing, backup plans) plus an offline vector map cut to your trip area.</p></div>
       <div class="card"><h3>Download, then go</h3><p>Open Waypack and tap Download while you have signal. Everything (pages, map, your location) works in airplane mode.</p></div>
     </div>
   </div>

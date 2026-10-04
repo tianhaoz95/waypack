@@ -15,6 +15,7 @@ import { recutExpired } from "./lib/tiles.js";
 import { deleteTripData } from "./mcp/tools.js";
 import { homePage } from "./pages.js";
 import { handleMacDownload } from "./lib/releases.js";
+import { deletePreview, listPreviews, PreviewError, previewOrigin, publishPreview } from "./lib/previews.js";
 
 const jsonErr = (status: number, error: string, extra: Record<string, unknown> = {}) => Response.json({ error, ...extra }, { status });
 
@@ -170,7 +171,33 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     return Response.json({ trips: out });
   }
 
-  let r = m(/^\/api\/trips\/([0-9a-f-]{36})\/download$/);
+  // Live previews (drafts pushed by agents).
+  if (path === "/api/previews" && req.method === "GET") {
+    if (!previewOrigin(env)) return Response.json({ previews: [], enabled: false });
+    return Response.json({ previews: await listPreviews(env, db, user.userId), enabled: true });
+  }
+  let r = m(/^\/api\/previews\/([0-9a-f-]{36})\/publish$/);
+  if (r && req.method === "POST") {
+    try {
+      const p = await publishPreview(env, db, user.userId, r[1]);
+      return Response.json(p, { status: p.ok ? 200 : 422 });
+    } catch (e) {
+      if (e instanceof PreviewError) return jsonErr(e.status, e.message);
+      throw e;
+    }
+  }
+  r = m(/^\/api\/previews\/([0-9a-f-]{36})$/);
+  if (r && req.method === "DELETE") {
+    try {
+      await deletePreview(env, db, user.userId, r[1]);
+      return Response.json({ ok: true });
+    } catch (e) {
+      if (e instanceof PreviewError) return jsonErr(e.status, e.message);
+      throw e;
+    }
+  }
+
+  r = m(/^\/api\/trips\/([0-9a-f-]{36})\/download$/);
   if (r && req.method === "GET") return downloadInfo(env, db, user.userId, r[1]);
 
   r = m(/^\/api\/trips\/([0-9a-f-]{36})$/);

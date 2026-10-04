@@ -1,9 +1,10 @@
-import { decodeInlineFiles, formatResult, LIMITS, SCHEMA_VERSION, SDK_MAJOR, validateFiles, validateZip, manifestSchema, type InlineFile } from "@waypack/bundle-schema";
+import { decodeInlineFiles, formatResult, LIMITS, SCHEMA_VERSION, SDK_MAJOR, unzipBundle, validateFiles, validateZip, manifestSchema, type BundleFile, type InlineFile } from "@waypack/bundle-schema";
 import type { Env } from "../env.js";
 import { Db, eq } from "../lib/db.js";
 import { computeRoute, geocode, rateLimit, type LatLon, type Mode } from "../lib/geo.js";
 import { publishBundle, tripStatus, type PublishResult, type TripRow } from "../lib/pipeline.js";
 import { keys, signedUploadUrl } from "../lib/storage.js";
+import { deletePreview, listPreviews, PreviewError, publishPreview, pushPreview, type PushResult } from "../lib/previews.js";
 import { GUIDE } from "../generated/guide.js";
 import { ToolError, type ToolDef, type ToolResult } from "./protocol.js";
 
@@ -75,7 +76,8 @@ async function ownTrip(ctx: ToolCtx, tripId: string): Promise<TripRow> {
 }
 
 export const INSTRUCTIONS = `Waypack publishes trip plans as offline mobile bundles for the Waypack phone app.
-Workflow: interview the user → research → geocode every place and compute_route every non-trivial move → write manifest.json + index.html (call get_authoring_guide first if you don't have the Waypack skill) → validate_bundle → upload (create_upload + PUT + finalize_upload, or upload_bundle_inline for chat agents) → get_trip_status until ready → tell the user to tap Download in the app.`;
+Workflow: interview the user → research → geocode every place and compute_route every non-trivial move → write manifest.json + index.html (call get_authoring_guide first if you don't have the Waypack skill) → validate_bundle → upload (create_upload + PUT + finalize_upload, or upload_bundle_inline for chat agents) → get_trip_status until ready → tell the user to tap Download in the app.
+Live preview: as soon as there's a skeleton, push_preview and give the user the link; push again (changed files only) at milestones so they can watch it take shape on any device. When they approve, publish_preview publishes it to the app.`;
 
 export const tools: ToolDef<ToolCtx>[] = [
   {
@@ -112,10 +114,15 @@ export const tools: ToolDef<ToolCtx>[] = [
     async run(_args, ctx) {
       const rows = await ctx.db.select<TripRow>("trips", `select=id,title,start_date,end_date,current_version,status&user_id=${eq(ctx.userId)}&deleted_at=is.null&order=start_date.desc.nullslast`);
       const trips = rows.map((t) => ({ trip_id: t.id, title: t.title, start_date: t.start_date, end_date: t.end_date, version: t.current_version, status: t.status }));
-      const text = trips.length
-        ? trips.map((t) => `- ${t.title} (${t.start_date} → ${t.end_date}) · v${t.version} · ${t.status} · trip_id ${t.trip_id}`).join("\n")
-        : "No trips yet. Plan one and upload it with create_upload/finalize_upload or upload_bundle_inline.";
-      return { text, structured: { trips } };
+      const previews = await listPreviews(ctx.env, ctx.db, ctx.userId).catch(() => []);
+      const text =
+        (trips.length
+          ? trips.map((t) => `- ${t.title} (${t.start_date} → ${t.end_date}) · v${t.version} · ${t.status} · trip_id ${t.trip_id}`).join("\n")
+          : "No trips yet. Plan one and upload it with create_upload/finalize_upload or upload_bundle_inline.") +
+        (previews.length
+          ? `\n\nPreviews (drafts, not in the app):\n${previews.map((p) => `- ${p.title ?? "Untitled"} · rev ${p.rev}${p.published_version ? ` · published as v${p.published_version}` : ""} · ${p.preview_url} · preview_id ${p.preview_id}`).join("\n")}`
+          : "");
+      return { text, structured: { trips, previews } };
     },
   },
   {
@@ -211,8 +218,17 @@ export const tools: ToolDef<ToolCtx>[] = [
     name: "create_upload",
     title: "Create an upload URL",
     description:
-      "Step 1 of the CLI upload: returns a single-use put_url (valid 15 min) for a zipped bundle. Then run `curl -fsS -X PUT -H 'Content-Type: application/zip' -T bundle.zip \"<put_url>\"` and call finalize_upload. Set trip_id to publish a new version of an existing trip.",
-    inputSchema: { type: "object", properties: { trip_id: { type: "string" }, size_bytes: { type: "integer", minimum: 1 } }, required: ["size_bytes"] },
+      "Step 1 of the CLI upload: returns a single-use put_url (valid 15 min) for a zipped bundle. Then run `curl -fsS -X PUT -H 'Content-Type: application/zip' -T bundle.zip \"<put_url>\"` and call finalize_upload. Set trip_id to publish a new version of an existing trip. Set preview: true (and preview_id to update one) to push the zip as a live preview instead of publishing it.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trip_id: { type: "string" },
+        size_bytes: { type: "integer", minimum: 1 },
+        preview: { type: "boolean", description: "Push as a live preview (draft) instead of publishing." },
+        preview_id: { type: "string", description: "With preview: true, the preview to replace (from push_preview / an earlier preview upload)." },
+      },
+      required: ["size_bytes"],
+    },
     annotations: { openWorldHint: false },
     async run(args, ctx) {
       const size = Number(args.size_bytes);
@@ -220,9 +236,21 @@ export const tools: ToolDef<ToolCtx>[] = [
       if (size > LIMITS.maxZippedBytes) throw new ToolError(`Bundle is ${(size / 1048576).toFixed(1)} MB; the limit is 25 MB zipped. Compress images (WebP/JPEG ≤ 1600px) and remove unused assets.`);
       const tripId = tripIdArg(args, false);
       if (tripId) await ownTrip(ctx, tripId);
+      const preview = args.preview === true;
+      const previewId = preview ? str(args, "preview_id", false) : undefined;
+      if (previewId && !uuidRe.test(previewId)) throw new ToolError("`preview_id` must be the id returned by push_preview.");
       const id = crypto.randomUUID();
       const expires = new Date(Date.now() + 15 * 60_000).toISOString();
-      await ctx.db.insert("uploads", { id, user_id: ctx.userId, trip_id: tripId ?? null, size_bytes: size, object_key: keys.upload(ctx.userId, id), expires_at: expires });
+      await ctx.db.insert("uploads", {
+        id,
+        user_id: ctx.userId,
+        trip_id: tripId ?? null,
+        size_bytes: size,
+        object_key: keys.upload(ctx.userId, id),
+        expires_at: expires,
+        purpose: preview ? "preview" : "publish",
+        preview_id: previewId ?? null,
+      });
       const put_url = await signedUploadUrl(ctx.env, id, 15 * 60);
       return {
         text: `Upload created (upload_id ${id}, expires ${expires}).\nNext:\n  curl -fsS -X PUT -H "Content-Type: application/zip" -T bundle.zip "${put_url}"\nthen call finalize_upload with upload_id "${id}".`,
@@ -243,6 +271,17 @@ export const tools: ToolDef<ToolCtx>[] = [
       const obj = await ctx.env.BUCKET.get(up.object_key);
       if (!obj) throw new ToolError("Nothing has been uploaded yet. PUT the zip to put_url (from create_upload) first, then finalize.");
       const zip = new Uint8Array(await obj.arrayBuffer());
+      if (up.purpose === "preview") {
+        const u = unzipBundle(zip);
+        await ctx.env.BUCKET.delete(up.object_key);
+        if (u.errors.length) {
+          await ctx.db.update("uploads", `id=${eq(up.id)}`, { status: "failed" });
+          throw new ToolError(`The zip couldn't be read:\n${u.errors.map((e) => `  - ${e.path}: ${e.message}`).join("\n")}`);
+        }
+        const res = await runPush(ctx, { previewId: up.preview_id ?? undefined, tripId: up.trip_id ?? undefined, files: u.files, replace: true });
+        await ctx.db.update("uploads", `id=${eq(up.id)}`, { status: "finalized" });
+        return res;
+      }
       const r = await publishBundle(ctx.env, ctx.db, ctx.userId, { zip }, up.trip_id);
       await ctx.db.update("uploads", `id=${eq(up.id)}`, { status: r.ok ? "finalized" : "failed" });
       await ctx.env.BUCKET.delete(up.object_key);
@@ -266,6 +305,78 @@ export const tools: ToolDef<ToolCtx>[] = [
       }
       const r = await publishBundle(ctx.env, ctx.db, ctx.userId, { files: d.files }, tripIdArg(args, false) ?? null);
       return publishResult(r);
+    },
+  },
+  {
+    name: "push_preview",
+    title: "Push a live preview",
+    description:
+      "Pushes the bundle you're building to a live preview link the user can open on any device; the page reloads itself on every push. " +
+      "Use it early (as soon as there's a manifest + index.html skeleton) and again at milestones (each finished day, research done, final). " +
+      "Send only the files that changed since the last push (others are kept); `delete` removes files, `replace: true` starts over. " +
+      "Unfinished bundles are fine: validation issues are reported, not blocking. Previews are drafts: they don't appear in the app and don't cut offline maps until publish_preview. " +
+      "First call: omit preview_id (or pass trip_id to preview a revision of a published trip); then reuse the returned preview_id. Always show the user the preview_url.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        preview_id: { type: "string", description: "From the first push_preview. Omit to start a new preview." },
+        trip_id: { type: "string", description: "Preview a revision of this published trip (uses its preview if one exists)." },
+        files: filesSchema,
+        delete: { type: "array", items: { type: "string" }, description: "Paths to remove from the preview." },
+        replace: { type: "boolean", description: "Replace all files instead of merging (default false)." },
+      },
+    },
+    annotations: { openWorldHint: false },
+    async run(args, ctx) {
+      const files = Array.isArray(args.files) ? (args.files as InlineFile[]) : [];
+      const deletes = Array.isArray(args.delete) ? (args.delete as unknown[]).map(String) : [];
+      const d = decodeInlineFiles(files);
+      if (d.errors.length) throw new ToolError(d.errors.map((e) => `${e.path}: ${e.message}`).join("\n"));
+      const total = d.files.reduce((n, f) => n + f.data.byteLength, 0);
+      if (total > LIMITS.maxInlineBytes) throw new ToolError(`One push can carry 4 MB (got ${(total / 1048576).toFixed(1)} MB). Push fewer files at a time, or zip the bundle and use create_upload with preview: true.`);
+      const limited = await rateLimit(ctx.env, ctx.userId, "push_preview", 20, 600);
+      if (limited) throw new ToolError(limited);
+      return runPush(ctx, {
+        previewId: str(args, "preview_id", false),
+        tripId: tripIdArg(args, false),
+        files: d.files,
+        deletes,
+        replace: args.replace === true,
+      });
+    },
+  },
+  {
+    name: "publish_preview",
+    title: "Publish a preview",
+    description:
+      "Publishes the preview's current files as a trip version (a new trip, or a new version of the trip it revises), exactly like an upload: the app shows it and offline maps are cut. Do this when the user is happy with the preview. Fails with the validation errors if the bundle isn't valid yet. The preview link keeps working for further revisions.",
+    inputSchema: { type: "object", properties: { preview_id: { type: "string" } }, required: ["preview_id"] },
+    annotations: { openWorldHint: false },
+    async run(args, ctx) {
+      try {
+        const r = await publishPreview(ctx.env, ctx.db, ctx.userId, str(args, "preview_id")!);
+        const res = publishResult(r);
+        return { ...res, structured: { ...res.structured, preview_id: r.preview_id } };
+      } catch (e) {
+        if (e instanceof PreviewError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "delete_preview",
+    title: "Delete a preview",
+    description: "Deletes a preview and its link. Published trips are not affected.",
+    inputSchema: { type: "object", properties: { preview_id: { type: "string" } }, required: ["preview_id"] },
+    annotations: { destructiveHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      try {
+        await deletePreview(ctx.env, ctx.db, ctx.userId, str(args, "preview_id")!);
+        return { text: "Preview deleted; its link no longer works.", structured: { ok: true } };
+      } catch (e) {
+        if (e instanceof PreviewError) throw new ToolError(e.message);
+        throw e;
+      }
     },
   },
   {
@@ -307,7 +418,7 @@ export const tools: ToolDef<ToolCtx>[] = [
 
 async function ownUpload(ctx: ToolCtx, id: string) {
   if (!uuidRe.test(id)) throw new ToolError("`upload_id` must be the id returned by create_upload.");
-  const up = await ctx.db.one<{ id: string; trip_id: string | null; object_key: string; status: string; expires_at: string }>(
+  const up = await ctx.db.one<{ id: string; trip_id: string | null; object_key: string; status: string; expires_at: string; purpose: string; preview_id: string | null }>(
     "uploads",
     `select=*&id=${eq(id)}&user_id=${eq(ctx.userId)}`,
   );
@@ -327,4 +438,31 @@ export async function deleteTripData(env: Env, db: Db, userId: string, tripId: s
   }
   await db.update("map_extracts", `trip_id=${eq(tripId)}`, { status: "skipped", tiles_key: null });
   await db.update("trips", `id=${eq(tripId)}`, { deleted_at: new Date().toISOString() });
+}
+
+async function runPush(ctx: ToolCtx, input: { previewId?: string; tripId?: string; files: BundleFile[]; deletes?: string[]; replace?: boolean }): Promise<ToolResult> {
+  let r: PushResult;
+  try {
+    r = await pushPreview(ctx.env, ctx.db, ctx.userId, input);
+  } catch (e) {
+    if (e instanceof PreviewError) throw new ToolError(e.message);
+    throw e;
+  }
+  return { text: formatPush(r), structured: { ...r } };
+}
+
+export function formatPush(r: PushResult): string {
+  const v = r.validation;
+  const list = (xs: { path: string; message: string }[]) => xs.slice(0, 8).map((x) => `  - ${x.path}: ${x.message}`).join("\n") + (xs.length > 8 ? `\n  … and ${xs.length - 8} more` : "");
+  const status = v.ok
+    ? `Valid${v.warnings.length ? ` with ${v.warnings.length} warning(s)` : ""}: ready to publish_preview when the user is happy.`
+    : `Not publishable yet (fine while building). ${v.errors.length} error(s):\n${list(v.errors)}`;
+  return [
+    `Preview rev ${r.rev}${r.title ? ` of "${r.title}"` : ""}: ${r.preview_url}`,
+    r.rev === 1
+      ? "Give the user this link now: it opens on any phone or computer and refreshes itself each time you push."
+      : "Open copies of the link refresh themselves.",
+    `preview_id ${r.preview_id} (pass it to the next push_preview) · ${r.files} files, ${(r.bytes / 1024).toFixed(0)} KB · expires ${r.expires_at.slice(0, 10)} unless pushed again.`,
+    status,
+  ].join("\n");
 }

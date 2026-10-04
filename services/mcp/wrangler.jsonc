@@ -12,14 +12,19 @@
     "binding": "ASSETS",
     "html_handling": "drop-trailing-slash",
     "not_found_handling": "none",
-    "run_worker_first": ["/mcp", "/mcp/*", "/api/*", "/auth/*", "/authorize", "/authorize/*", "/token", "/register", "/.well-known/*", "/upload/*", "/files/*", "/stripe/*", "/healthz"]
+    // The Worker routes by host first: the preview origin (PREVIEW_URL) must serve previews only,
+    // never the site or portal. On the main host it falls through to these assets.
+    "run_worker_first": true
   },
 
   // Production custom domains (uncomment when deploying). Site, portal, API and MCP share one origin.
-  // "routes": [{ "pattern": "waypack.app", "custom_domain": true }],
+  // "routes": [{ "pattern": "waypack.app", "custom_domain": true }, { "pattern": "waypackpreview.com", "custom_domain": true }],
 
   "vars": {
     "PUBLIC_URL": "http://127.0.0.1:8787",
+    // Live previews are served from a separate host (no cookies, no API). localhost ≠ 127.0.0.1 for cookies.
+    // Production: a separate registrable domain, e.g. https://waypackpreview.com (see docs/DEPLOY.md).
+    "PREVIEW_URL": "http://localhost:8787",
     "SUPABASE_URL": "http://127.0.0.1:55421",
     // Planet the tiler extracts from. Production: the monthly R2 mirror (see services/tiler).
     "PLANET_URL": "latest",

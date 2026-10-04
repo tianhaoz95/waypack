@@ -32,7 +32,13 @@ If the user says "just plan it", make sensible assumptions and **list them** at 
 - **Routes:** call `compute_route` for every non-trivial move (driving > ~1 km, every hike). Use `mode: "hiking"` for trails. Paste the returned `geometry`, `distance_m`, `duration_s` into the manifest.
 - Volatile facts (road conditions, chain controls, weather, closures) are **never** stated as fact: say "verify before leaving" and add a `live_checks` link.
 
-## Phase 3 — Author the bundle
+## Phase 3 — Author the bundle (with a live preview)
+
+**Show your work as you go.** The user can watch the plan take shape on any phone or computer, and redirect you early:
+1. As soon as you have a skeleton (template files + `manifest.json` with title, dates, theme and an outline), call MCP `push_preview` with all files. **Give the user the `preview_url` right away**: "Here's a live preview; it updates as I work."
+2. Push again at **milestones**: each finished day, the Guide section, the final pass. Usually 4–6 pushes. Send **only the files that changed** (pass the `preview_id`); unchanged files are kept. Don't push after every small edit.
+3. Unfinished is fine: `push_preview` reports validation issues but never blocks. Previews don't reach the app and don't cut offline maps.
+4. CLI agents can also run `npx @waypack/cli preview ./waypack/<slug>` locally, and push a zip as a preview (`create_upload { preview: true, preview_id }` → PUT → `finalize_upload`); see `reference/upload.md`.
 
 Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>` (or copy `templates/base/` from this skill). Chat agents call `get_authoring_guide` and reproduce the template files.
 
@@ -79,9 +85,11 @@ SDK reference: `reference/sdk.md`.
 - Or MCP `validate_bundle` with the files.
 - Optional: `npx @waypack/cli preview ./waypack/<slug>` and check it at phone, iPad and desktop widths.
 
-## Phase 5 — Upload
+## Phase 5 — Publish
 
-See `reference/upload.md`. Summary:
+**If you used a preview** (recommended): when the user is happy with it, push the final files, then call MCP `publish_preview { preview_id }`. It publishes exactly what the preview shows as a trip version (or a new version of the trip it revises). Ask before publishing. The preview link keeps working for later revisions; to revise a published trip later, `push_preview { trip_id }`.
+
+**Without a preview,** upload directly. See `reference/upload.md`. Summary:
 - **CLI agents:** `npx @waypack/cli zip ./waypack/<slug> -o bundle.zip` → MCP `create_upload {size_bytes}` → `curl -fsS -X PUT -T bundle.zip "<put_url>"` → MCP `finalize_upload {upload_id}`.
 - **Chat agents (no shell):** MCP `upload_bundle_inline` with `files: [{path, content, encoding}]` (utf-8 text, base64 binary; ≤ 4 MB total).
 - **Updating** a trip: set `manifest.trip_id` to the existing id (from `list_trips` / the first upload) and upload again → new version. Use `get_trip` to fetch the current manifest first.
