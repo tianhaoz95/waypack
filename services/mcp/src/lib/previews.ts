@@ -9,7 +9,7 @@
 //   sees half a push.
 // - Previews are agent-written HTML, so they're served from a separate origin (PREVIEW_URL)
 //   that has no cookies, no API and no MCP (served by hosted.ts). Never serve them from PUBLIC_URL.
-import { LIMITS, unsafePathReason, validateFiles, type BundleFile, type Issue } from "@waypack/bundle-schema";
+import { LIMITS, unsafePathReason, unzipBundle, validateFiles, type BundleFile, type Issue } from "@waypack/bundle-schema";
 import type { Env } from "../env.js";
 import { randomToken, sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
@@ -35,6 +35,10 @@ export interface PreviewRow {
   bytes: number;
   validation: { ok: boolean; errors: Issue[]; warnings: Issue[] } | null;
   published_version: number | null;
+  /** The published version this preview's files started from (revisions). */
+  base_version: number | null;
+  /** The agent's "what changed" for the latest push. */
+  note: string | null;
   created_at: string;
   updated_at: string;
   expires_at: string;
@@ -129,7 +133,7 @@ const days = (n: number, from = Date.now()) => new Date(from + n * 86400000).toI
 
 // ------------------------------------------------------------------ rows
 
-const COLS = "id,user_id,trip_id,token,title,files,rev,bytes,validation,published_version,created_at,updated_at,expires_at";
+const COLS = "id,user_id,trip_id,token,title,files,rev,bytes,validation,published_version,base_version,note,created_at,updated_at,expires_at";
 
 async function ownPreview(db: Db, userId: string, id: string): Promise<PreviewRow> {
   if (!uuidRe.test(id)) throw new PreviewError("`preview_id` must be the id returned by push_preview.");
@@ -152,21 +156,60 @@ async function createPreview(db: Db, userId: string, tripId: string | null): Pro
   return row;
 }
 
-/** The preview to push into: by id, by the trip it revises, or a new one. */
-async function targetPreview(env: Env, db: Db, userId: string, previewId?: string, tripId?: string): Promise<PreviewRow> {
-  if (previewId) return ownPreview(db, userId, previewId);
+/**
+ * The preview to push into: by id, by the trip it revises, or a new one. A preview for a trip
+ * starts as a copy of the trip's latest published version (and is re-based if a newer version
+ * was published since), so a revision only pushes the files it changes.
+ */
+async function targetPreview(env: Env, db: Db, userId: string, previewId?: string, tripId?: string): Promise<{ row: PreviewRow; seeded: number | null }> {
+  if (previewId) return { row: await ownPreview(db, userId, previewId), seeded: null };
   if (tripId) {
     if (!uuidRe.test(tripId)) throw new PreviewError("`trip_id` must be a UUID (from list_trips).");
-    const trip = await db.one<{ id: string }>("trips", `select=id&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
+    const trip = await db.one<{ id: string; current_version: number }>("trips", `select=id,current_version&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
     if (!trip) throw new PreviewError(`Trip ${tripId} not found in your account.`, 404);
-    const existing = await db.one<PreviewRow>("trip_previews", `select=${COLS}&trip_id=${eq(tripId)}&user_id=${eq(userId)}`);
-    if (existing) {
-      if (Date.parse(existing.expires_at) > Date.now()) return existing;
-      await deletePreviewData(env, db, existing);
+    let row = await db.one<PreviewRow>("trip_previews", `select=${COLS}&trip_id=${eq(tripId)}&user_id=${eq(userId)}`);
+    if (row && Date.parse(row.expires_at) <= Date.now()) {
+      await deletePreviewData(env, db, row);
+      row = null;
     }
-    return createPreview(db, userId, tripId);
+    row ??= await createPreview(db, userId, tripId);
+    const base = row.base_version ?? row.published_version ?? 0;
+    if (trip.current_version > 0 && base < trip.current_version) {
+      return { row: await seedFromPublished(env, db, row, tripId, trip.current_version), seeded: trip.current_version };
+    }
+    return { row, seeded: null };
   }
-  return createPreview(db, userId, null);
+  return { row: await createPreview(db, userId, null), seeded: null };
+}
+
+/** Replaces a preview's files with a published version's (one atomic swap, like a push). */
+async function seedFromPublished(env: Env, db: Db, row: PreviewRow, tripId: string, version: number): Promise<PreviewRow> {
+  const v = await db.one<{ bundle_key: string }>("trip_versions", `select=bundle_key&trip_id=${eq(tripId)}&version=${eq(version)}`);
+  const obj = v ? await env.BUCKET.get(v.bundle_key) : null;
+  if (!obj) throw new PreviewError(`Version ${version} of this trip couldn't be read; publish it again or push all files with replace: true.`, 500);
+  const u = unzipBundle(new Uint8Array(await obj.arrayBuffer()));
+  if (u.errors.length) throw new PreviewError(`Version ${version} of this trip couldn't be unpacked: ${u.errors[0].message}`, 500);
+  const files: Record<string, PreviewFileRef> = {};
+  await Promise.all(
+    u.files.map(async (f) => {
+      const ref = { sha256: await sha256(f.data), bytes: f.data.byteLength, type: contentTypeFor(f.path) };
+      files[f.path] = ref;
+      await env.BUCKET.put(previewKeys.blob(row.user_id, row.id, ref.sha256), f.data, { httpMetadata: { contentType: ref.type } });
+    }),
+  );
+  const val = validateFiles(u.files);
+  const [saved] = await db.update<PreviewRow>("trip_previews", `id=${eq(row.id)}`, {
+    files,
+    rev: row.rev + 1,
+    bytes: u.files.reduce((n, f) => n + f.data.byteLength, 0),
+    title: manifestTitle(u.files) ?? row.title,
+    validation: { ok: val.ok, errors: val.errors, warnings: val.warnings },
+    base_version: version,
+    note: `Started from published version ${version}`,
+    updated_at: new Date().toISOString(),
+    expires_at: days(PREVIEW_TTL_DAYS),
+  });
+  return saved;
 }
 
 async function readBlob(env: Env, row: PreviewRow, ref: PreviewFileRef): Promise<Uint8Array> {
@@ -189,6 +232,8 @@ export interface PushInput {
   deletes?: string[];
   /** Replace every file (a full push, e.g. from a zip) instead of merging. */
   replace?: boolean;
+  /** One line for viewers: what changed in this push. */
+  note?: string;
 }
 
 export interface PushResult {
@@ -201,6 +246,8 @@ export interface PushResult {
   bytes: number;
   expires_at: string;
   validation: { ok: boolean; errors: Issue[]; warnings: Issue[] };
+  /** Set when this push started from (or re-based onto) a published version. */
+  based_on_version: number | null;
 }
 
 export async function pushPreview(env: Env, db: Db, userId: string, input: PushInput): Promise<PushResult> {
@@ -216,7 +263,8 @@ export async function pushPreview(env: Env, db: Db, userId: string, input: PushI
     input.files.map(async (f) => ({ path: f.path, data: f.data, ref: { sha256: await sha256(f.data), bytes: f.data.byteLength, type: contentTypeFor(f.path) } })),
   );
 
-  let row = await targetPreview(env, db, userId, input.previewId, input.tripId);
+  const target = await targetPreview(env, db, userId, input.previewId, input.tripId);
+  let row = target.row;
   for (let attempt = 0; ; attempt++) {
     const next = mergeFiles(row.files, adds, deletes, !!input.replace);
     const over = limitErrors(next);
@@ -245,6 +293,7 @@ export async function pushPreview(env: Env, db: Db, userId: string, input: PushI
       bytes,
       title,
       validation: { ok: v.ok, errors: v.errors, warnings: v.warnings },
+      note: input.note?.trim().slice(0, 200) || null,
       updated_at: new Date().toISOString(),
       expires_at: days(PREVIEW_TTL_DAYS),
     });
@@ -261,6 +310,7 @@ export async function pushPreview(env: Env, db: Db, userId: string, input: PushI
         bytes,
         expires_at: saved.expires_at,
         validation: { ok: v.ok, errors: v.errors, warnings: v.warnings },
+        based_on_version: target.seeded,
       };
     }
     if (attempt >= 3) throw new PreviewError("The preview kept changing during this push; try again.", 409);
@@ -314,7 +364,7 @@ export async function publishPreview(env: Env, db: Db, userId: string, previewId
       // One preview per trip: if an older preview pointed at this trip, detach it.
       await db.update("trip_previews", `trip_id=${eq(r.trip_id)}&id=neq.${row.id}`, { trip_id: null });
     }
-    await db.update("trip_previews", `id=${eq(row.id)}`, { trip_id: r.trip_id, published_version: r.version, expires_at: days(PREVIEW_TTL_DAYS) });
+    await db.update("trip_previews", `id=${eq(row.id)}`, { trip_id: r.trip_id, published_version: r.version, base_version: r.version, expires_at: days(PREVIEW_TTL_DAYS) });
   }
   return { ...r, preview_id: row.id };
 }
@@ -330,6 +380,8 @@ export interface PreviewSummary {
   updated_at: string;
   expires_at: string;
   published_version: number | null;
+  base_version: number | null;
+  note: string | null;
   errors: number;
   warnings: number;
 }
@@ -351,6 +403,8 @@ export function summarize(env: Env, r: PreviewRow): PreviewSummary {
     updated_at: r.updated_at,
     expires_at: r.expires_at,
     published_version: r.published_version,
+    base_version: r.base_version,
+    note: r.note,
     errors: r.validation?.errors.length ?? 0,
     warnings: r.validation?.warnings.length ?? 0,
   };

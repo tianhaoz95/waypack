@@ -3,7 +3,7 @@ import type { Env } from "../env.js";
 import { Db, eq } from "../lib/db.js";
 import { computeRoute, geocode, rateLimit, type LatLon, type Mode } from "../lib/geo.js";
 import { publishBundle, tripStatus, type PublishResult, type TripRow } from "../lib/pipeline.js";
-import { keys, signedUploadUrl } from "../lib/storage.js";
+import { keys, signedFileUrl, signedUploadUrl } from "../lib/storage.js";
 import { deletePreview, listPreviews, PreviewError, publishPreview, pushPreview, type PushResult } from "../lib/previews.js";
 import { ShareError, sharedTripForAgent, shareTrip, unshareTrip } from "../lib/shares.js";
 import { GUIDE } from "../generated/guide.js";
@@ -78,7 +78,8 @@ async function ownTrip(ctx: ToolCtx, tripId: string): Promise<TripRow> {
 
 export const INSTRUCTIONS = `Waypack publishes trip plans as offline mobile bundles for the Waypack phone app.
 Workflow: interview the user → research → geocode every place and compute_route every non-trivial move → write manifest.json + index.html (call get_authoring_guide first if you don't have the Waypack skill) → validate_bundle → upload (create_upload + PUT + finalize_upload, or upload_bundle_inline for chat agents) → get_trip_status until ready → tell the user to tap Download in the app.
-Live preview: as soon as there's a skeleton, push_preview and give the user the link; push again (changed files only) at milestones so they can watch it take shape on any device. When they approve, publish_preview publishes it to the app.`;
+Live preview: as soon as there's a skeleton, push_preview and give the user the link; push again (changed files only) at milestones so they can watch it take shape on any device. When they approve, publish_preview publishes it to the app.
+Updates to an existing trip ("we booked X", "add a day", "the road is closed"): list_trips → get_trip (latest files) → revise everything the change affects → push_preview { trip_id, changed files, note } → publish_preview when approved.`;
 
 export const tools: ToolDef<ToolCtx>[] = [
   {
@@ -129,17 +130,49 @@ export const tools: ToolDef<ToolCtx>[] = [
   {
     name: "get_trip",
     title: "Get trip",
-    description: "Returns the current manifest.json and status of a trip, so you can revise it. To publish a revision, keep manifest.trip_id set to this id and upload again.",
-    inputSchema: { type: "object", properties: { trip_id: { type: "string" } }, required: ["trip_id"] },
+    description:
+      "Returns the latest published version of a trip as the base for a revision: manifest.json and index.html in full, other files listed (pass `paths` to get them, or [\"*\"] for every text file), plus a short-lived download_url for the whole bundle zip (CLI agents: curl + unzip instead). " +
+      "To revise, edit these files and push only the changed ones with push_preview { trip_id, files, note }; the preview starts from this version.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trip_id: { type: "string" },
+        paths: { type: "array", items: { type: "string" }, description: "Extra files to return in full, e.g. [\"assets/style.css\"], or [\"*\"] for all text files." },
+      },
+      required: ["trip_id"],
+    },
     annotations: { readOnlyHint: true, openWorldHint: false },
     async run(args, ctx) {
       const id = tripIdArg(args, true)!;
       const t = await ownTrip(ctx, id);
-      const v = await ctx.db.one<{ manifest: Record<string, unknown> }>("trip_versions", `select=manifest&trip_id=${eq(id)}&version=${eq(t.current_version)}`);
+      const v = await ctx.db.one<{ manifest: Record<string, unknown>; bundle_key: string; version: number }>(
+        "trip_versions",
+        `select=manifest,bundle_key,version&trip_id=${eq(id)}&version=${eq(t.current_version)}`,
+      );
       const status = await tripStatus(ctx.db, ctx.userId, id);
+      if (!v) return { text: `Trip "${t.title}" has no published version yet.`, structured: { trip_id: id, version: 0, status } };
+      const obj = await ctx.env.BUCKET.get(v.bundle_key);
+      const u = obj ? unzipBundle(new Uint8Array(await obj.arrayBuffer())) : { files: [] as BundleFile[], errors: [] };
+      const wanted = new Set(["manifest.json", "index.html", ...((Array.isArray(args.paths) ? args.paths : []) as string[])]);
+      const all = wanted.has("*");
+      const texty = /\.(html?|json|txt|md|js|mjs|css|svg|geojson)$/i;
+      const full: { path: string; content: string }[] = [];
+      const listed: { path: string; bytes: number }[] = [];
+      for (const f of u.files) {
+        if (texty.test(f.path) && (all || wanted.has(f.path))) full.push({ path: f.path, content: new TextDecoder().decode(f.data) });
+        else listed.push({ path: f.path, bytes: f.data.byteLength });
+      }
+      full.sort((a, b) => (a.path === "manifest.json" ? -1 : b.path === "manifest.json" ? 1 : a.path.localeCompare(b.path)));
+      const download_url = await signedFileUrl(ctx.env, v.bundle_key, 3600);
+      const fence = (p: string) => p.split(".").pop();
       return {
-        text: `Trip "${t.title}" v${t.current_version} (${t.status}). Manifest:\n\`\`\`json\n${JSON.stringify(v?.manifest ?? {}, null, 2)}\n\`\`\`\nThe current index.html/assets aren't returned; regenerate them from the manifest and your plan when revising.`,
-        structured: { trip_id: id, version: t.current_version, status, manifest: v?.manifest ?? null },
+        text:
+          `Trip "${t.title}" — latest published version v${v.version} (${status?.status ?? t.status}). trip_id ${id}.\n` +
+          "Revise from these files: change what the update requires and everything it affects, keep the rest, then push_preview { trip_id, files: [changed files only], note } and publish_preview when the user approves.\n" +
+          `Whole bundle (1 h): ${download_url}\n\n` +
+          full.map((f) => `### ${f.path}\n\`\`\`${fence(f.path)}\n${f.content}\n\`\`\``).join("\n\n") +
+          (listed.length ? `\n\nOther files (unchanged unless you send them): ${listed.map((f) => `${f.path} (${f.bytes} B)`).join(", ")}` : ""),
+        structured: { trip_id: id, version: v.version, status, manifest: v.manifest, files: full, other_files: listed, download_url },
       };
     },
   },
@@ -316,7 +349,9 @@ export const tools: ToolDef<ToolCtx>[] = [
       "Use it early (as soon as there's a manifest + index.html skeleton) and again at milestones (each finished day, research done, final). " +
       "Send only the files that changed since the last push (others are kept); `delete` removes files, `replace: true` starts over. " +
       "Unfinished bundles are fine: validation issues are reported, not blocking. Previews are drafts: they don't appear in the app and don't cut offline maps until publish_preview. " +
-      "First call: omit preview_id (or pass trip_id to preview a revision of a published trip); then reuse the returned preview_id. Always show the user the preview_url.",
+      "New plan: omit preview_id on the first push, then reuse the returned preview_id. " +
+      "Revising a published trip: pass trip_id; the preview starts as a copy of the latest published version (see get_trip), so send only the files you changed. " +
+      "Add a short `note` saying what changed (viewers see it). Always show the user the preview_url.",
     inputSchema: {
       type: "object",
       properties: {
@@ -325,6 +360,7 @@ export const tools: ToolDef<ToolCtx>[] = [
         files: filesSchema,
         delete: { type: "array", items: { type: "string" }, description: "Paths to remove from the preview." },
         replace: { type: "boolean", description: "Replace all files instead of merging (default false)." },
+        note: { type: "string", description: "One line for viewers: what changed, e.g. \"Booked The Landing; re-planned days 1–2 around it\"." },
       },
     },
     annotations: { openWorldHint: false },
@@ -343,6 +379,7 @@ export const tools: ToolDef<ToolCtx>[] = [
         files: d.files,
         deletes,
         replace: args.replace === true,
+        note: str(args, "note", false),
       });
     },
   },
@@ -512,7 +549,7 @@ export async function deleteTripData(env: Env, db: Db, userId: string, tripId: s
   await db.update("trips", `id=${eq(tripId)}`, { deleted_at: new Date().toISOString() });
 }
 
-async function runPush(ctx: ToolCtx, input: { previewId?: string; tripId?: string; files: BundleFile[]; deletes?: string[]; replace?: boolean }): Promise<ToolResult> {
+async function runPush(ctx: ToolCtx, input: { previewId?: string; tripId?: string; files: BundleFile[]; deletes?: string[]; replace?: boolean; note?: string }): Promise<ToolResult> {
   let r: PushResult;
   try {
     r = await pushPreview(ctx.env, ctx.db, ctx.userId, input);
@@ -534,6 +571,7 @@ export function formatPush(r: PushResult): string {
     r.rev === 1
       ? "Give the user this link now: it opens on any phone or computer and refreshes itself each time you push."
       : "Open copies of the link refresh themselves.",
+    ...(r.based_on_version ? [`Started from published version ${r.based_on_version}; your files were applied on top (the others are unchanged).`] : []),
     `preview_id ${r.preview_id} (pass it to the next push_preview) · ${r.files} files, ${(r.bytes / 1024).toFixed(0)} KB · expires ${r.expires_at.slice(0, 10)} unless pushed again.`,
     status,
   ].join("\n");

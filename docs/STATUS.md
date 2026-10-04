@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: offline assistant)
+# Build status — 2026-10-04 (updated: trip revisions)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,10 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Revising a published trip (2026-10-04)
+- Tell the agent what changed ("I booked hotel X for the Tahoe trip"); the skill's generic update procedure + `get_trip` (latest files) + `push_preview { trip_id, changed files, note }` + `publish_preview`.
+- Verified: `scripts/e2e-revise.mjs` 18/18 (base files, one-file revision → full valid preview, note shown, v2 publish keeps unchanged files, re-base onto a newer version published elsewhere); browser test checks the "Updated: <note>" toast.
 
 ## Offline trip assistant (2026-10-04)
 - "Ask about this trip" (trip menu, Today): an on-device model answers from the downloaded plan with no signal. Apple Foundation Models (iOS/iPadOS/macOS 26+), Gemini Nano (Android, ML Kit Prompt API); otherwise "not available on this device yet". Engine layer ready for a LiteRT-LM/Qwen engine later.

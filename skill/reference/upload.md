@@ -34,9 +34,9 @@ If `finalize_upload` returns validation errors, fix, re-zip, and repeat from ste
 - Same response as `finalize_upload`.
 
 ## Updating
-- `list_trips` → find the trip; `get_trip { trip_id }` → current manifest.
-- Set `manifest.trip_id` to that id, change what's needed, upload again. The app shows "Update available".
-- Map tiles are re-cut only if `map` changed.
+- `list_trips` → find the trip; `get_trip { trip_id }` → the latest published `manifest.json` + `index.html` (+ `paths` for other files, `download_url` for the whole zip).
+- Revise those files (see SKILL.md, "Updating an existing trip"), then `push_preview { trip_id, files: [changed files only], note }` and `publish_preview` when the user approves. A direct upload with `manifest.trip_id` set also publishes a new version (no preview).
+- The app shows "Update available". Map tiles are re-cut only if `map` changed.
 
 ## Limits (free tier)
 Free accounts get 1 active trip and no offline map extract (the map needs a connection). Plans are managed at https://waypack.app/account. If a tool returns a limit message, show it to the user verbatim; don’t retry.

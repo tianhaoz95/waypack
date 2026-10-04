@@ -9,6 +9,7 @@ export const LIVE_JS = String.raw`(function () {
   var token = (location.pathname.match(/^\/t\/([^/]+)\//) || [])[1];
   if (!token) return;
   var KEY = "waypack-preview:" + token;
+  var pendingToast = false; // set by restorePlace(), shown after the first state fetch
   var stateUrl = "/__waypack/preview/" + token + "/state";
   var info = null;
 
@@ -93,7 +94,8 @@ export const LIVE_JS = String.raw`(function () {
     var saved;
     try { saved = JSON.parse(sessionStorage.getItem(KEY) || "null"); sessionStorage.removeItem(KEY); } catch (e) {}
     if (!saved) return;
-    if (saved.updated) say("Updated by your agent");
+    // The toast waits for the first state fetch so it can say what changed.
+    if (saved.updated) pendingToast = true;
     // The plan renders asynchronously (manifest fetch, map); re-apply for a moment.
     var tries = 0;
     (function apply() {
@@ -128,6 +130,10 @@ export const LIVE_JS = String.raw`(function () {
         pill.classList.remove("off");
         info = s;
         render();
+        if (pendingToast) {
+          pendingToast = false;
+          say(s.note ? "Updated: " + s.note : "Updated by your agent");
+        }
         if (s.rev > rev) { savePlace(); location.reload(); return; }
       })
       .catch(function () { pill.classList.add("off"); when.textContent = "offline"; })

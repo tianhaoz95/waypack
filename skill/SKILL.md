@@ -101,5 +101,18 @@ Then call `get_trip_status` until `status` is `ready` (map extraction takes ~1â€
 
 If the server returns an entitlement/limit message, relay it verbatim â€” don't retry in a loop.
 
+## Updating an existing trip
+
+Plans change: "we booked hotel X", "grandma is coming", "the road is closed", "make day 2 lazier", "add a day". Treat every update the same way. Use judgment about what it implies; don't follow a fixed recipe.
+
+1. **Find the trip.** `list_trips` and match the user's words ("our Tahoe trip"). If two could match, ask which.
+2. **Start from the latest version.** `get_trip { trip_id }` returns `manifest.json` and `index.html` in full (ask for other files with `paths`; CLI agents can download the whole bundle from `download_url`). Edit these files. Never rebuild the plan from memory or from scratch: the user's earlier choices, notes and research live in them.
+3. **Work out everything the change affects**, not just the line it names. For example, a booked hotel becomes the base: the other candidate hotels go (or move to a short "considered" note if useful); routes to and from lodging, drive times, the day's order, meals near the base, check-in/out times, parking, the budget, packing and the emergency section (nearest hospital from the new base) may all change. Research and `geocode`/`compute_route` again where facts changed; keep the theme, tone and everything still true.
+4. **Record what the user told you** (confirmation numbers, times, who's coming) in the manifest and page where the plan used to say "to be booked".
+5. **Show it.** `push_preview { trip_id, files: [only the changed files], note: "what changed, in one line" }`. The preview starts as a copy of the published version. Give the user the link and a short summary of what changed and anything you couldn't verify.
+6. **Publish when they approve:** `publish_preview { preview_id }`. The app shows "Update available"; the offline map is re-cut only if the map area changed.
+
+If the update contradicts the plan (e.g. a hotel far outside the map area), say so and adjust the plan, map area included; don't silently keep both.
+
 ## Sharing (only when the user asks)
 `share_trip { trip_id }` makes a public, read-only page with a "Plan this trip" button that lets others have their own agent adapt it. Booking/confirmation numbers are masked automatically, but **names, private phone numbers and personal notes are not**. If the plan has any, pass `files` with a cleaned copy (same bundle with those removed). Give the user the `remix_url` to share. `unshare_trip` turns the link off.

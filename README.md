@@ -56,6 +56,7 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | Worker protocol, signing, Stripe, OAuth, Mac downloads, previews, shares (37) | `npm test -w @waypack/mcp` | ✅ |
 | **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
 | **Live previews (44 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
+| **Trip revisions (18 checks)**: latest files as base, one-file revisions, notes, re-base onto newer versions | `node services/mcp/scripts/e2e-revise.mjs` (stack running) | ✅ |
 | **Shared trips (28 checks)**: share/redact/remix/update/stop, isolation, no owner data in public views | `node services/mcp/scripts/e2e-shares.mjs` (stack running) | ✅ |
 | **Travel companions (29 checks)**: invites, join, download with owner's maps, permissions, leave/remove, link off, trip deleted | `node services/mcp/scripts/e2e-companions.mjs` (stack running) | ✅ |
 | **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |

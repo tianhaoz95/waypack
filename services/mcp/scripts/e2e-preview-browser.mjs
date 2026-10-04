@@ -52,7 +52,7 @@ if (shots) await page.screenshot({ path: join(shots, "1-phone-day1.png") });
 // The agent finishes the plan and pushes only the manifest.
 const nav = page.waitForNavigation({ timeout: 15000 });
 const t0 = Date.now();
-await call("push_preview", { preview_id, files: [{ path: "manifest.json", content: JSON.stringify(manifest, null, 2) }] });
+await call("push_preview", { preview_id, files: [{ path: "manifest.json", content: JSON.stringify(manifest, null, 2) }], note: "Added days 2 and 3" });
 await nav;
 ok(true, `page reloaded by itself ${((Date.now() - t0) / 1000).toFixed(1)} s after the push`);
 await page.waitForLoadState("networkidle");
@@ -63,7 +63,7 @@ ok((await page.evaluate(() => location.hash)) === "#plan", "still on the Plan ta
 const y = await page.evaluate(() => scrollY);
 ok(Math.abs(y - 400) < 60, `scroll position kept (y=${y})`);
 const toast = await badge.evaluate((h) => (h.shadowRoot ?? h).querySelector(".toast")?.textContent ?? "");
-ok(/Updated by your agent/.test(toast), "shows “Updated by your agent”");
+ok(/Updated: Added days 2 and 3/.test(toast), `the toast says what changed (“${toast}”)`);
 if (shots) await page.screenshot({ path: join(shots, "2-phone-updated.png") });
 
 // Desktop: map pane renders from online tiles; no CSP / console errors.

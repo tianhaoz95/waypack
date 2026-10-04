@@ -15,7 +15,7 @@ const BASE_HEADERS: Record<string, string> = {
   "X-Robots-Tag": "noindex, nofollow",
 };
 const TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
-const PREVIEW_COLS = "id,user_id,trip_id,token,title,files,rev,bytes,validation,published_version,created_at,updated_at,expires_at";
+const PREVIEW_COLS = "id,user_id,trip_id,token,title,files,rev,bytes,validation,published_version,base_version,note,created_at,updated_at,expires_at";
 
 /** A page set served at /t/<token>/: a live preview or a public share. */
 interface Hosted {
@@ -100,7 +100,7 @@ export async function handlePreviewHost(req: Request, env: Env, db = new Db(env.
     const row = await previewByToken(db, m[1]);
     if (!row) return Response.json({ error: "not found" }, { status: 404, headers: { ...BASE_HEADERS, "Cache-Control": "no-store" } });
     return Response.json(
-      { rev: row.rev, updated_at: row.updated_at, title: row.title, published_version: row.published_version, errors: row.validation?.errors.length ?? 0, warnings: row.validation?.warnings.length ?? 0, expires_at: row.expires_at },
+      { rev: row.rev, updated_at: row.updated_at, title: row.title, note: row.note, published_version: row.published_version, errors: row.validation?.errors.length ?? 0, warnings: row.validation?.warnings.length ?? 0, expires_at: row.expires_at },
       { headers: { ...BASE_HEADERS, "Cache-Control": "no-store" } },
     );
   }

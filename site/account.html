@@ -402,7 +402,8 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
           var status = p.errors ? "<span class='status-processing'>" + p.errors + " issue" + (p.errors === 1 ? "" : "s") + "</span>"
             : "<span class='status-ready'>ready to publish</span>";
           var pub = p.published_version ? "published as v" + p.published_version : "not published";
-          return "<tr><td><b>" + esc(p.title || "Untitled trip") + "</b><div class='muted small'>revision " + esc(p.rev) + " · " + esc(pub) + "</div></td>" +
+          return "<tr><td><b>" + esc(p.title || "Untitled trip") + "</b><div class='muted small'>revision " + esc(p.rev) + " · " + esc(pub) + "</div>" +
+            (p.note ? "<div class='small' style='margin-top:4px'>Latest change: " + esc(p.note) + "</div>" : "") + "</td>" +
             "<td class='hide-sm'>" + esc(fmtDate(p.updated_at)) + "</td>" +
             "<td>" + status + "</td>" +
             "<td><div class='row' style='justify-content:flex-end'>" +
