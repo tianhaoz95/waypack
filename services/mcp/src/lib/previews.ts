@@ -8,14 +8,12 @@
 //   the new blobs first, then swaps the map in one conditional update, so a viewer never
 //   sees half a push.
 // - Previews are agent-written HTML, so they're served from a separate origin (PREVIEW_URL)
-//   that has no cookies, no API and no MCP. Never serve them from PUBLIC_URL.
+//   that has no cookies, no API and no MCP (served by hosted.ts). Never serve them from PUBLIC_URL.
 import { LIMITS, unsafePathReason, validateFiles, type BundleFile, type Issue } from "@waypack/bundle-schema";
 import type { Env } from "../env.js";
 import { randomToken, sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
 import { publishBundle, type PublishResult } from "./pipeline.js";
-import { resolvePlanet } from "./planet.js";
-import { LIVE_JS } from "./preview-live.js";
 
 export const PREVIEW_TTL_DAYS = 14;
 /** Open (unexpired) previews per account. */
@@ -57,7 +55,6 @@ export const PREVIEW_CSP =
   "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; " +
   "worker-src 'self' blob:; frame-src 'none'; object-src 'none'; frame-ancestors 'none'";
 
-const TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ------------------------------------------------------------------ origin
@@ -382,135 +379,3 @@ export async function expirePreviews(env: Env, db: Db, now = new Date()): Promis
   for (const row of due) await deletePreviewData(env, db, row);
   return due.length;
 }
-
-// ------------------------------------------------------------------ preview host
-
-const BASE_HEADERS: Record<string, string> = {
-  // The token is the capability: never leak it to sites the plan links to.
-  "Referrer-Policy": "no-referrer",
-  "X-Content-Type-Options": "nosniff",
-  "X-Robots-Tag": "noindex, nofollow",
-};
-
-function page(status: number, title: string, body: string): Response {
-  const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<style>body{font:16px/1.5 system-ui,sans-serif;max-width:34rem;margin:15vh auto;padding:0 20px;color:#0f172a}@media(prefers-color-scheme:dark){body{background:#0b1120;color:#e8edf6}}</style>
-<h1 style="font-size:1.4rem">${title}</h1><p>${body}</p>`;
-  return new Response(html, { status, headers: { ...BASE_HEADERS, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'" } });
-}
-
-const notFound = () => page(404, "Preview not found", "This trip preview doesn't exist or has expired (previews last 14 days after the last change). Ask your agent to push it again.");
-
-async function byToken(db: Db, token: string): Promise<PreviewRow | null> {
-  if (!TOKEN_RE.test(token)) return null;
-  return db.one<PreviewRow>("trip_previews", `select=${COLS}&token=${eq(token)}&expires_at=gt.${new Date().toISOString()}`);
-}
-
-/** Everything served on PREVIEW_URL. Nothing else (API, MCP, portal, cookies) exists on this origin. */
-export async function handlePreviewHost(req: Request, env: Env, db = new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)): Promise<Response> {
-  if (req.method !== "GET" && req.method !== "HEAD") return new Response("method not allowed", { status: 405, headers: BASE_HEADERS });
-  const url = new URL(req.url);
-  const path = url.pathname;
-
-  if (path === "/" || path === "/favicon.ico") return page(200, "Waypack trip previews", "Open the link your agent gave you to watch your trip plan as it's built.");
-  if (path === "/__waypack/preview/live.js") {
-    return new Response(LIVE_JS, { headers: { ...BASE_HEADERS, "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "public, max-age=300" } });
-  }
-  if (path.startsWith("/__waypack/sdk/v1/")) {
-    if (!env.ASSETS) return new Response("SDK not deployed", { status: 404, headers: BASE_HEADERS });
-    const res = await env.ASSETS.fetch(req);
-    const h = new Headers(res.headers);
-    for (const [k, v] of Object.entries(BASE_HEADERS)) h.set(k, v);
-    return new Response(res.body, { status: res.status, headers: h });
-  }
-
-  let m = path.match(/^\/__waypack\/preview\/([^/]+)\/state$/);
-  if (m) {
-    const row = await byToken(db, m[1]);
-    if (!row) return Response.json({ error: "not found" }, { status: 404, headers: { ...BASE_HEADERS, "Cache-Control": "no-store" } });
-    return Response.json(
-      { rev: row.rev, updated_at: row.updated_at, title: row.title, published_version: row.published_version, errors: row.validation?.errors.length ?? 0, warnings: row.validation?.warnings.length ?? 0, expires_at: row.expires_at },
-      { headers: { ...BASE_HEADERS, "Cache-Control": "no-store" } },
-    );
-  }
-
-  m = path.match(/^\/__waypack\/tiles\/([^/]+)\/(index\.json|online\.pmtiles)$/);
-  if (m) {
-    const row = await byToken(db, m[1]); // only live previews may use the tile proxy
-    if (!row) return Response.json({ error: "not found" }, { status: 404, headers: BASE_HEADERS });
-    const online = await onlineTilesUrl(env);
-    if (m[2] === "index.json") {
-      return Response.json({ extracts: [], online: online ? `/__waypack/tiles/${m[1]}/online.pmtiles` : null }, { headers: { ...BASE_HEADERS, "Cache-Control": "no-store" } });
-    }
-    if (!online) return new Response("no online basemap", { status: 404, headers: BASE_HEADERS });
-    return proxyTiles(req, online);
-  }
-
-  m = path.match(/^\/t\/([^/]+)(\/.*)?$/);
-  if (!m) return notFound();
-  if (!m[2]) return new Response(null, { status: 301, headers: { ...BASE_HEADERS, Location: `/t/${m[1]}/` } });
-  const row = await byToken(db, m[1]);
-  if (!row) return notFound();
-
-  let rel: string;
-  try {
-    rel = decodeURIComponent(m[2].slice(1));
-  } catch {
-    return notFound();
-  }
-  if (rel === "" || rel.endsWith("/")) rel += "index.html";
-  if (rel === "index.html" && !row.files["index.html"]) {
-    const title = row.title ? `${escapeHtml(row.title)} — preview` : "Preview starting…";
-    return withLiveCsp(page(200, title, `Your agent hasn't pushed the page yet. This tab refreshes by itself when it does.<script src="/__waypack/preview/live.js" data-rev="${row.rev}"></script>`));
-  }
-  const ref = row.files[rel];
-  if (!ref) return new Response("not found", { status: 404, headers: { ...BASE_HEADERS, "Cache-Control": "no-cache" } });
-
-  const isHtml = /\.html?$/i.test(rel);
-  // HTML embeds the rev for live reload, so its validator includes it.
-  const etag = `"${ref.sha256.slice(0, 32)}${isHtml ? `-${row.rev}` : ""}"`;
-  const headers: Record<string, string> = { ...BASE_HEADERS, "Content-Type": ref.type || contentTypeFor(rel), "Cache-Control": "no-cache", ETag: etag };
-  if (isHtml) headers["Content-Security-Policy"] = PREVIEW_CSP;
-  if (req.headers.get("If-None-Match") === etag) return new Response(null, { status: 304, headers });
-
-  const obj = await env.BUCKET.get(previewKeys.blob(row.user_id, row.id, ref.sha256));
-  if (!obj) return new Response("missing", { status: 404, headers: BASE_HEADERS });
-  if (isHtml) {
-    const html = injectLive(new TextDecoder().decode(await obj.arrayBuffer()), row.rev);
-    return new Response(req.method === "HEAD" ? null : html, { headers });
-  }
-  headers["Content-Length"] = String(ref.bytes);
-  return new Response(req.method === "HEAD" ? null : obj.body, { headers });
-}
-
-function withLiveCsp(res: Response): Response {
-  // The "waiting" page loads live.js from this origin.
-  res.headers.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; connect-src 'self'");
-  return res;
-}
-
-const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-
-/** Online basemap for previews: ONLINE_TILES_URL if it's a .pmtiles, else the planet the tiler uses. */
-async function onlineTilesUrl(env: Env): Promise<string | null> {
-  if (env.ONLINE_TILES_URL && /\.pmtiles(\?|$)/.test(env.ONLINE_TILES_URL)) return env.ONLINE_TILES_URL;
-  try {
-    return (await resolvePlanet(env)).url;
-  } catch {
-    return null;
-  }
-}
-
-/** Same-origin proxy (the page's CSP only allows connect-src 'self'): forwards Range only. */
-async function proxyTiles(req: Request, upstream: string): Promise<Response> {
-  const range = req.headers.get("Range");
-  const res = await fetch(upstream, { method: req.method, headers: range ? { Range: range } : {} });
-  const h = new Headers(BASE_HEADERS);
-  for (const k of ["Content-Type", "Content-Length", "Content-Range", "ETag", "Last-Modified", "Accept-Ranges"]) {
-    const v = res.headers.get(k);
-    if (v) h.set(k, v);
-  }
-  h.set("Cache-Control", "public, max-age=86400");
-  return new Response(res.body, { status: res.status, headers: h });
-}
-

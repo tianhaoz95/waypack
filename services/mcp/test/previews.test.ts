@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Env } from "../src/env.js";
 import type { Db } from "../src/lib/db.js";
+import { handlePreviewHost } from "../src/lib/hosted.js";
 import {
-  handlePreviewHost,
   injectLive,
   isPreviewHost,
   limitErrors,

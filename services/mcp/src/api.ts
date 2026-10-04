@@ -16,6 +16,7 @@ import { deleteTripData } from "./mcp/tools.js";
 import { homePage } from "./pages.js";
 import { handleMacDownload } from "./lib/releases.js";
 import { deletePreview, listPreviews, PreviewError, previewOrigin, publishPreview } from "./lib/previews.js";
+import { listShares, publicSummary, ShareError, shareByToken, shareTrip, unshareTrip } from "./lib/shares.js";
 
 const jsonErr = (status: number, error: string, extra: Record<string, unknown> = {}) => Response.json({ error, ...extra }, { status });
 
@@ -58,6 +59,17 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
 
   // Mac app downloads (public): /download/mac → the current DMG; see apps/mobile/tool/release_mac.sh.
   if (path.startsWith("/download/mac") && (req.method === "GET" || req.method === "HEAD")) return handleMacDownload(req, env, path);
+
+  // Public, remixable trips: the remix page (static, site/remix.html) and its data.
+  if (/^\/remix\/[A-Za-z0-9_-]{32}$/.test(path) && req.method === "GET" && env.ASSETS) {
+    return env.ASSETS.fetch(new Request(new URL("/remix", req.url), req));
+  }
+  const pub = path.match(/^\/api\/public\/shares\/([A-Za-z0-9_-]{32})$/);
+  if (pub && req.method === "GET") {
+    const s = await shareByToken(new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY), pub[1]);
+    if (!s) return jsonErr(404, "This trip isn't shared (anymore).");
+    return Response.json(publicSummary(env, s), { headers: { "Cache-Control": "no-store" } });
+  }
 
   if (path.startsWith("/api/auth/")) return handlePortalAuth(req, env, path);
   if (path.startsWith("/api/")) return handleApi(req, env, url);
@@ -169,6 +181,22 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     const trips = await db.select<TripRow>("trips", `select=id,title,start_date,end_date,current_version,status,updated_at&user_id=${eq(user.userId)}&deleted_at=is.null&order=start_date.desc.nullslast`);
     const out = await Promise.all(trips.map((t) => tripStatus(db, user.userId, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
     return Response.json({ trips: out });
+  }
+
+  // Public shares of published trips.
+  if (path === "/api/shares" && req.method === "GET") {
+    if (!previewOrigin(env)) return Response.json({ shares: [], enabled: false });
+    return Response.json({ shares: await listShares(env, db, user.userId), enabled: true });
+  }
+  const sh = m(/^\/api\/trips\/([0-9a-f-]{36})\/share$/);
+  if (sh && (req.method === "POST" || req.method === "DELETE")) {
+    try {
+      if (req.method === "DELETE") return Response.json({ ok: await unshareTrip(env, db, user.userId, sh[1]) });
+      return Response.json(await shareTrip(env, db, user.userId, sh[1]));
+    } catch (e) {
+      if (e instanceof ShareError) return jsonErr(e.status, e.message);
+      throw e;
+    }
   }
 
   // Live previews (drafts pushed by agents).

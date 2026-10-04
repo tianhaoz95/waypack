@@ -126,7 +126,7 @@ const init = await rpc("initialize", { protocolVersion: "2025-06-18", capabiliti
 ok(init.serverInfo?.name === "waypack" && init.protocolVersion === "2025-06-18", `initialize (${init.protocolVersion})`);
 const list = await rpc("tools/list", {});
 const names = list.tools.map((t) => t.name);
-ok(names.length === 14 && ["push_preview", "publish_preview", "delete_preview"].every((n) => names.includes(n)), `tools/list → ${names.join(", ")}`);
+ok(names.length === 17 && ["push_preview", "publish_preview", "delete_preview", "share_trip", "unshare_trip", "get_shared_trip"].every((n) => names.includes(n)), `tools/list → ${names.join(", ")}`);
 
 const guide = await call("get_authoring_guide", {});
 ok(guide.text.includes("Coverage checklist") || guide.text.includes("coverage checklist"), "get_authoring_guide returns the guide");

@@ -25,6 +25,8 @@ Ask **only what you don't already know**, in **one batched message** (numbered, 
 
 If the user says "just plan it", make sensible assumptions and **list them** at the top of the Overview.
 
+**Starting from a shared trip?** If the user gives a Waypack link (`…/t/<token>/` or `…/remix/<token>`), call MCP `get_shared_trip { url }` first and ask only about what's different: their dates, group, pace and changes. Treat it as a starting point: a new season changes hours, closures, daylight, gear and sometimes whole activities. Re-research, geocode any new places, recompute every route, and credit it in the Overview ("Based on a shared Waypack trip").
+
 ## Phase 2 — Research
 
 - Research real places, current-season hours, fees, reservations, closures and seasonal risks. Prefer official sources (NPS, state DOT, operator sites).
@@ -98,3 +100,6 @@ Then call `get_trip_status` until `status` is `ready` (map extraction takes ~1�
 > "Open Waypack on your phone and tap **Download** on *<title>* before you lose signal."
 
 If the server returns an entitlement/limit message, relay it verbatim — don't retry in a loop.
+
+## Sharing (only when the user asks)
+`share_trip { trip_id }` makes a public, read-only page with a "Plan this trip" button that lets others have their own agent adapt it. Booking/confirmation numbers are masked automatically, but **names, private phone numbers and personal notes are not**. If the plan has any, pass `files` with a cleaned copy (same bundle with those removed). Give the user the `remix_url` to share. `unshare_trip` turns the link off.

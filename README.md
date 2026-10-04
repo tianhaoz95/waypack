@@ -9,7 +9,7 @@ Design: [`docs/design.md`](docs/design.md) · Deviations: [`docs/DECISIONS.md`](
 ## Repository
 ```
 apps/mobile/               Flutter app (iOS, Android, macOS), a free viewer: downloads, loopback server, WebView, Today, Map
-services/mcp/              Cloudflare Worker: MCP (14 tools, incl. live previews) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
+services/mcp/              Cloudflare Worker: MCP (17 tools, incl. live previews and shared trips) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
 services/tiler/            Go + pmtiles container: extract trip areas; mirror the planet monthly
 supabase/                  Schema + RLS, Google/Apple auth config
 packages/bundle-schema/    manifest v1 JSON Schema + validator (CLI, Worker, browser)
@@ -53,9 +53,10 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | Validator (26) | `npm test -w @waypack/bundle-schema` | ✅ |
 | CLI + preview server (7) | `npm test -w @waypack/cli` | ✅ |
 | SDK: calendar + maps choice (6) and in a phone browser, offline extract only (6, Playwright) | `npm test -w @waypack/trip-sdk` | ✅ |
-| Worker protocol, signing, Stripe, OAuth, Mac downloads, previews (32) | `npm test -w @waypack/mcp` | ✅ |
+| Worker protocol, signing, Stripe, OAuth, Mac downloads, previews, shares (37) | `npm test -w @waypack/mcp` | ✅ |
 | **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
 | **Live previews (44 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
+| **Shared trips (28 checks)**: share/redact/remix/update/stop, isolation, no owner data in public views | `node services/mcp/scripts/e2e-shares.mjs` (stack running) | ✅ |
 | **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |
 | App unit (19) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |

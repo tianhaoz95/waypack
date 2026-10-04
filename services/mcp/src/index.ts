@@ -1,7 +1,8 @@
 import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import type { AuthProps, Env, TileJob } from "./env.js";
 import { handleApp } from "./api.js";
-import { expirePreviews, handlePreviewHost, isPreviewHost } from "./lib/previews.js";
+import { handlePreviewHost } from "./lib/hosted.js";
+import { expirePreviews, isPreviewHost } from "./lib/previews.js";
 import { resolveApiToken } from "./auth/tokens.js";
 import { Db } from "./lib/db.js";
 import { callTiler, runExpiry, runTileJob } from "./lib/tiles.js";

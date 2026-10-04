@@ -5,6 +5,7 @@ import { computeRoute, geocode, rateLimit, type LatLon, type Mode } from "../lib
 import { publishBundle, tripStatus, type PublishResult, type TripRow } from "../lib/pipeline.js";
 import { keys, signedUploadUrl } from "../lib/storage.js";
 import { deletePreview, listPreviews, PreviewError, publishPreview, pushPreview, type PushResult } from "../lib/previews.js";
+import { ShareError, sharedTripForAgent, shareTrip, unshareTrip } from "../lib/shares.js";
 import { GUIDE } from "../generated/guide.js";
 import { ToolError, type ToolDef, type ToolResult } from "./protocol.js";
 
@@ -380,6 +381,76 @@ export const tools: ToolDef<ToolCtx>[] = [
     },
   },
   {
+    name: "share_trip",
+    title: "Share a trip publicly",
+    description:
+      "Creates (or updates) a public, read-only link to a published trip that anyone can open, with a \"Plan this trip\" button so they can have their own agent adapt it. " +
+      "Ask the user first. Booking/confirmation numbers are masked automatically, but names, private phone numbers and personal notes are not: " +
+      "if the plan has any, pass `files` with a cleaned copy (same bundle, personal details removed) instead of sharing the published files. Sharing again updates the same link.",
+    inputSchema: { type: "object", properties: { trip_id: { type: "string" }, files: filesSchema }, required: ["trip_id"] },
+    annotations: { openWorldHint: false },
+    async run(args, ctx) {
+      const tripId = tripIdArg(args, true)!;
+      let files: BundleFile[] | undefined;
+      if (Array.isArray(args.files) && args.files.length) {
+        const d = decodeInlineFiles(args.files as InlineFile[]);
+        if (d.errors.length) throw new ToolError(d.errors.map((e) => `${e.path}: ${e.message}`).join("\n"));
+        files = d.files;
+      }
+      try {
+        const r = await shareTrip(ctx.env, ctx.db, ctx.userId, tripId, files);
+        return {
+          text:
+            `Shared "${r.title}" (v${r.version}).\nPublic page: ${r.share_url}\nRemix page (\"plan this trip for my dates\"): ${r.remix_url}\n` +
+            (r.redactions ? `${r.redactions} booking/confirmation number(s) were masked. ` : "") +
+            "Anyone with the link can see the plan. To stop sharing, call unshare_trip.",
+          structured: { ...r },
+        };
+      } catch (e) {
+        if (e instanceof ShareError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "unshare_trip",
+    title: "Stop sharing a trip",
+    description: "Turns off a trip's public link (it stops working immediately).",
+    inputSchema: { type: "object", properties: { trip_id: { type: "string" } }, required: ["trip_id"] },
+    annotations: { destructiveHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      const tripId = tripIdArg(args, true)!;
+      await ownTrip(ctx, tripId);
+      const was = await unshareTrip(ctx.env, ctx.db, ctx.userId, tripId);
+      return { text: was ? "Stopped sharing; the public link no longer works." : "This trip wasn't shared.", structured: { ok: true, was_shared: was } };
+    },
+  },
+  {
+    name: "get_shared_trip",
+    title: "Read a shared trip",
+    description:
+      "Reads a public Waypack trip (a link like https://…/t/<token>/ or …/remix/<token>) so you can plan a new trip based on it. Returns its manifest (route geometry omitted) and the page's text. " +
+      "Use it as a starting point, not a copy: adapt to the user's dates, group and pace, re-check hours, closures and conditions for the new season, " +
+      "geocode any new places, recompute every route, set trip_id to null, and credit it (\"Based on a shared Waypack trip\") in the Overview.",
+    inputSchema: { type: "object", properties: { url: { type: "string", description: "The shared trip link or remix link." } }, required: ["url"] },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      try {
+        const t = await sharedTripForAgent(ctx.env, ctx.db, str(args, "url")!);
+        return {
+          text:
+            `Shared trip "${t.title}" (${t.share_url}).\n` +
+            "Adapt it; don't copy it: new dates/season change hours, closures, daylight and gear. Recompute routes (geometry omitted below). Keep what the user liked.\n\n" +
+            `manifest.json:\n\`\`\`json\n${JSON.stringify(t.manifest, null, 2)}\n\`\`\`\n\nPage text (index.html):\n${t.guide_text}\n\nOther files: ${t.files.join(", ")}`,
+          structured: { ...t },
+        };
+      } catch (e) {
+        if (e instanceof ShareError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
     name: "get_trip_status",
     title: "Get trip status",
     description: "Processing status of a trip: status (processing | ready | failed), tiles_status, and sizes. Poll every ~20 s after uploading until ready.",
@@ -428,6 +499,7 @@ async function ownUpload(ctx: ToolCtx, id: string) {
 
 /** Soft-deletes the trip row and removes its R2 objects (bundles + tiles). */
 export async function deleteTripData(env: Env, db: Db, userId: string, tripId: string): Promise<void> {
+  await unshareTrip(env, db, userId, tripId);
   for (const prefix of [`bundles/${userId}/${tripId}/`, `tiles/${userId}/${tripId}/`]) {
     let cursor: string | undefined;
     do {

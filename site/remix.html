@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Plan this trip · Waypack</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d6fe0'/%3E%3Cpath d='M8 22l5-12 4 8 3-5 4 9z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
+  --accent: #1d6fe0; --accent-ink: #fff; --soft: #eaf1fd; --ok: #15803d; --warn: #b45309; --danger: #c81e1e;
+  --code: #0f172a; --code-ink: #e5edff;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f1c; --surface: #121a2c; --text: #e8edf6; --muted: #9aa6bb; --line: #222c42;
+    --accent: #5b9bff; --accent-ink: #06122a; --soft: #142443; --ok: #4ade80; --warn: #fbbf24; --danger: #f87171;
+    --code: #060a14; --code-ink: #dbe6ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--font); }
+a { color: var(--accent); }
+nav.top { border-bottom: 1px solid var(--line); background: var(--surface); }
+nav.top .wrap { display: flex; align-items: center; height: 60px; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+.brand i { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-style: normal; }
+nav.top .who { margin-left: auto; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+main { padding: 28px 0 64px; }
+h1 { font-size: 1.7rem; margin: 0 0 18px; }
+h2 { font-size: 1.15rem; margin: 0 0 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+label { display: block; font-weight: 600; margin: 12px 0 6px; }
+input { width: 100%; min-height: 48px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+button, .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .95rem var(--font); cursor: pointer; text-decoration: none; }
+button.secondary, a.btn.secondary { background: transparent; color: var(--text) !important; border: 1px solid var(--line); }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+button:disabled { opacity: .6; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.signin { max-width: 420px; margin: 40px auto; }
+.signin button { width: 100%; margin-top: 12px; }
+.provider { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; margin-top: 12px; border-radius: 12px; font: 600 1rem var(--font); text-decoration: none; }
+.provider.google { background: #fff; color: #1f1f1f; border: 1px solid #747775; }
+.provider.apple { background: #000; color: #fff; border: 1px solid #000; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .provider.apple { background: #fff; color: #000; border-color: #fff; } }
+form.dev { margin-top: 20px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.plan-name { font-size: 1.4rem; font-weight: 800; }
+.badge { display: inline-block; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 10px; border-radius: 999px; background: var(--soft); color: var(--accent); }
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+.offer { border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.offer .price { font-size: 1.5rem; font-weight: 800; margin: 4px 0 10px; }
+.offer ul { margin: 0 0 14px; padding-left: 18px; color: var(--muted); font-size: .92rem; }
+.offer button { width: 100%; }
+table { width: 100%; border-collapse: collapse; font-size: .94rem; }
+th, td { text-align: left; padding: 10px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 640px) { .hide-sm { display: none; } }
+.status-ready { color: var(--ok); font-weight: 600; }
+.status-processing { color: var(--warn); font-weight: 600; }
+.status-failed { color: var(--danger); font-weight: 600; }
+pre { position: relative; background: var(--code); color: var(--code-ink); border-radius: 12px; padding: 36px 14px 12px; overflow-x: auto; font: 13.5px/1.6 var(--mono); margin: 8px 0 12px; }
+pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding: 4px 10px; background: rgba(255,255,255,.14); color: inherit; font-size: 12px; }
+.banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+.banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
+.banner.err { background: color-mix(in srgb, var(--danger) 15%, transparent); }
+.error { color: var(--danger); font-weight: 600; margin-top: 10px; }
+.empty { color: var(--muted); padding: 12px 0; }
+[hidden] { display: none !important; }
+.trip h1 { margin-bottom: 4px; }
+.trip .dates { color: var(--muted); margin-bottom: 10px; }
+textarea { width: 100%; min-height: 48px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); resize: vertical; }
+pre.prompt { white-space: pre-wrap; padding-top: 14px; }
+ol.steps { padding-left: 20px; margin: 0; }
+ol.steps li { margin: 6px 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+@media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <a class="brand" href="/"><i aria-hidden="true">◈</i>Waypack</a>
+  <span class="who"><a href="/account">Your account</a></span>
+</div></nav>
+<main><div class="wrap">
+  <section class="card trip" id="trip">
+    <span class="badge">Shared trip</span>
+    <h1 id="title" style="margin-top:10px">Loading…</h1>
+    <div class="dates" id="dates"></div>
+    <p id="summary"></p>
+    <div class="row">
+      <a class="btn secondary" id="view" target="_blank" rel="noopener">View the plan</a>
+      <span class="muted small" id="remixes"></span>
+    </div>
+  </section>
+
+  <section class="card" id="remix" hidden>
+    <h2>Plan this trip for yourself</h2>
+    <p class="muted">Your AI agent adapts this plan to your dates, group and pace, re-checks hours and conditions for your season, and sends it to the Waypack app for offline use.</p>
+    <div class="grid2">
+      <div><label for="when">When</label><input id="when" placeholder="e.g. June 12–15, 2027"></div>
+      <div><label for="who">Who's going</label><input id="who" placeholder="e.g. 2 adults and a 6-year-old"></div>
+    </div>
+    <label for="changes">Anything to change? <span class="muted small">(optional)</span></label>
+    <textarea id="changes" rows="2" placeholder="e.g. more easy hikes, no drives over 2 hours, we're vegetarian"></textarea>
+
+    <label>Your prompt</label>
+    <pre class="prompt"><code id="prompt"></code><button type="button" id="copy">Copy</button></pre>
+    <div class="row">
+      <a class="btn" id="claude" target="_blank" rel="noopener">Open in Claude</a>
+      <button type="button" class="secondary" id="copy2">Copy for another agent</button>
+    </div>
+
+    <h2 style="margin-top:24px">First time?</h2>
+    <ol class="steps muted">
+      <li>Connect Waypack to your agent (Claude, Cursor or any MCP client): <a href="/account">get the link on your account page</a> (free).</li>
+      <li>Paste the prompt above. Your agent sends you a live preview link as it works.</li>
+      <li>Install the free Waypack app and tap <b>Download</b> before you lose signal.</li>
+    </ol>
+  </section>
+
+  <section class="card" id="gone" hidden>
+    <h2>This trip isn't shared anymore</h2>
+    <p class="muted">The owner stopped sharing it, or the link is wrong. <a href="/">Plan your own trip with Waypack</a>.</p>
+  </section>
+</div></main>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var token = (location.pathname.match(/^\/remix\/([A-Za-z0-9_-]{32})$/) || [])[1];
+  var share = null;
+  function fmt(d) {
+    if (!d) return "";
+    var x = new Date(d + "T12:00:00Z");
+    return x.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  }
+  function prompt() {
+    var when = $("when").value.trim(), who = $("who").value.trim(), changes = $("changes").value.trim();
+    var lines = [
+      "Using Waypack, plan a trip based on this shared trip: " + share.share_url,
+      "Start by reading it with get_shared_trip, then adapt it for me:",
+      "- When: " + (when || "ask me"),
+      "- Who's going: " + (who || "ask me"),
+    ];
+    if (changes) lines.push("- Changes: " + changes);
+    lines.push("Re-check hours, closures and conditions for my dates, and send me a live preview link while you work.");
+    return lines.join("\n");
+  }
+  function update() {
+    var p = prompt();
+    $("prompt").textContent = p;
+    $("claude").href = "https://claude.ai/new?q=" + encodeURIComponent(p);
+  }
+  function copy(btn) {
+    navigator.clipboard.writeText(prompt()).then(function () {
+      var t = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = t; }, 1500);
+    });
+  }
+  if (!token) { $("trip").hidden = true; $("gone").hidden = false; return; }
+  fetch("/api/public/shares/" + token).then(function (r) {
+    if (!r.ok) throw new Error("gone");
+    return r.json();
+  }).then(function (s) {
+    share = s;
+    document.title = "Plan this trip: " + s.title + " · Waypack";
+    $("title").textContent = s.title;
+    $("dates").textContent = s.start_date ? fmt(s.start_date) + " – " + fmt(s.end_date) + " (the original dates)" : "";
+    $("summary").textContent = s.summary || "";
+    $("view").href = s.share_url;
+    $("remixes").textContent = s.remix_count ? "Planned again " + s.remix_count + " time" + (s.remix_count === 1 ? "" : "s") : "";
+    $("remix").hidden = false;
+    ["when", "who", "changes"].forEach(function (id) { $(id).addEventListener("input", update); });
+    $("copy").addEventListener("click", function () { copy($("copy")); });
+    $("copy2").addEventListener("click", function () { copy($("copy2")); });
+    update();
+  }).catch(function () { $("trip").hidden = true; $("gone").hidden = false; });
+})();
+</script>
+</body>
+</html>

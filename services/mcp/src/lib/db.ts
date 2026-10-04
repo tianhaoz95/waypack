@@ -45,6 +45,11 @@ export class Db {
     return this.req("DELETE", `${table}?${query}`);
   }
 
+  /** Calls a Postgres function (`create function public.<fn>`). */
+  rpc<T = unknown>(fn: string, args: object): Promise<T> {
+    return this.req<T>("POST", `rpc/${fn}`, args);
+  }
+
   /** Count rows matching a query using a HEAD-less trick (select id only). */
   async count(table: string, query: string): Promise<number> {
     return (await this.select<{ id: string }>(table, `select=id&${query}`)).length;

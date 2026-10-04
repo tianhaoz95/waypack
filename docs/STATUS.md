@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: live previews)
+# Build status — 2026-10-04 (updated: shared trips)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,10 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Public, remixable trips (2026-10-04)
+- MCP `share_trip` / `unshare_trip` / `get_shared_trip` (17 tools). Shared trips are frozen, redacted snapshots on the preview origin with a "Plan this trip" button → `/remix/<token>` on the site (prompt builder, "Open in Claude", copy). Portal: Share / public page / copy link / update to latest / stop sharing.
+- Verified: `scripts/e2e-shares.mjs` 28/28 (ownership, redaction, isolation, public summary has no owner data, remix via another account, v2 update keeps the link, cleaned-copy sharing, stop + delete kill the link), Worker unit tests 37.
 
 ## Live previews (2026-10-04)
 - MCP `push_preview` / `publish_preview` / `delete_preview` (14 tools now); drafts listed in `list_trips`; `create_upload {preview: true}` for shell agents; portal "Previews" section (Open / Publish / Delete).

@@ -13,6 +13,11 @@ A preview is a **draft** with its own link that anyone can open on any device; o
 - **Clean up:** `delete_preview { "preview_id": "..." }`. Unpublished previews expire 14 days after the last push.
 - Limits: 4 MB per `push_preview` call, 25 MB / 2,000 files per preview, 10 open previews per account.
 
+## Sharing and remixing
+- `share_trip { "trip_id", "files"? }` → `{ share_url, remix_url, redactions }`. Public read-only page (+ "Plan this trip" button → `remix_url`). Sharing again moves the same link to the current version. Pass `files` to share a copy with personal details removed.
+- `unshare_trip { "trip_id" }` → the link stops working. Deleting a trip also stops sharing it.
+- `get_shared_trip { "url" }` → `{ manifest (route geometry omitted), guide_text }` to plan a new trip from someone's shared one. Adapt, don't copy.
+
 ## CLI agents (filesystem + shell)
 1. `npx @waypack/cli validate ./waypack/<slug>` → fix errors.
 2. `npx @waypack/cli zip ./waypack/<slug> -o ./waypack/<slug>.zip` (prints `size_bytes`).
