@@ -20,6 +20,8 @@ import { LIVE_JS } from "./preview-live.js";
 export const PREVIEW_TTL_DAYS = 14;
 /** Open (unexpired) previews per account. */
 export const MAX_OPEN_PREVIEWS = 10;
+/** Blobs younger than this are never garbage-collected: a concurrent push may be about to reference them. */
+export const GC_GRACE_MS = 10 * 60 * 1000;
 /** Raw (unzipped) size of all files in one preview. */
 export const MAX_PREVIEW_BYTES = LIMITS.maxZippedBytes;
 
@@ -280,15 +282,18 @@ function manifestTitle(files: BundleFile[]): string | null {
   }
 }
 
-/** Deletes blobs that neither the new nor the previous file map uses (a viewer may still be on the previous rev). */
-async function collectGarbage(env: Env, row: PreviewRow, previous: Record<string, PreviewFileRef>): Promise<void> {
+/**
+ * Deletes blobs that neither the new nor the previous file map uses (a viewer may still be on the
+ * previous rev). Recent blobs are kept: a push racing this one may have uploaded them and not swapped yet.
+ */
+export async function collectGarbage(env: Env, row: PreviewRow, previous: Record<string, PreviewFileRef>, now = Date.now()): Promise<void> {
   const keep = new Set([...Object.values(row.files), ...Object.values(previous)].map((f) => previewKeys.blob(row.user_id, row.id, f.sha256)));
   const prefix = `${previewKeys.prefix(row.user_id, row.id)}blobs/`;
   let cursor: string | undefined;
   const drop: string[] = [];
   do {
     const list = await env.BUCKET.list({ prefix, cursor });
-    for (const o of list.objects) if (!keep.has(o.key)) drop.push(o.key);
+    for (const o of list.objects) if (!keep.has(o.key) && now - new Date(o.uploaded).getTime() > GC_GRACE_MS) drop.push(o.key);
     cursor = list.truncated ? list.cursor : undefined;
   } while (cursor);
   for (let i = 0; i < drop.length; i += 1000) await env.BUCKET.delete(drop.slice(i, i + 1000));
@@ -300,7 +305,13 @@ export async function publishPreview(env: Env, db: Db, userId: string, previewId
   const row = await ownPreview(db, userId, previewId);
   if (!Object.keys(row.files).length) throw new PreviewError("This preview has no files yet.");
   const files = await previewBundleFiles(env, row);
-  const r = await publishBundle(env, db, userId, { files }, row.trip_id);
+  // If the trip this draft revised has since been deleted, publish it as a new trip.
+  let tripId = row.trip_id;
+  if (tripId && !(await db.one("trips", `select=id&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`))) {
+    tripId = null;
+    await db.update("trip_previews", `id=${eq(row.id)}`, { trip_id: null });
+  }
+  const r = await publishBundle(env, db, userId, { files }, tripId);
   if (r.ok) {
     if (row.trip_id !== r.trip_id) {
       // One preview per trip: if an older preview pointed at this trip, detach it.

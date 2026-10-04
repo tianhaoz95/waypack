@@ -53,9 +53,9 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | Validator (26) | `npm test -w @waypack/bundle-schema` | ✅ |
 | CLI + preview server (7) | `npm test -w @waypack/cli` | ✅ |
 | SDK: calendar + maps choice (6) and in a phone browser, offline extract only (6, Playwright) | `npm test -w @waypack/trip-sdk` | ✅ |
-| Worker protocol, signing, Stripe, OAuth, Mac downloads, previews (31) | `npm test -w @waypack/mcp` | ✅ |
+| Worker protocol, signing, Stripe, OAuth, Mac downloads, previews (32) | `npm test -w @waypack/mcp` | ✅ |
 | **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
-| **Live previews (43 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
+| **Live previews (44 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
 | **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |
 | App unit (19) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |

@@ -145,10 +145,16 @@ const del = await fetch(`${BASE}/api/previews/${pid2}`, { method: "DELETE", head
 ok(del.ok, "portal can delete a preview");
 ok((await fetch(`${PREVIEW}/__waypack/preview/${list.previews.find((p) => p.preview_id === pid2).preview_url.split("/t/")[1].replace("/", "")}/state`)).status === 404, "a deleted preview's link stops working");
 
+// ---- 12. the trip a draft revised was deleted → publishing makes a new trip
+await call("delete_trip", { trip_id: tripId, confirm: true });
+r = await call("publish_preview", { preview_id: pid });
+ok(!r.isError && r.structuredContent.trip_id !== tripId && r.structuredContent.version === 1, "after its trip is deleted, a draft publishes as a new trip");
+const tripId2 = r.structuredContent.trip_id;
+
 // ---- cleanup
 await call("delete_preview", { preview_id: pid });
 ok((await fetch(url)).status === 404, "delete_preview → link is dead");
-await call("delete_trip", { trip_id: tripId, confirm: true });
+await call("delete_trip", { trip_id: tripId2, confirm: true });
 
 console.log(failures ? `\n${failures} check(s) failed` : "\nall preview checks passed");
 process.exit(failures ? 1 : 0);

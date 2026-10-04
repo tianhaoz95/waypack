@@ -20,7 +20,7 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 ## Live previews (2026-10-04)
 - MCP `push_preview` / `publish_preview` / `delete_preview` (14 tools now); drafts listed in `list_trips`; `create_upload {preview: true}` for shell agents; portal "Previews" section (Open / Publish / Delete).
 - Preview origin (`PREVIEW_URL`) serves drafts with live reload, the SDK and online map tiles; nothing else.
-- Verified: `scripts/e2e-preview.mjs` 43/43 (push, merge, delete, isolation, traversal, tiles proxy, publish v1→v2, zip path, portal API), `scripts/e2e-preview-browser.mjs` 11/11 (phone page reloads ~2 s after a push, new days appear, tab and scroll kept, desktop map loads online tiles, no console errors), Worker unit tests 31, original `e2e.mjs` still all green.
+- Verified: `scripts/e2e-preview.mjs` 44/44 (push, merge, delete, isolation, traversal, tiles proxy, publish v1→v2, zip path, portal API), `scripts/e2e-preview-browser.mjs` 11/11 (phone page reloads ~2 s after a push, new days appear, tab and scroll kept, desktop map loads online tiles, no console errors), Worker unit tests 32, original `e2e.mjs` still all green.
 - Needs for production: a second domain for previews (DEPLOY.md §2).
 
 ## Mac app (2026-10-04)

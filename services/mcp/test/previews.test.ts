@@ -61,7 +61,12 @@ class FakeBucket {
     const v = this.objects.get(k);
     return v ? { body: v, arrayBuffer: async () => v.buffer.slice(v.byteOffset, v.byteOffset + v.byteLength) } : null;
   }
-  async list({ prefix }: { prefix: string }) { return { objects: [...this.objects.keys()].filter((k) => k.startsWith(prefix)).map((key) => ({ key })), truncated: false }; }
+  uploaded = new Map<string, Date>();
+  /** Pretend everything was uploaded long ago unless a test says otherwise. */
+  age = 60 * 60 * 1000;
+  async list({ prefix }: { prefix: string }) {
+    return { objects: [...this.objects.keys()].filter((k) => k.startsWith(prefix)).map((key) => ({ key, uploaded: this.uploaded.get(key) ?? new Date(Date.now() - this.age) })), truncated: false };
+  }
   async delete(k: string | string[]) { for (const x of Array.isArray(k) ? k : [k]) this.objects.delete(x); }
 }
 
@@ -121,6 +126,15 @@ describe("pushPreview", () => {
     const c = await pushPreview(env, dbx, user, { previewId: a.preview_id, files: [{ path: "index.html", data: enc("<body>3</body>") }] });
     expect(c.rev).toBe(3);
     expect(bucket.objects.size).toBe(3); // rev-1 blob collected: only current + previous remain
+  });
+
+  it("never collects blobs a racing push may have just uploaded", async () => {
+    const { env, dbx, bucket } = setup();
+    bucket.age = 0; // everything is fresh
+    const a = await pushPreview(env, dbx, user, { files: [{ path: "index.html", data: enc("<body>1</body>") }] });
+    await pushPreview(env, dbx, user, { previewId: a.preview_id, files: [{ path: "index.html", data: enc("<body>2</body>") }] });
+    await pushPreview(env, dbx, user, { previewId: a.preview_id, files: [{ path: "index.html", data: enc("<body>3</body>") }] });
+    expect(bucket.objects.size).toBe(3); // the rev-1 blob is unreferenced but too new to delete
   });
 
   it("merges onto a concurrent push instead of overwriting it", async () => {
