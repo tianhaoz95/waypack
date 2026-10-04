@@ -10,8 +10,14 @@ class RemoteTrip {
     required this.bundleBytes,
     required this.tilesBytes,
     required this.tilesStatus,
+    this.role = 'owner',
+    this.ownerEmail,
   });
 
+  /// owner, or member (a travel companion: can view and download, not change).
+  final String role;
+  final String? ownerEmail;
+  bool get isCompanion => role == 'member';
   final String id;
   final String title;
   final String? startDate;
@@ -33,6 +39,8 @@ class RemoteTrip {
     bundleBytes: ((j['sizes'] as Map?)?['bundle_bytes'] as num?)?.toInt() ?? 0,
     tilesBytes: ((j['sizes'] as Map?)?['tiles_bytes'] as num?)?.toInt() ?? 0,
     tilesStatus: j['tiles_status'] as String? ?? 'not_included',
+    role: j['role'] as String? ?? 'owner',
+    ownerEmail: j['owner_email'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -44,6 +52,8 @@ class RemoteTrip {
     'status': status,
     'sizes': {'bundle_bytes': bundleBytes, 'tiles_bytes': tilesBytes},
     'tiles_status': tilesStatus,
+    'role': role,
+    'owner_email': ownerEmail,
   };
 }
 
@@ -63,7 +73,11 @@ class LocalTrip {
     this.owner,
     this.accent,
     this.accentDark,
+    this.receivedNearby = false,
   });
+
+  /// Copied from a nearby device (offline handoff) rather than downloaded.
+  final bool receivedNearby;
 
   /// Trip theme colours (manifest.theme) for native screens.
   final String? accent;
@@ -98,6 +112,7 @@ class LocalTrip {
     owner: j['owner'] as String?,
     accent: j['accent'] as String?,
     accentDark: j['accent_dark'] as String?,
+    receivedNearby: j['received_nearby'] as bool? ?? false,
   );
 
   Map<String, dynamic> toJson() => {
@@ -114,6 +129,7 @@ class LocalTrip {
     'owner': owner,
     'accent': accent,
     'accent_dark': accentDark,
+    'received_nearby': receivedNearby,
   };
 }
 

@@ -65,6 +65,11 @@ class Api {
 
   Future<Map<String, dynamic>> me() => _json('GET', '/api/me');
 
+  /// The trip's companion invite link (created on first use).
+  Future<String> inviteLink(String tripId) async =>
+      (await _json('POST', '/api/trips/$tripId/invite'))['invite_url']
+          as String;
+
   Future<List<Map<String, dynamic>>> tokens() async =>
       ((await _json('GET', '/api/tokens'))['tokens'] as List)
           .cast<Map<String, dynamic>>();

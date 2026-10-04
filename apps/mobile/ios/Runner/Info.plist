@@ -68,6 +68,10 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Waypack shows your position on your trip's offline map (works without signal).</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan the code on a companion's phone to copy a trip to this phone, with no signal needed.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Copies trips between your phones and your companions' phones over Wi-Fi or a Personal Hotspot, with no signal needed.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Trips are served to the in-app browser from a loopback server (127.0.0.1). -->

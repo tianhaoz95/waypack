@@ -265,6 +265,28 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
     if (del && confirm("Delete \"" + del.getAttribute("data-title") + "\"? This removes it and its offline map from your account and devices' next sync.")) {
       api("DELETE", "/api/trips/" + del.getAttribute("data-delete-trip")).then(loadTrips).catch(function (err) { banner("err", err.message); });
     }
+    var comp = e.target.closest("[data-companions]");
+    if (comp) showCompanions(comp.getAttribute("data-companions"), true);
+    var inviteBtn = e.target.closest("[data-invite]");
+    if (inviteBtn) {
+      api("POST", "/api/trips/" + inviteBtn.getAttribute("data-invite") + "/invite").then(function (r) {
+        navigator.clipboard && navigator.clipboard.writeText(r.invite_url).catch(function () {});
+        showCompanions(inviteBtn.getAttribute("data-invite"));
+      }).catch(function (err) { banner("err", err.message); });
+    }
+    var stopInv = e.target.closest("[data-stop-invite]");
+    if (stopInv) {
+      e.preventDefault();
+      api("DELETE", "/api/trips/" + stopInv.getAttribute("data-stop-invite") + "/invite").then(function () { showCompanions(stopInv.getAttribute("data-stop-invite")); });
+    }
+    var rm = e.target.closest("[data-remove-member]");
+    if (rm && confirm("Remove " + rm.getAttribute("data-email") + " from this trip? Their app stops getting updates (a copy they already downloaded stays on their phone).")) {
+      api("DELETE", "/api/trips/" + rm.getAttribute("data-trip") + "/members/" + rm.getAttribute("data-remove-member")).then(function () { showCompanions(rm.getAttribute("data-trip")); });
+    }
+    var leave = e.target.closest("[data-leave-trip]");
+    if (leave && confirm("Leave \"" + leave.getAttribute("data-title") + "\"? It disappears from your trips (a downloaded copy stays on your devices until you delete it).")) {
+      api("DELETE", "/api/trips/" + leave.getAttribute("data-leave-trip") + "/members/" + me.user_id).then(loadTrips).catch(function (err) { banner("err", err.message); });
+    }
     var share = e.target.closest("[data-share-trip]");
     if (share) {
       e.preventDefault();
@@ -331,15 +353,44 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
               (sh.version < t.current_version ? " · <a href='#' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>update to v" + esc(t.current_version) + "</a>" : "") +
               " · <a href='#' data-unshare-trip='" + esc(t.id) + "'>stop sharing</a></div>"
             : "";
+          var member = t.role === "member";
+          if (member) shareCell = "<div class='muted small' style='margin-top:6px'>Shared with you" + (t.owner_email ? " by " + esc(t.owner_email) : "") + "</div>";
           return "<tr><td><b>" + esc(t.title) + "</b><div class='muted small'>v" + esc(t.current_version) + "</div>" + shareCell + "</td>" +
             "<td class='hide-sm'>" + esc(fmtDate(t.start_date)) + " – " + esc(fmtDate(t.end_date)) + "</td>" +
             "<td><span class='status-" + esc(t.status) + "'>" + esc(t.status) + "</span><div class='muted small'>" + esc(map) + "</div></td>" +
             "<td class='hide-sm'>" + esc(size) + "</td>" +
             "<td><div class='row' style='justify-content:flex-end'>" +
-            (sharing && !sh ? "<button class='secondary' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Share</button>" : "") +
-            "<button class='danger' data-delete-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Delete</button></div></td></tr>";
+            (member
+              ? "<button class='secondary' data-leave-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Leave</button>"
+              : "<button class='secondary' data-companions='" + esc(t.id) + "'>Companions</button>" +
+                (sharing && !sh ? "<button class='secondary' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Share</button>" : "") +
+                "<button class='danger' data-delete-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Delete</button>") +
+            "</div></td></tr>" +
+            (member ? "" : "<tr class='sub' id='comp-" + esc(t.id) + "' hidden><td colspan='5'></td></tr>");
         }).join("") + "</tbody></table>";
     }).catch(function (err) { $("trips").innerHTML = '<p class="error">' + esc(err.message) + "</p>"; });
+  }
+
+  function showCompanions(tripId, toggle) {
+    var row = $("comp-" + tripId);
+    if (!row) return;
+    if (toggle && !row.hidden) { row.hidden = true; return; }
+    row.hidden = false;
+    var cell = row.firstElementChild;
+    cell.innerHTML = '<p class="empty">Loading…</p>';
+    api("GET", "/api/trips/" + tripId + "/members").then(function (r) {
+      var html = "<div style='padding:4px 0 8px'><b>Travel companions</b> <span class='muted small'>(" + r.members.length + " of " + r.max + ")</span>" +
+        "<p class='muted small' style='margin:4px 0 10px'>Companions see this trip in their Waypack app and can download it, offline map included (on your plan). They can't change, share or delete it.</p>";
+      html += r.members.length
+        ? "<ul style='margin:0 0 10px;padding-left:18px'>" + r.members.map(function (m) {
+            return "<li>" + esc(m.email || "Companion") + " · <a href='#' data-remove-member='" + esc(m.user_id) + "' data-trip='" + esc(tripId) + "' data-email='" + esc(m.email || "this companion") + "'>remove</a></li>";
+          }).join("") + "</ul>"
+        : "";
+      html += r.invite
+        ? "<div class='muted small'>Invite link (copied to your clipboard when created; expires " + esc(fmtDate(r.invite.expires_at)) + "):</div><pre style='padding-top:12px'><code>" + esc(r.invite.invite_url) + "</code></pre><a href='#' class='small' data-stop-invite='" + esc(tripId) + "'>Turn off this link</a>"
+        : "<button data-invite='" + esc(tripId) + "'>Create invite link</button>";
+      cell.innerHTML = html + "</div>";
+    }).catch(function (err) { cell.innerHTML = '<p class="error">' + esc(err.message) + "</p>"; });
   }
 
   function loadPreviews() {

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Join a trip · Waypack</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d6fe0'/%3E%3Cpath d='M8 22l5-12 4 8 3-5 4 9z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
+  --accent: #1d6fe0; --accent-ink: #fff; --soft: #eaf1fd; --ok: #15803d; --warn: #b45309; --danger: #c81e1e;
+  --code: #0f172a; --code-ink: #e5edff;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f1c; --surface: #121a2c; --text: #e8edf6; --muted: #9aa6bb; --line: #222c42;
+    --accent: #5b9bff; --accent-ink: #06122a; --soft: #142443; --ok: #4ade80; --warn: #fbbf24; --danger: #f87171;
+    --code: #060a14; --code-ink: #dbe6ff;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--font); }
+a { color: var(--accent); }
+nav.top { border-bottom: 1px solid var(--line); background: var(--surface); }
+nav.top .wrap { display: flex; align-items: center; height: 60px; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
+.brand i { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-style: normal; }
+nav.top .who { margin-left: auto; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+main { padding: 28px 0 64px; }
+h1 { font-size: 1.7rem; margin: 0 0 18px; }
+h2 { font-size: 1.15rem; margin: 0 0 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+label { display: block; font-weight: 600; margin: 12px 0 6px; }
+input { width: 100%; min-height: 48px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+button, .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .95rem var(--font); cursor: pointer; text-decoration: none; }
+button.secondary, a.btn.secondary { background: transparent; color: var(--text) !important; border: 1px solid var(--line); }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+button:disabled { opacity: .6; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.signin { max-width: 420px; margin: 40px auto; }
+.signin button { width: 100%; margin-top: 12px; }
+.provider { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; margin-top: 12px; border-radius: 12px; font: 600 1rem var(--font); text-decoration: none; }
+.provider.google { background: #fff; color: #1f1f1f; border: 1px solid #747775; }
+.provider.apple { background: #000; color: #fff; border: 1px solid #000; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .provider.apple { background: #fff; color: #000; border-color: #fff; } }
+form.dev { margin-top: 20px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.plan-name { font-size: 1.4rem; font-weight: 800; }
+.badge { display: inline-block; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 3px 10px; border-radius: 999px; background: var(--soft); color: var(--accent); }
+.offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 16px; }
+.offer { border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.offer .price { font-size: 1.5rem; font-weight: 800; margin: 4px 0 10px; }
+.offer ul { margin: 0 0 14px; padding-left: 18px; color: var(--muted); font-size: .92rem; }
+.offer button { width: 100%; }
+table { width: 100%; border-collapse: collapse; font-size: .94rem; }
+th, td { text-align: left; padding: 10px 6px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+@media (max-width: 640px) { .hide-sm { display: none; } }
+.status-ready { color: var(--ok); font-weight: 600; }
+.status-processing { color: var(--warn); font-weight: 600; }
+.status-failed { color: var(--danger); font-weight: 600; }
+pre { position: relative; background: var(--code); color: var(--code-ink); border-radius: 12px; padding: 36px 14px 12px; overflow-x: auto; font: 13.5px/1.6 var(--mono); margin: 8px 0 12px; }
+pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding: 4px 10px; background: rgba(255,255,255,.14); color: inherit; font-size: 12px; }
+.banner { border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+.banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
+.banner.err { background: color-mix(in srgb, var(--danger) 15%, transparent); }
+.error { color: var(--danger); font-weight: 600; margin-top: 10px; }
+.empty { color: var(--muted); padding: 12px 0; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <a class="brand" href="/"><i aria-hidden="true">◈</i>Waypack</a>
+  <span class="who" id="who"></span>
+</div></nav>
+<main><div class="wrap" style="max-width:560px">
+  <section class="card" id="invite" hidden>
+    <span class="badge">Trip invite</span>
+    <h1 id="title" style="margin:10px 0 4px">…</h1>
+    <div class="muted" id="dates"></div>
+    <p id="by" class="muted small"></p>
+    <p>Join to get this trip in your Waypack app, with the plan, map and your location working offline.</p>
+
+    <div id="signin" hidden>
+      <p class="muted small">Sign in first. Use the account you'll use in the app.</p>
+      <a class="provider google" href="/auth/start?provider=google&amp;return=__RETURN__"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Continue with Google</span></a>
+    <a class="provider apple" href="/auth/start?provider=apple&amp;return=__RETURN__"><svg width="16" height="18" viewBox="0 0 384 470" aria-hidden="true"><path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg><span>Continue with Apple</span></a>
+      <form id="dev-form" class="dev" hidden>
+        <p class="muted small">Dev sign-in (local server only)</p>
+        <input id="dev-email" type="email" value="companion@waypack.test" required>
+        <button type="submit" class="secondary" style="width:100%;margin-top:8px">Sign in as this user</button>
+      </form>
+    </div>
+
+    <div id="ready" hidden>
+      <button type="button" id="join" style="width:100%">Join trip</button>
+    </div>
+    <p class="error" id="err" hidden></p>
+  </section>
+
+  <section class="card" id="done" hidden>
+    <h1 style="font-size:1.4rem">You're in</h1>
+    <p id="done-text"></p>
+    <ol class="muted" style="padding-left:20px">
+      <li>Open the Waypack app (<a href="/#download">get it here</a>) and sign in with the same account.</li>
+      <li>Tap <b>Download</b> on the trip while you have signal.</li>
+    </ol>
+    <p class="muted small">No signal later? A companion who has the trip can hand it to your phone from the app: <b>Trip menu → Hand off to a nearby phone</b>.</p>
+  </section>
+
+  <section class="card" id="gone" hidden>
+    <h1 style="font-size:1.4rem">This invite doesn't work anymore</h1>
+    <p class="muted">It expired or the trip's owner turned it off. Ask them for a new link.</p>
+  </section>
+</div></main>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var code = (location.pathname.match(/^\/join\/([A-Za-z0-9_-]{24})$/) || [])[1];
+  function api(method, path, body) {
+    return fetch(path, { method: method, credentials: "same-origin", headers: Object.assign({ "X-Waypack": "1" }, body ? { "Content-Type": "application/json" } : {}), body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = new Error(j.error || "Request failed (" + r.status + ")"); e.status = r.status; e.body = j; throw e; } return j; }); });
+  }
+  function fmt(d) { return d ? new Date(d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : ""; }
+  function err(m) { $("err").textContent = m; $("err").hidden = !m; }
+  function done(r) {
+    $("invite").hidden = true; $("done").hidden = false;
+    $("done-text").textContent = r.owner ? "This is your own trip." : r.already ? "You're already on \u201c" + r.title + "\u201d." : "\u201c" + r.title + "\u201d is now in your trips.";
+  }
+  function whoami() {
+    return api("GET", "/api/me").then(function (m) {
+      $("who").textContent = m.email || ""; $("signin").hidden = true; $("ready").hidden = false;
+    }).catch(function (e) {
+      $("signin").hidden = false; $("ready").hidden = true;
+      if (e.body && e.body.dev_sign_in) $("dev-form").hidden = false;
+    });
+  }
+  if (!code) { $("gone").hidden = false; return; }
+  document.querySelectorAll("a.provider").forEach(function (a) { a.href = a.getAttribute("href").replace("__RETURN__", encodeURIComponent(location.pathname)); });
+  api("GET", "/api/public/invites/" + code).then(function (inv) {
+    document.title = "Join " + inv.title + " · Waypack";
+    $("title").textContent = inv.title;
+    $("dates").textContent = inv.start_date ? fmt(inv.start_date) + " – " + fmt(inv.end_date) : "";
+    $("by").textContent = inv.invited_by ? "Invited by " + inv.invited_by : "";
+    $("invite").hidden = false;
+    return whoami();
+  }).catch(function () { $("gone").hidden = false; });
+  $("dev-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    api("POST", "/api/auth/dev", { email: $("dev-email").value }).then(whoami).catch(function (x) { err(x.message); });
+  });
+  $("join").addEventListener("click", function () {
+    $("join").disabled = true; err("");
+    api("POST", "/api/invites/" + code + "/accept").then(done).catch(function (x) { err(x.message); $("join").disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

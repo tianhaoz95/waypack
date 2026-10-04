@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../util/format.dart';
 import '../widgets/bundle_webview.dart';
+import '../services/handoff.dart';
+import 'nearby_screens.dart';
 import 'today_screen.dart';
 
 /// Full-screen trip bundle with a small native overlay button (design §8.1 #3).
@@ -100,6 +102,49 @@ class TripScreen extends StatelessWidget {
                   );
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.mobile_screen_share_outlined),
+                title: const Text('Hand off to a nearby phone'),
+                subtitle: const Text(
+                  'Copy this trip to a companion, no signal needed',
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HandoffSendScreen(tripId: tripId),
+                    ),
+                  );
+                },
+              ),
+              if (e.remote != null && !e.remote!.isCompanion)
+                ListTile(
+                  leading: const Icon(Icons.group_add_outlined),
+                  title: const Text('Invite travel companions'),
+                  subtitle: const Text(
+                    'They get this trip in their own app (needs a connection)',
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final link = await s.api.inviteLink(tripId);
+                      await Handoff.share(
+                        'Join "${e.title}" in Waypack, our trip plan that works offline: $link',
+                      );
+                    } catch (err) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Couldn\'t create an invite link: $err',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('Info'),

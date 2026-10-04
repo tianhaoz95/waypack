@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../util/colors.dart';
 import '../util/format.dart';
+import 'nearby_screens.dart';
 import 'settings_screen.dart';
 import 'trip_screen.dart';
 
@@ -24,6 +25,14 @@ class TripsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Trips'),
         actions: [
+          IconButton(
+            tooltip: 'Receive from a nearby phone',
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReceiveNearbyScreen()),
+            ),
+          ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
@@ -217,6 +226,33 @@ class _TripCard extends StatelessWidget {
                     color: t.colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (r?.isCompanion == true ||
+                    (r == null && e.local?.receivedNearby == true))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          r != null
+                              ? Icons.group_outlined
+                              : Icons.mobile_screen_share_outlined,
+                          size: 16,
+                          color: t.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            r != null
+                                ? 'Shared with you${r.ownerEmail != null ? ' by ${r.ownerEmail}' : ''}'
+                                : 'From a nearby phone',
+                            style: t.textTheme.bodySmall?.copyWith(
+                              color: t.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 status,
                 if (r?.tilesStatus == 'not_included' && !downloading)
@@ -325,6 +361,14 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             child: const Text('How to connect your agent'),
+          ),
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReceiveNearbyScreen()),
+            ),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Receive a trip from a nearby phone'),
           ),
         ],
       ),

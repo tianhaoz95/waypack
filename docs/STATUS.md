@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: shared trips)
+# Build status — 2026-10-04 (updated: companions + offline handoff)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,12 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Travel companions + offline handoff (2026-10-04)
+- Companions: invite links from the app (trip menu → Invite travel companions) or portal (Companions); `/join/<code>` page; companions see and download the trip (owner's maps), can leave; owner can remove them or turn the link off.
+- Offline handoff: trip menu → Hand off to a nearby phone (QR + typed fallback); Trips → Receive from a nearby phone (scan or type). Same Wi-Fi or Personal Hotspot; no internet needed.
+- Verified: `scripts/e2e-companions.mjs` 29/29; app `test/transfer_test.dart` 9 (real sockets: copy + install, wrong code, forged offer, damaged file, lockout); **cross-device run `tool/handoff_e2e.mjs`: the Mac app sent the Sequoia trip (4.2 MB incl. offline map) to an iPhone simulator signed in as a different user, which installed and opened it**.
+- Not verified: QR scanning with a real camera, and two physical phones over a Personal Hotspot (simulators share the Mac's network).
 
 ## Public, remixable trips (2026-10-04)
 - MCP `share_trip` / `unshare_trip` / `get_shared_trip` (17 tools). Shared trips are frozen, redacted snapshots on the preview origin with a "Plan this trip" button → `/remix/<token>` on the site (prompt builder, "Open in Claude", copy). Portal: Share / public page / copy link / update to latest / stop sharing.

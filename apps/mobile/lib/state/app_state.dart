@@ -85,6 +85,13 @@ class AppState extends ChangeNotifier {
     if (session != null) unawaited(refresh());
   }
 
+  /// A trip copied from a nearby device (offline handoff) is now on this device.
+  void adoptLocal(LocalTrip l) {
+    (_trips[l.id] ??= TripEntry()).local = l;
+    _register(l);
+    notifyListeners();
+  }
+
   void _register(LocalTrip l) {
     server.versions[l.id] = l.version;
     server.tiles[l.id] = l.tiles.map((t) => t.file).toList();

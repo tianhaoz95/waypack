@@ -17,6 +17,7 @@ import { homePage } from "./pages.js";
 import { handleMacDownload } from "./lib/releases.js";
 import { deletePreview, listPreviews, PreviewError, previewOrigin, publishPreview } from "./lib/previews.js";
 import { listShares, publicSummary, ShareError, shareByToken, shareTrip, unshareTrip } from "./lib/shares.js";
+import { acceptInvite, companionTrips, createInvite, inviteSummary, listMembers, MemberError, removeMember, revokeInvite, tripAccess } from "./lib/members.js";
 
 const jsonErr = (status: number, error: string, extra: Record<string, unknown> = {}) => Response.json({ error, ...extra }, { status });
 
@@ -63,6 +64,16 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
   // Public, remixable trips: the remix page (static, site/remix.html) and its data.
   if (/^\/remix\/[A-Za-z0-9_-]{32}$/.test(path) && req.method === "GET" && env.ASSETS) {
     return env.ASSETS.fetch(new Request(new URL("/remix", req.url), req));
+  }
+  // Companion invites: the join page (static, site/join.html) and its data.
+  if (/^\/join\/[A-Za-z0-9_-]{24}$/.test(path) && req.method === "GET" && env.ASSETS) {
+    return env.ASSETS.fetch(new Request(new URL("/join", req.url), req));
+  }
+  const inv = path.match(/^\/api\/public\/invites\/([A-Za-z0-9_-]{24})$/);
+  if (inv && req.method === "GET") {
+    const s = await inviteSummary(new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY), inv[1]);
+    if (!s) return jsonErr(404, "This invite link has expired or was turned off.");
+    return Response.json(s, { headers: { "Cache-Control": "no-store" } });
   }
   const pub = path.match(/^\/api\/public\/shares\/([A-Za-z0-9_-]{32})$/);
   if (pub && req.method === "GET") {
@@ -178,10 +189,23 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   }
 
   if (path === "/api/trips" && req.method === "GET") {
-    const trips = await db.select<TripRow>("trips", `select=id,title,start_date,end_date,current_version,status,updated_at&user_id=${eq(user.userId)}&deleted_at=is.null&order=start_date.desc.nullslast`);
-    const out = await Promise.all(trips.map((t) => tripStatus(db, user.userId, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
+    const own = await db.select<TripRow>("trips", `select=id,title,start_date,end_date,current_version,status,updated_at,user_id&user_id=${eq(user.userId)}&deleted_at=is.null&order=start_date.desc.nullslast`);
+    const joined = await companionTrips(db, user.userId);
+    const rows = [...own.map((t) => ({ ...t, role: "owner" as const, owner_email: null })), ...joined.filter((t) => t.current_version > 0).map((t) => ({ ...t, role: "member" as const }))];
+    rows.sort((a, b) => String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
+    const out = await Promise.all(rows.map(({ user_id, ...t }) => tripStatus(db, user_id, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
     return Response.json({ trips: out });
   }
+
+  // Companions.
+  if (r_invite(path) && req.method === "POST") return members(() => createInvite(env, db, user.userId, user.email, r_invite(path)!));
+  if (r_invite(path) && req.method === "DELETE") return members(() => revokeInvite(db, user.userId, r_invite(path)!).then(() => ({ ok: true })));
+  const mem = m(/^\/api\/trips\/([0-9a-f-]{36})\/members$/);
+  if (mem && req.method === "GET") return members(() => listMembers(env, db, user.userId, mem[1]));
+  const memDel = m(/^\/api\/trips\/([0-9a-f-]{36})\/members\/([0-9a-f-]{36})$/);
+  if (memDel && req.method === "DELETE") return members(() => removeMember(db, user.userId, memDel[1], memDel[2]).then(() => ({ ok: true })));
+  const acc = m(/^\/api\/invites\/([A-Za-z0-9_-]{24})\/accept$/);
+  if (acc && req.method === "POST") return members(() => acceptInvite(db, user.userId, user.email, acc[1]));
 
   // Public shares of published trips.
   if (path === "/api/shares" && req.method === "GET") {
@@ -277,18 +301,21 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
 }
 
 async function downloadInfo(env: Env, db: Db, userId: string, tripId: string): Promise<Response> {
-  const t = await db.one<TripRow>("trips", `select=*&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
-  if (!t) return jsonErr(404, "trip not found");
+  // Owners and companions can download; maps follow the owner's plan.
+  const access = await tripAccess(db, userId, tripId);
+  if (!access) return jsonErr(404, "trip not found");
+  const t = access.trip;
+  const ownerId = t.user_id;
   const v = await db.one<{ version: number; bundle_key: string; bundle_sha256: string; bundle_bytes: number; manifest: Record<string, unknown> }>(
     "trip_versions",
     `select=version,bundle_key,bundle_sha256,bundle_bytes,manifest&trip_id=${eq(tripId)}&version=${eq(t.current_version)}`,
   );
   if (!v) return jsonErr(409, "trip has no published version yet");
-  const plan = await planFor(db, userId);
+  const plan = await planFor(db, ownerId);
   let extracts = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(tripId)}&status=in.(pending,processing,ready,failed,expired)&order=area_index`);
   if (plan.offlineMaps && !extracts.length) {
     // Published on the free plan, upgraded since: cut the map now.
-    await ensureTripExtracts(env, db, userId, tripId);
+    await ensureTripExtracts(env, db, ownerId, tripId);
     extracts = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(tripId)}&status=in.(pending,processing,ready,failed)&order=area_index`);
   }
   if (plan.offlineMaps && extracts.some((e) => e.status === "expired")) {
@@ -323,4 +350,15 @@ async function downloadInfo(env: Env, db: Db, userId: string, tripId: string): P
     manifest: v.manifest,
     expires_in: 6 * 3600,
   });
+}
+
+const r_invite = (path: string) => path.match(/^\/api\/trips\/([0-9a-f-]{36})\/invite$/)?.[1];
+
+async function members(fn: () => Promise<unknown>): Promise<Response> {
+  try {
+    return Response.json(await fn());
+  } catch (e) {
+    if (e instanceof MemberError) return jsonErr(e.status, e.message);
+    throw e;
+  }
 }

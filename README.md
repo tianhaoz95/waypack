@@ -57,8 +57,10 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | **End-to-end backend (65 checks)**: OAuth DCR+PKCE, Google/Apple sign-in redirects + callback checks, all tools, real tile extraction, limits, Stripe webhooks, portal session + CSRF, downloads, RLS, tokens | `node services/mcp/scripts/e2e.mjs` (stack running) | ✅ |
 | **Live previews (44 checks)**: push/merge/delete, origin isolation, traversal, tile proxy, publish v1→v2, zip path, portal | `node services/mcp/scripts/e2e-preview.mjs` (stack running) | ✅ |
 | **Shared trips (28 checks)**: share/redact/remix/update/stop, isolation, no owner data in public views | `node services/mcp/scripts/e2e-shares.mjs` (stack running) | ✅ |
+| **Travel companions (29 checks)**: invites, join, download with owner's maps, permissions, leave/remove, link off, trip deleted | `node services/mcp/scripts/e2e-companions.mjs` (stack running) | ✅ |
 | **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |
-| App unit (19) | `cd apps/mobile && flutter test test/unit_test.dart` | ✅ |
+| App unit (28, incl. offline handoff over real sockets) | `cd apps/mobile && flutter test test/` | ✅ |
+| **Offline handoff, Mac app → iPhone simulator** (different accounts, no server involved) | `node apps/mobile/tool/handoff_e2e.mjs <sim-udid> <out>` | ✅ |
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |
 
 Map data © OpenStreetMap contributors (ODbL) · Basemap © Protomaps · MapLibre GL JS (BSD-3-Clause).
