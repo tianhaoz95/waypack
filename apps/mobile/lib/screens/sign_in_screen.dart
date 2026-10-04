@@ -128,7 +128,8 @@ class _SignInScreenState extends State<SignInScreen> {
                   SignInWithAppleButton(
                     onPressed: _busy ? () {} : _apple,
                     text: 'Continue with Apple',
-                    height: 52,
+                    // The Apple button sizes its label from the height (≈0.43×); the Google label matches it.
+                    height: 50,
                     style: dark ? SignInWithAppleButtonStyle.white : SignInWithAppleButtonStyle.black,
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                   ),
@@ -159,7 +160,7 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 52,
+        height: 50,
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
@@ -167,11 +168,11 @@ class _GoogleButton extends StatelessWidget {
             foregroundColor: const Color(0xFF1F1F1F),
             side: const BorderSide(color: Color(0xFF747775)),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
           child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             _GoogleG(),
-            SizedBox(width: 10),
+            SizedBox(width: 8),
             Text('Continue with Google'),
           ]),
         ),
