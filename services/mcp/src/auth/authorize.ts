@@ -1,12 +1,12 @@
 import { AuthorizationError, CimdFetchError, type ConsentDescription } from "@cloudflare/workers-oauth-provider";
 import type { Env, AuthProps } from "../env.js";
 import { clearSessionCookie, makeSessionCookie, readSession } from "./session.js";
-import { AuthError, MIN_PASSWORD, signIn, signUp } from "./supabase.js";
-import { esc, page } from "../pages.js";
+import { devSession, devSignInAllowed, isProvider, startOAuth } from "./oauth.js";
+import { esc, page, providerButtons } from "../pages.js";
 
 /**
- * OAuth 2.1 authorize endpoint (design §6.1). Identity: email + password (Supabase Auth).
- * A signed session cookie lets returning users approve with one tap.
+ * OAuth 2.1 authorize endpoint (design §6.1). Identity: Sign in with Google or Apple
+ * (Supabase Auth). A signed session cookie lets returning users approve with one tap.
  */
 export async function handleAuthorize(req: Request, env: Env): Promise<Response> {
   const oauth = env.OAUTH_PROVIDER;
@@ -17,7 +17,7 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
       const details = await oauth.describeConsent(authReq);
       const consent = await oauth.beginConsent(authReq);
       const session = await readSession(env.SIGNING_SECRET, req);
-      const html = session ? consentPage(details, consent.handle, session.email ?? "your account") : signInPage(details, consent.handle, "signin");
+      const html = session ? consentPage(details, consent.handle, session.email ?? "your account") : signInPage(env, details, consent.handle);
       consent.headers.set("Content-Type", "text/html; charset=utf-8");
       consent.headers.set("X-Frame-Options", "DENY");
       return new Response(html, { headers: consent.headers });
@@ -32,28 +32,26 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
       const denied = await oauth.denyConsent(req, handle);
       return new Response(null, { status: 302, headers: denied.headers });
     }
-    if (step === "switch") return html(signInPage(details, handle, "signin"), { "Set-Cookie": clearSessionCookie() });
-    if (step === "show_signup") return html(signInPage(details, handle, "signup"));
-    if (step === "show_signin") return html(signInPage(details, handle, "signin"));
+    if (step === "switch") return html(signInPage(env, details, handle), { "Set-Cookie": clearSessionCookie() });
+
+    if (step === "oauth") {
+      const provider = form.get("provider");
+      if (!isProvider(provider)) return html(errorPage("Unknown sign-in provider."), {}, 400);
+      // Choosing a provider on this page (which names the client) is the approval; the grant
+      // completes in /auth/callback once Google/Apple confirm who the user is.
+      return startOAuth(env, req, { purpose: "mcp", provider, handle });
+    }
 
     if (step === "approve") {
       const session = await readSession(env.SIGNING_SECRET, req);
-      if (!session) return html(signInPage(details, handle, "signin", "Your session expired. Please sign in again."));
+      if (!session) return html(signInPage(env, details, handle, "Your session expired. Please sign in again."));
       return completeGrant(env, req, handle, session.uid, session.email);
     }
 
-    if (step === "signin" || step === "signup") {
-      // Submitting credentials on this page (which names the client) is the approval.
-      const email = String(form.get("email") ?? "").trim().toLowerCase();
-      const password = String(form.get("password") ?? "");
-      try {
-        const s = step === "signup" ? await signUp(env, email, password) : await signIn(env, email, password);
-        const h = new Headers({ "Set-Cookie": await makeSessionCookie(env.SIGNING_SECRET, s.user.id, s.user.email ?? email, secure) });
-        return completeGrant(env, req, handle, s.user.id, s.user.email ?? email, h);
-      } catch (e) {
-        if (!(e instanceof AuthError)) throw e;
-        return html(signInPage(details, handle, step, e.message, email), {}, e.status === 429 ? 429 : 200);
-      }
+    if (step === "dev" && devSignInAllowed(env)) {
+      const s = await devSession(env, String(form.get("email") ?? "").trim().toLowerCase());
+      const h = new Headers({ "Set-Cookie": await makeSessionCookie(env.SIGNING_SECRET, s.userId, s.email, secure) });
+      return completeGrant(env, req, handle, s.userId, s.email, h);
     }
     return html(errorPage("Unknown step."), {}, 400);
   } catch (error) {
@@ -124,28 +122,26 @@ function hidden(handle: string, d: Shown) {
   return `<input type="hidden" name="handle" value="${esc(handle)}"><input type="hidden" name="details" value="${packDetails(d)}">`;
 }
 
-function signInPage(d: Shown, handle: string, mode: "signin" | "signup", error?: string, email = ""): string {
-  const signup = mode === "signup";
+function signInPage(env: Env, d: Shown, handle: string, error?: string): string {
+  const dev = devSignInAllowed(env)
+    ? `<details class="dev"><summary>Dev sign-in (local only)</summary>
+        <form method="post">${hidden(handle, d)}
+          <input name="email" type="email" required placeholder="dev@waypack.test" value="dev@waypack.test">
+          <button class="secondary" name="step" value="dev">Sign in as this user</button>
+        </form></details>`
+    : "";
   return page(
-    signup ? "Create your Waypack account" : "Connect your AI agent",
+    "Connect your AI agent",
     `${clientBlurb(d)}
     ${error ? `<p class="error">${esc(error)}</p>` : ""}
     <form method="post">${hidden(handle, d)}
-      <label for="email">Email</label>
-      <input id="email" name="email" type="email" autocomplete="email" required value="${esc(email)}" ${email ? "" : "autofocus"}>
-      <label for="password">Password</label>
-      <input id="password" name="password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" required minlength="${signup ? MIN_PASSWORD : 1}" ${email ? "autofocus" : ""}>
-      ${signup ? `<p class="muted small">At least ${MIN_PASSWORD} characters.</p>` : ""}
-      <button name="step" value="${signup ? "signup" : "signin"}">${signup ? "Create account and allow" : "Sign in and allow"}</button>
+      ${providerButtons("submit")}
     </form>
     <form method="post">${hidden(handle, d)}
-      ${signup
-        ? `<button class="link" name="step" value="show_signin">Already have an account? Sign in</button>`
-        : `<button class="link" name="step" value="show_signup">New to Waypack? Create an account</button>`}
       <button class="secondary" name="step" value="deny">Cancel</button>
     </form>
-    ${signup ? "" : `<p class="small"><a href="/account?reset=1" target="_blank" rel="noopener">Forgot password?</a></p>`}
-    <p class="muted small">Use the same account as the Waypack app so your trips show up there.</p>`,
+    <p class="muted small">Use the same account as the Waypack app so your trips show up there.</p>
+    ${dev}`,
   );
 }
 

@@ -1,7 +1,20 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:http/http.dart' as http;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Email + password sign-in. Sign-up sends no email; "Forgot password?" emails a 6-digit code.
+import '../config.dart';
+import '../dev_flags.dart';
+
+/// One tap: Sign in with Apple (native sheet on iPhone) or Google (system sign-in pop-up).
+/// No email or codes.
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -9,104 +22,92 @@ class SignInScreen extends StatefulWidget {
   State<SignInScreen> createState() => _SignInScreenState();
 }
 
-enum _Mode { signIn, signUp, resetRequest, resetConfirm }
-
 class _SignInScreenState extends State<SignInScreen> {
-  static const minPassword = 8;
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  final _code = TextEditingController();
-  _Mode _mode = _Mode.signIn;
   bool _busy = false;
-  bool _obscure = true;
   String? _error;
-  String? _info;
 
-  GoTrueClient get _auth => Supabase.instance.client.auth;
-
-  void _setMode(_Mode m) => setState(() {
-        _mode = m;
-        _error = null;
-        _info = null;
-        _password.clear();
-        _code.clear();
-      });
+  SupabaseClient get _sb => Supabase.instance.client;
 
   Future<void> _run(Future<void> Function() fn) async {
-    FocusScope.of(context).unfocus();
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       await fn();
+    } on _Cancelled {
+      // User closed the sheet: nothing to report.
     } on AuthException catch (e) {
-      setState(() => _error = _friendly(e));
+      setState(() => _error = e.message);
     } catch (e) {
-      setState(() => _error = 'Something went wrong. Check your connection and try again.');
+      setState(() => _error = 'Sign-in failed. Please try again.\n($e)');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  String _friendly(AuthException e) {
-    final code = e.code ?? '';
-    if (code == 'invalid_credentials' || e.message.contains('Invalid login')) return 'Wrong email or password.';
-    if (code == 'user_already_exists' || e.message.contains('already registered')) return 'An account with this email already exists. Sign in instead.';
-    if (code == 'weak_password') return 'That password is too weak. Use at least $minPassword characters.';
-    if (code == 'otp_expired' || e.message.contains('expired')) return 'That code is wrong or expired. Request a new one.';
-    if (e.statusCode == '429') return 'Too many attempts. Please wait a few minutes.';
-    return e.message;
-  }
-
-  String get _emailText => _email.text.trim().toLowerCase();
-
-  bool _validEmail() {
-    if (RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_emailText)) return true;
-    setState(() => _error = 'Enter a valid email address.');
-    return false;
-  }
-
-  Future<void> _submit() async {
-    if (!_validEmail()) return;
-    switch (_mode) {
-      case _Mode.signIn:
-        if (_password.text.isEmpty) return setState(() => _error = 'Enter your password.');
-        return _run(() => _auth.signInWithPassword(email: _emailText, password: _password.text));
-      case _Mode.signUp:
-        if (_password.text.length < minPassword) return setState(() => _error = 'Use a password with at least $minPassword characters.');
-        return _run(() async {
-          final r = await _auth.signUp(email: _emailText, password: _password.text);
-          // Supabase answers an existing email with a user that has no identities.
-          if (r.session == null) throw const AuthException('An account with this email already exists. Sign in instead.', code: 'user_already_exists');
-        });
-      case _Mode.resetRequest:
-        return _run(() async {
-          await _auth.resetPasswordForEmail(_emailText);
-          setState(() {
-            _mode = _Mode.resetConfirm;
-            _info = 'If an account exists for $_emailText, we sent a 6-digit code.';
-          });
-        });
-      case _Mode.resetConfirm:
-        if (_password.text.length < minPassword) return setState(() => _error = 'Use a password with at least $minPassword characters.');
-        return _run(() async {
-          await _auth.verifyOTP(type: OtpType.recovery, email: _emailText, token: _code.text.replaceAll(' ', ''));
-          await _auth.updateUser(UserAttributes(password: _password.text));
-        });
+  /// Google everywhere, and Apple on Android: Supabase OAuth (PKCE) in the system auth session.
+  Future<void> _webOAuth(OAuthProvider provider) async {
+    final res = await _sb.auth.getOAuthSignInUrl(provider: provider, redirectTo: Config.authRedirect);
+    final String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(url: res.url, callbackUrlScheme: Config.authScheme);
+    } on PlatformException catch (e) {
+      if (e.code == 'CANCELED') throw _Cancelled();
+      rethrow;
     }
+    final uri = Uri.parse(result);
+    final code = uri.queryParameters['code'];
+    if (code == null) {
+      final err = uri.queryParameters['error_description'] ?? uri.queryParameters['error'];
+      if (err == null || err.contains('cancel')) throw _Cancelled();
+      throw AuthException(err.replaceAll('+', ' '));
+    }
+    await _sb.auth.exchangeCodeForSession(code);
   }
+
+  /// Native Sign in with Apple on iOS (Face ID sheet), verified by Supabase with a nonce.
+  Future<void> _appleNative() async {
+    final rawNonce = _nonce();
+    final AuthorizationCredentialAppleID cred;
+    try {
+      cred = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) throw _Cancelled();
+      rethrow;
+    }
+    final idToken = cred.identityToken;
+    if (idToken == null) throw const AuthException('Apple didn\'t return an identity token.');
+    await _sb.auth.signInWithIdToken(provider: OAuthProvider.apple, idToken: idToken, nonce: rawNonce);
+  }
+
+  static String _nonce([int length = 32]) {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final r = Random.secure();
+    return List.generate(length, (_) => chars[r.nextInt(chars.length)]).join();
+  }
+
+  Future<void> _apple() => _run(() => Platform.isIOS ? _appleNative() : _webOAuth(OAuthProvider.apple));
+  Future<void> _google() => _run(() => _webOAuth(OAuthProvider.google));
+
+  /// Local development / tests only (build with --dart-define=DEV_SIGN_IN=true).
+  Future<void> _dev(String email) => _run(() async {
+        final res = await http.post(
+          Uri.parse('${Config.apiUrl}/api/auth/dev'),
+          headers: {'Content-Type': 'application/json', 'X-Waypack': '1'},
+          body: jsonEncode({'email': email}),
+        );
+        if (res.statusCode != 200) throw AuthException('Dev sign-in refused (${res.statusCode})');
+        await _sb.auth.setSession((jsonDecode(res.body) as Map)['refresh_token'] as String);
+      });
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
-    final (title, button) = switch (_mode) {
-      _Mode.signIn => ('Sign in', 'Sign in'),
-      _Mode.signUp => ('Create your account', 'Create account'),
-      _Mode.resetRequest => ('Reset password', 'Email me a reset code'),
-      _Mode.resetConfirm => ('Choose a new password', 'Set new password'),
-    };
-    final showPassword = _mode != _Mode.resetRequest;
+    final dark = t.brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -114,78 +115,32 @@ class _SignInScreenState extends State<SignInScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: AutofillGroup(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Icon(Icons.backpack_outlined, size: 56, color: t.colorScheme.primary),
-                    const SizedBox(height: 12),
-                    Text('Waypack', textAlign: TextAlign.center, style: t.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Text('Trips planned by your AI agent, ready when the signal isn\'t.',
-                        textAlign: TextAlign.center, style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                    const SizedBox(height: 32),
-                    Text(title, style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-                    if (_info != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_info!, style: TextStyle(color: t.colorScheme.onSurfaceVariant))),
-                    const SizedBox(height: 16),
-                    TextField(
-                      key: const Key('email'),
-                      controller: _email,
-                      enabled: _mode != _Mode.resetConfirm,
-                      keyboardType: TextInputType.emailAddress,
-                      autocorrect: false,
-                      autofillHints: const [AutofillHints.email],
-                      textInputAction: showPassword ? TextInputAction.next : TextInputAction.go,
-                      onSubmitted: showPassword ? null : (_) => _submit(),
-                      decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                    ),
-                    if (_mode == _Mode.resetConfirm) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        key: const Key('code'),
-                        controller: _code,
-                        keyboardType: TextInputType.number,
-                        autofillHints: const [AutofillHints.oneTimeCode],
-                        textInputAction: TextInputAction.next,
-                        decoration: const InputDecoration(labelText: '6-digit code from the email', border: OutlineInputBorder()),
-                      ),
-                    ],
-                    if (showPassword) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        key: const Key('password'),
-                        controller: _password,
-                        obscureText: _obscure,
-                        autofillHints: [_mode == _Mode.signIn ? AutofillHints.password : AutofillHints.newPassword],
-                        textInputAction: TextInputAction.go,
-                        onSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: _mode == _Mode.signIn ? 'Password' : 'New password',
-                          helperText: _mode == _Mode.signIn ? null : 'At least $minPassword characters',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            tooltip: _obscure ? 'Show password' : 'Hide password',
-                            icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                            onPressed: () => setState(() => _obscure = !_obscure),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    FilledButton(onPressed: _busy ? null : _submit, child: Text(button)),
-                    if (_busy) const Padding(padding: EdgeInsets.only(top: 16), child: Center(child: CircularProgressIndicator())),
-                    if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: t.colorScheme.error))),
-                    const SizedBox(height: 8),
-                    if (_mode == _Mode.signIn) ...[
-                      TextButton(onPressed: _busy ? null : () => _setMode(_Mode.signUp), child: const Text('New to Waypack? Create an account')),
-                      TextButton(onPressed: _busy ? null : () => _setMode(_Mode.resetRequest), child: const Text('Forgot password?')),
-                    ] else
-                      TextButton(onPressed: _busy ? null : () => _setMode(_Mode.signIn), child: const Text('Back to sign in')),
-                    const SizedBox(height: 16),
-                    Text('Use the same account as your AI agent\'s Waypack connection.',
-                        textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(Icons.backpack_outlined, size: 56, color: t.colorScheme.primary),
+                  const SizedBox(height: 12),
+                  Text('Waypack', textAlign: TextAlign.center, style: t.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Text('Trips planned by your AI agent, ready when the signal isn\'t.',
+                      textAlign: TextAlign.center, style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  const SizedBox(height: 40),
+                  SignInWithAppleButton(
+                    onPressed: _busy ? () {} : _apple,
+                    text: 'Continue with Apple',
+                    height: 52,
+                    style: dark ? SignInWithAppleButtonStyle.white : SignInWithAppleButtonStyle.black,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                  const SizedBox(height: 12),
+                  _GoogleButton(onPressed: _busy ? null : _google),
+                  if (_busy) const Padding(padding: EdgeInsets.only(top: 20), child: Center(child: CircularProgressIndicator())),
+                  if (_error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_error!, style: TextStyle(color: t.colorScheme.error))),
+                  const SizedBox(height: 28),
+                  Text('Use the same account as your AI agent\'s Waypack connection.',
+                      textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  if (DevFlags.devSignIn) _DevSignIn(onSubmit: _dev, busy: _busy),
+                ],
               ),
             ),
           ),
@@ -193,4 +148,86 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     );
   }
+}
+
+class _Cancelled implements Exception {}
+
+/// Google-branded button (white, "G" logo) per Google's sign-in branding guidelines.
+class _GoogleButton extends StatelessWidget {
+  const _GoogleButton({required this.onPressed});
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 52,
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF1F1F1F),
+            side: const BorderSide(color: Color(0xFF747775)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          ),
+          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            _GoogleG(),
+            SizedBox(width: 10),
+            Text('Continue with Google'),
+          ]),
+        ),
+      );
+}
+
+class _GoogleG extends StatelessWidget {
+  const _GoogleG();
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GPainter()));
+}
+
+/// Draws the four-colour Google "G".
+class _GPainter extends CustomPainter {
+  const _GPainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width;
+    final stroke = s * 0.2;
+    final rect = Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2 - stroke / 2);
+    Paint p(Color c) => Paint()
+      ..color = c
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    const deg = pi / 180;
+    canvas.drawArc(rect, -40 * deg, -100 * deg, false, p(const Color(0xFFEA4335))); // red (top)
+    canvas.drawArc(rect, -140 * deg, -80 * deg, false, p(const Color(0xFFFBBC05))); // yellow (left)
+    canvas.drawArc(rect, -220 * deg, -95 * deg, false, p(const Color(0xFF34A853))); // green (bottom)
+    canvas.drawArc(rect, -315 * deg, -45 * deg, false, p(const Color(0xFF4285F4))); // blue (right)
+    canvas.drawLine(Offset(s / 2, s / 2), Offset(s - stroke / 2, s / 2), p(const Color(0xFF4285F4))..strokeCap = StrokeCap.butt);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _DevSignIn extends StatefulWidget {
+  const _DevSignIn({required this.onSubmit, required this.busy});
+  final Future<void> Function(String email) onSubmit;
+  final bool busy;
+  @override
+  State<_DevSignIn> createState() => _DevSignInState();
+}
+
+class _DevSignInState extends State<_DevSignIn> {
+  final _email = TextEditingController(text: 'dev@waypack.test');
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 32),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const Divider(),
+          Text('Dev sign-in (local server only)', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 8),
+          TextField(key: const Key('dev-email'), controller: _email, decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true)),
+          const SizedBox(height: 8),
+          OutlinedButton(onPressed: widget.busy ? null : () => widget.onSubmit(_email.text.trim()), child: const Text('Dev sign-in')),
+        ]),
+      );
 }

@@ -1,5 +1,5 @@
 // Seeds a local dev account with a published trip (and Pro entitlement), for app testing.
-//   node scripts/seed-dev.mjs [email] [--free] [--bundle ../../examples/sequoia-winter]   (password: $SEED_PASSWORD or waypack-dev-password)
+//   node scripts/seed-dev.mjs [email] [--free] [--bundle ../../examples/sequoia-winter]
 // Prints the trip id. Requires the local stack (supabase start, wrangler dev, tiler).
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -14,13 +14,10 @@ const env = Object.fromEntries(readFileSync(new URL("../.dev.vars", import.meta.
 const svc = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, "Content-Type": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const password = process.env.SEED_PASSWORD ?? "waypack-dev-password";
-// Create the account (or reset its password) with the admin API, then sign in normally.
-const existing = (await (await fetch(`${SUPA}/auth/v1/admin/users?per_page=1000`, { headers: svc })).json()).users?.find((u) => u.email === email);
-if (existing) await fetch(`${SUPA}/auth/v1/admin/users/${existing.id}`, { method: "PUT", headers: svc, body: JSON.stringify({ password }) });
-else await fetch(`${SUPA}/auth/v1/admin/users`, { method: "POST", headers: svc, body: JSON.stringify({ email, password, email_confirm: true }) });
-const sess = await (await fetch(`${SUPA}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) })).json();
-if (!sess.access_token) throw new Error(`sign-in failed: ${JSON.stringify(sess)}`);
+const signin = await fetch(`${BASE}/api/auth/dev`, { method: "POST", headers: { "Content-Type": "application/json", "X-Waypack": "1" }, body: JSON.stringify({ email }) });
+if (!signin.ok) throw new Error(`dev sign-in failed (${signin.status}) — is wrangler dev running with ENVIRONMENT=development?`);
+const sess = await signin.json();
+sess.user = { id: sess.userId };
 const uid = sess.user.id;
 await fetch(`${SUPA}/rest/v1/entitlements?user_id=eq.${uid}`, {
   method: "PATCH",
@@ -44,4 +41,4 @@ for (let i = 0; i < 60; i++) {
   if (s.structuredContent.status !== "processing") { console.error(s.content[0].text); break; }
   await sleep(3000);
 }
-console.log(JSON.stringify({ email, password, user_id: uid, trip_id: tripId }));
+console.log(JSON.stringify({ email, user_id: uid, trip_id: tripId }));

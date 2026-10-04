@@ -5,14 +5,14 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 | Milestone | State | Evidence |
 |---|---|---|
 | **M0** Contract & skill | ✅ Done | Validator 25 tests · CLI 7 · SDK Playwright 4 (offline extract, no external requests, no CSP errors) · Sequoia example validates with 0 warnings |
-| **M1** Backend + MCP | ✅ Done locally | `services/mcp/scripts/e2e.mjs`: 69/69 checks: OAuth (DCR, PKCE), email + password sign-up/sign-in, reset code, lockout, 11 tools, upload → validate → version → **real PMTiles extract via queue + tiler** → R2, limits, download API, RLS, API tokens, delete |
+| **M1** Backend + MCP | ✅ Done locally | `services/mcp/scripts/e2e.mjs`: 65/65 checks: OAuth (DCR, PKCE), Google/Apple sign-in redirects + callback validation, 11 tools, upload → validate → version → **real PMTiles extract via queue + tiler** → R2, limits, download API, RLS, API tokens, delete |
 | **M2** App viewer offline | ✅ iOS verified · Android builds | iOS simulator integration test: UI sign-in, download + SHA-256, loopback server (token, CSP, Range, traversal, Host checks), WebView bridge, native Today |
 | **M3** Offline maps | ✅ iOS verified | Native Map renders the trip's offline extract, offline glyphs, routes and icons in the app (screenshot checked). Blue dot: GeolocateControl wired; needs an on-device walk |
 | **M4** Payments & limits | ✅ Web billing verified locally | **Stripe on the web portal** (`/account`): Checkout (annual subscription, optional lifetime), Customer Portal, signed + idempotent webhook. e2e: subscription.created → Pro and existing trips get maps; subscription.deleted → Free; lifetime payment → Lifetime; forged signatures rejected. Free-tier limit message links to `/account`. Apps are free viewers (no IAP). Needs Stripe test keys to click through real Checkout |
 | **M5** Launch assets | ✅ Drafted | `site/` landing (real screenshots) + **account portal** + privacy + terms, served by the Worker (one deploy), `docs/store-listing.md`, attribution screen in app, `docs/DEPLOY.md` |
 
 ## Not done / needs you
-0. **SMTP for password-reset codes** (DEPLOY.md §1). It's the only email Waypack sends.
+0. **Google + Apple sign-in credentials** (DEPLOY.md §1). Locally the redirect chain, callback validation and PKCE exchange code are tested, plus a dev-only sign-in; a real round trip needs your Google Cloud and Apple Developer setup.
 1. **Real accounts and deployment**: Cloudflare (Workers Paid), Supabase project, ORS key, Stripe, Apple/Google consoles, domain. Step-by-step in DEPLOY.md.
 2. **Testing with real clients**: Claude Code and claude.ai connector against a deployed (https) server. Locally, OAuth was exercised by a scripted client that follows the MCP auth spec.
 3. **Android run**: the APK builds, but the emulator image download failed because the disk filled up (I freed ~5 GB of my own build output). Running the integration test needs ~8 GB free.

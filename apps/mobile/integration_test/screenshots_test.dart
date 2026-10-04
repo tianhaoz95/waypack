@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/main.dart';
 
 const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
-const password = String.fromEnvironment('TEST_PASSWORD', defaultValue: 'waypack-dev-password');
 
 Future<void> settle(WidgetTester t, [int ms = 1500]) async {
   for (var i = 0; i < ms ~/ 100; i++) {
@@ -42,10 +41,8 @@ void main() {
     await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
     await shot(t, '01-sign-in');
 
-    await t.enterText(find.byKey(const Key('email')), email);
-    await t.enterText(find.byKey(const Key('password')), password);
-    await shot(t, '02-sign-in-filled', waitMs: 300);
-    await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await t.enterText(find.byKey(const Key('dev-email')), email);
+    await t.tap(find.text('Dev sign-in'));
     await until(t, find.text('Not downloaded'));
     await shot(t, '03-trips-not-downloaded');
 
