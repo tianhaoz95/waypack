@@ -80,7 +80,8 @@ class WaypackAssistant(messenger: BinaryMessenger) : EventChannel.StreamHandler 
 
     private suspend fun status(): Map<String, Any?> = try {
         when (client().checkStatus()) {
-            FeatureStatus.AVAILABLE -> mapOf("engine" to "gemini-nano", "state" to "available")
+            // No tool calling in the Prompt API: Dart pre-fills search results instead.
+            FeatureStatus.AVAILABLE -> mapOf("engine" to "gemini-nano", "state" to "available", "tools" to false)
             FeatureStatus.DOWNLOADABLE -> mapOf("engine" to "gemini-nano", "state" to "downloadable")
             FeatureStatus.DOWNLOADING -> mapOf("engine" to "gemini-nano", "state" to "downloading")
             else -> mapOf("engine" to "gemini-nano", "state" to "unavailable", "reason" to "unsupportedDevice")

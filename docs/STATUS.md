@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: trip revisions)
+# Build status — 2026-10-04 (updated: assistant searches the whole plan)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,10 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Assistant: whole-plan search (2026-10-04)
+- The offline assistant now searches the entire plan (every manifest key, known or not, plus the page text); on Apple it calls a `searchPlan` tool itself, on Android the search results are pre-filled.
+- Verified: in-app eval against Apple's real model `tool/assistant_eval/run.sh` 14/14 with tool calling (3 runs) and 14/14 with `--no-tools` (2 runs), including questions answered only by keys the app doesn't know; macOS in-app flow 4/4; app unit tests 51.
 
 ## Revising a published trip (2026-10-04)
 - Tell the agent what changed ("I booked hotel X for the Tahoe trip"); the skill's generic update procedure + `get_trip` (latest files) + `push_preview { trip_id, changed files, note }` + `publish_preview`.

@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
-# Asks the device's on-device model the questions in cases.json, using the app's real trip briefs,
-# and checks each answer contains the expected facts. macOS with Apple Intelligence for now.
-#   apps/mobile/tool/assistant_eval/run.sh
+# Asks the device's on-device model the questions in cases.json through the app's real assistant
+# (trip brief + searchPlan tool), and checks each answer contains the expected facts.
+#   apps/mobile/tool/assistant_eval/run.sh [device] [--no-tools]   (default: macos; needs Apple Intelligence)
+#   --no-tools: pre-filled search results instead of tool calling (what Gemini Nano gets)
+# Run it after changing the brief, the instructions or the index.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-OUT="$(mktemp -d)"
-trap 'rm -rf "$OUT"' EXIT
-EVAL_OUT="$OUT" flutter test tool/assistant_eval/build_prompts_test.dart >/dev/null
-swiftc -parse-as-library tool/assistant_eval/apple.swift -o "$OUT/apple" 2>/dev/null
-pass=0; fail=0
-n=$(python3 -c 'import json;print(len(json.load(open("tool/assistant_eval/cases.json"))))')
-for ((i = 0; i < n; i++)); do
-  q=$(python3 -c "import json;c=json.load(open('tool/assistant_eval/cases.json'))[$i];print('[%s] %s' % (c['trip'], c['q']))")
-  a=$("$OUT/apple" "$OUT/$i.instructions" "$OUT/$i.prompt" | tr '\n' ' ')
-  if python3 -c "import json,sys;c=json.load(open('tool/assistant_eval/cases.json'))[$i];a=sys.argv[1].lower();sys.exit(0 if all(e.lower() in a for e in c['expect']) else 1)" "$a"; then
-    pass=$((pass + 1)); echo "✓ $q"; else fail=$((fail + 1)); echo "✗ $q"; fi
-  echo "    $a"
-done
-echo "$pass passed, $fail failed"
-[ "$fail" -eq 0 ]
+DEVICE="macos"; TOOLS=true
+for a in "$@"; do case "$a" in --no-tools) TOOLS=false ;; *) DEVICE="$a" ;; esac; done
+ROOT="$(cd ../.. && pwd)"
+PORT=$((20000 + RANDOM % 20000))
+python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$ROOT" >/dev/null 2>&1 &
+SERVER=$!
+trap 'kill $SERVER 2>/dev/null' EXIT
+sleep 1
+flutter test integration_test/assistant_eval_test.dart -d "$DEVICE" --dart-define=EVAL_URL="http://127.0.0.1:$PORT" --dart-define=EVAL_TOOLS=$TOOLS 2>&1 \
+  | grep -E "^EVAL|Some tests failed|All tests passed" | sed 's/^EVAL //'

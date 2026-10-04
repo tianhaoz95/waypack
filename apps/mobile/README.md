@@ -43,7 +43,8 @@ Same code, built for macOS 12+ (universal: Apple silicon + Intel). Distributed a
 ## Offline assistant
 "Ask about this trip" answers questions from the downloaded plan with an on-device model: Apple Foundation Models (iOS/iPadOS/macOS 26+ with Apple Intelligence) or Gemini Nano (Android 8+ with AICore). Elsewhere it explains that it isn't available yet.
 - `lib/assistant/engine.dart`: engines + picker (add a LiteRT-LM/Qwen engine to `AssistantEngines.candidates()` later). Native sides: `ios/Runner/WaypackAssistant.swift` (also linked into the macOS target), `android/app/src/main/kotlin/.../WaypackAssistant.kt`.
-- `lib/assistant/context.dart`: builds the per-question brief that fits a ~4k-token model.
-- Quality check against the real model: `tool/assistant_eval/run.sh` (cases in `cases.json`; macOS with Apple Intelligence). Run it after changing the brief or instructions.
+- `lib/assistant/plan_index.dart`: the whole plan (every manifest key, known or not, plus the page's passages) as a searchable index.
+- `lib/assistant/context.dart`: the per-question brief (computed now/next, schedule, GPS distances + search results) that fits a ~4k-token model; Apple's model also gets a `searchPlan` tool.
+- Quality check against the real model, inside the app: `tool/assistant_eval/run.sh [--no-tools]` (cases in `cases.json`, which can add keys the app doesn't know; macOS with Apple Intelligence). Run it after changing the brief, the index or the instructions.
 - In-app walkthrough: `node tool/screenshots.mjs macos <out> --test integration_test/assistant_flow_test.dart --fake-now 2026-12-24T11:05:00-08:00`.
 

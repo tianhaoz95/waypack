@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:waypack/assistant/context.dart';
 import 'package:waypack/assistant/engine.dart';
+import 'package:waypack/assistant/plan_index.dart';
 import 'package:waypack/models/manifest.dart';
 
 Manifest tahoe() => Manifest(
@@ -31,7 +32,7 @@ class FakeEngine implements AssistantEngine {
   @override
   Stream<double> download() => const Stream.empty();
   @override
-  Stream<String> generate(AssistantRequest r) {
+  Stream<String> generate(AssistantRequest r, {SearchPlan? search}) {
     last = r;
     return Stream.fromIterable([answer.substring(0, 2), answer]);
   }
@@ -45,6 +46,10 @@ void main() {
 
   group('trip brief', () {
     final brief = TripBrief(tahoe(), guideText: tahoeGuide());
+    String found(AssistantRequest r) => r.prompt
+        .split('From the plan, most relevant to the question:\n')[1]
+        .split('\n\n')
+        .first;
 
     test('situation: now and next in the trip time zone', () {
       final r = brief.build('What\'s next?', now: duringTrip);
@@ -57,62 +62,56 @@ void main() {
       expect(r.prompt, contains('Happening now: 10:45–12:45 Heavenly Gondola'));
       expect(r.prompt, contains('Next: '));
       expect(r.prompt, contains('Day 1, 2027-01-16'));
-      expect(r.prompt, contains('Day 2, '), reason: 'tomorrow is included');
+      expect(
+        r.prompt,
+        contains('Day 2, '),
+        reason: 'tomorrow is included for time questions',
+      );
       expect(r.prompt, startsWith('Question: What\'s next?'));
       expect(r.prompt.trim(), endsWith('Question: What\'s next?'));
       expect(
         r.instructions,
         contains('using only the facts in the trip notes'),
       );
-      expect(r.instructions, isNot(contains('emergency question')));
-    });
-
-    test('nearest gas: fuel places first, with distance and direction from the GPS fix', () {
-      final r = brief.build(
-        'Where is the nearest gas station?',
-        here: placerville,
-        now: duringTrip,
-      );
-      final places = r.prompt
-          .split('Most relevant to the question:\n')[1]
-          .split('\n\n')
-          .first
-          .split('\n');
-      expect(places.first, contains('(gas station)'));
-      expect(places.first, matches(RegExp(r'about [\d.]+ (mi|m)')));
-      expect(
-        places.first,
-        matches(RegExp(r' (N|NE|E|SE|S|SW|W|NW) of the phone')),
-      );
+      expect(r.tools, isFalse);
     });
 
     test(
-      'emergency: numbers right after the situation, hospital among places',
+      'nearest gas: the closest fuel entry first, with distance and direction',
       () {
         final r = brief.build(
-          'My kid is hurt, where is the hospital?',
-          here: southLake,
+          'Where is the nearest gas station?',
+          here: placerville,
           now: duringTrip,
         );
-        expect(
-          r.prompt.indexOf('Emergency contacts:'),
-          lessThan(r.prompt.indexOf('Most relevant to the question:')),
-        );
-        expect(
-          r.prompt.indexOf('Right now:'),
-          lessThan(r.prompt.indexOf('Emergency contacts:')),
-        );
-        expect(r.prompt, contains('911'));
-        expect(
-          r.prompt
-              .split('Most relevant to the question:\n')[1]
-              .split('\n')
-              .first,
-          contains('(medical)'),
-        );
-        expect(r.instructions, contains('emergency question'));
+        final first = found(r).split('\n').first;
+        expect(first.toLowerCase(), contains('fuel'));
+        expect(first, matches(RegExp(r'about [\d.]+ (mi|m)')));
+        expect(first, matches(RegExp(r' (N|NE|E|SE|S|SW|W|NW) of the phone')));
       },
     );
+
+    test('emergency: help from the plan right after the situation', () {
+      final r = brief.build(
+        'My kid is hurt, where is the hospital?',
+        here: southLake,
+        now: duringTrip,
+      );
+      expect(
+        r.prompt.indexOf('Emergency help from the plan:'),
+        greaterThan(r.prompt.indexOf('Right now:')),
+      );
+      expect(
+        r.prompt.indexOf('Emergency help from the plan:'),
+        lessThan(r.prompt.indexOf('From the plan, most relevant')),
+      );
+      expect(r.prompt, contains('911'));
+      expect(
+        r.prompt.split('Emergency help from the plan:\n')[1].toLowerCase(),
+        contains('medical'),
+      );
+      expect(r.instructions, contains('emergency question'));
+    });
 
     test(
       'a named place leads, with its phone number; tomorrow is left out',
@@ -121,31 +120,32 @@ void main() {
           'What\'s the phone number for Heavenly Village?',
           now: duringTrip,
         );
-        final first = r.prompt
-            .split('Most relevant to the question:\n')[1]
-            .split('\n')
-            .first;
-        expect(first.toLowerCase(), contains('heavenly'));
-        expect(
-          r.prompt.indexOf('Most relevant to the question:'),
-          lessThan(r.prompt.indexOf('Emergency contacts:')),
-          reason: 'not an emergency: emergency info goes later',
-        );
+        expect(found(r).split('\n').first.toLowerCase(), contains('heavenly'));
         expect(r.prompt, isNot(contains('Day 2, ')));
       },
     );
 
-    test('guide passages that match the question are included', () {
+    test('page passages are searched too (with their section headings)', () {
       final r = brief.build(
         'Do we need chains for Echo Summit?',
         now: duringTrip,
       );
-      expect(r.prompt, contains('From the trip guide:'));
-      expect(r.prompt.toLowerCase(), contains('chain'));
+      expect(found(r).toLowerCase(), contains('chain'));
+    });
+
+    test('plan B questions find backup plans', () {
+      final r = brief.build(
+        'What\'s plan B if the gondola is closed?',
+        now: duringTrip,
+      );
+      expect(
+        found(r).toLowerCase(),
+        anyOf(contains('backup'), contains('plan b'), contains('instead')),
+      );
     });
 
     test(
-      '"where\'s the hospital" is not an emergency; "my kid is hurt" is',
+      '"where\'s the hospital" is not an emergency; "someone is bleeding" is',
       () {
         expect(
           brief.build('How far is the hospital?', now: duringTrip).instructions,
@@ -160,21 +160,20 @@ void main() {
       },
     );
 
-    test('plan B questions pull backup plans from the guide', () {
+    test('with tool calling: shorter notes, the search tool offered', () {
       final r = brief.build(
-        'What\'s plan B if the gondola is closed?',
+        'Tell me about every restaurant and hike and the hospital',
+        here: southLake,
         now: duringTrip,
+        toolAvailable: true,
       );
-      expect(r.prompt, contains('From the trip guide:'));
-    });
-
-    test('guide passages keep their heading', () {
-      final p = guidePassages(
-        'Backup plans\nIf Wolverton is closed, swap the morning and afternoon.\nThe meadow is fine for play.',
-      );
-      expect(p, [
-        'Backup plans: If Wolverton is closed, swap the morning and afternoon. The meadow is fine for play.',
-      ]);
+      expect(r.tools, isTrue);
+      expect(r.instructions, contains('searchPlan'));
+      final notes = r.prompt
+          .split('Trip notes:\n')[1]
+          .split('\n\nQuestion:')
+          .first;
+      expect(notes.length, lessThanOrEqualTo(4500));
     });
 
     test('asking about a specific day includes it', () {
@@ -229,19 +228,70 @@ void main() {
     });
   });
 
-  group('geometry', () {
-    test('distance and direction', () {
-      final km = distanceKm(placerville, southLake);
-      expect(km, inInclusiveRange(65, 85));
-      expect(bearing(placerville, southLake), anyOf('E', 'NE'));
-    });
-    test('page text drops scripts, styles and tags', () {
+  group('plan index (any keys the agent used)', () {
+    final raw = jsonDecode(
+      File('../../examples/tahoe-winter/manifest.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    // Keys the app has never heard of.
+    raw['tide_times'] = {'2027-01-16': 'High 06:12, low 12:40 at Zephyr Cove'};
+    raw['ski_passes'] = [
+      {
+        'name': 'Heavenly sightseeing ticket',
+        'price': '\$79 adult',
+        'where': 'Gondola ticket windows or online',
+      },
+    ];
+    raw['packing_extras'] = 'Bring the red sled from the garage';
+    final brief = TripBrief(Manifest(raw), guideText: tahoeGuide());
+
+    test('unknown keys are searchable like everything else', () {
+      expect(brief.lookup('when is low tide'), contains('12:40'));
       expect(
-        htmlText(
-          '<style>x{}</style><h2>Day 1</h2><p>Hike &amp; swim</p><script>1</script>',
-        ),
-        'Day 1\nHike & swim',
+        brief.lookup('how much is the sightseeing ticket'),
+        contains('\$79'),
       );
+      expect(brief.lookup('which sled should we bring'), contains('red sled'));
+    });
+    test('ids and raw coordinates are left out of entries', () {
+      final text = brief.index.entries.map((e) => e.text).join('\n');
+      expect(text, isNot(matches(RegExp(r'\blat -?\d'))));
+      expect(text, isNot(contains('place id ')));
+    });
+    test('entries with coordinates (any key spelling) get distances', () {
+      final idx = PlanIndex.build({
+        'spots': [
+          {'title': 'Secret beach', 'latitude': 38.95, 'longitude': -119.95},
+        ],
+      }, const []);
+      expect(idx.entries.single.lat, 38.95);
+      expect(
+        TripBrief(
+          Manifest({
+            'title': 'x',
+            'timezone': 'UTC',
+            'start_date': '2027-01-01',
+            'end_date': '2027-01-02',
+            'spots': [
+              {
+                'title': 'Secret beach',
+                'latitude': 38.95,
+                'longitude': -119.95,
+              },
+            ],
+          }),
+        ).lookup('how far is the secret beach', here: southLake),
+        contains('of the phone'),
+      );
+    });
+    test('page passages keep their section path', () {
+      final p = guidePassages(
+        htmlText(
+          '<h2>Backup plans</h2><h3>If it storms</h3><p>Swap the gondola for the museum and lunch at the lodge.</p>',
+        ),
+      );
+      expect(p, [
+        'Backup plans › If it storms: Swap the gondola for the museum and lunch at the lodge.',
+      ]);
     });
   });
 

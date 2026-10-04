@@ -1,6 +1,7 @@
 // The offline trip assistant's model bridge: Apple Foundation Models (DECISIONS #49).
 // Same channel protocol as Android (MainActivity.kt) and macOS (MainFlutterWindow.swift):
-//   waypack/assistant         status | generate {id, instructions, prompt, temperature, maxTokens} | cancel {id} | download
+//   waypack/assistant         status | generate {id, instructions, prompt, temperature, maxTokens, tools} | cancel {id} | download
+//                             (native → Dart) search {id, query} → String, when the model calls the searchPlan tool
 //   waypack/assistant/events  {id, type: text|done|error, text?, code?, message?}
 // This file is shared by the iOS and macOS targets.
 import Foundation
@@ -13,7 +14,30 @@ import FlutterMacOS
 import FoundationModels
 #endif
 
+#if canImport(FoundationModels)
+/// Lets the model look things up in the whole trip plan (the search itself runs in Dart:
+/// lib/assistant/plan_index.dart), so answers aren't limited to what fit in the prompt.
+@available(iOS 26.0, macOS 26.0, *)
+struct SearchPlanTool: Tool {
+  let name = "searchPlan"
+  let description = "Searches the traveler's full trip plan (places, schedule, notes and the trip page) and returns the best matching entries."
+
+  @Generable
+  struct Arguments {
+    @Guide(description: "What to look for, in a few words, e.g. \"Wuksachi Lodge phone\" or \"backup plan if Wolverton is closed\"")
+    var query: String
+  }
+
+  let search: @Sendable (String) async -> String
+
+  func call(arguments: Arguments) async throws -> String {
+    await search(arguments.query)
+  }
+}
+#endif
+
 final class WaypackAssistant: NSObject, FlutterStreamHandler {
+  private var methods: FlutterMethodChannel?
   private var sink: FlutterEventSink?
   private var tasks: [String: Task<Void, Never>] = [:]
   private static var shared: WaypackAssistant?
@@ -22,6 +46,7 @@ final class WaypackAssistant: NSObject, FlutterStreamHandler {
     let me = WaypackAssistant()
     shared = me
     let methods = FlutterMethodChannel(name: "waypack/assistant", binaryMessenger: messenger)
+    me.methods = methods
     methods.setMethodCallHandler { call, result in me.handle(call, result) }
     FlutterEventChannel(name: "waypack/assistant/events", binaryMessenger: messenger).setStreamHandler(me)
   }
@@ -55,7 +80,8 @@ final class WaypackAssistant: NSObject, FlutterStreamHandler {
         instructions: args["instructions"] as? String ?? "",
         prompt: prompt,
         temperature: args["temperature"] as? Double ?? 0.3,
-        maxTokens: args["maxTokens"] as? Int ?? 350)
+        maxTokens: args["maxTokens"] as? Int ?? 350,
+        tools: args["tools"] as? Bool ?? false)
       result(nil)
     case "cancel":
       if let id = args["id"] as? String {
@@ -77,7 +103,7 @@ final class WaypackAssistant: NSObject, FlutterStreamHandler {
     if #available(iOS 26.0, macOS 26.0, *) {
       switch SystemLanguageModel.default.availability {
       case .available:
-        return ["engine": "apple-foundation", "state": "available"]
+        return ["engine": "apple-foundation", "state": "available", "tools": true]
       case .unavailable(let reason):
         let why: String
         switch reason {
@@ -93,12 +119,28 @@ final class WaypackAssistant: NSObject, FlutterStreamHandler {
     return ["engine": "apple-foundation", "state": "unavailable", "reason": "osTooOld"]
   }
 
-  private func generate(id: String, instructions: String, prompt: String, temperature: Double, maxTokens: Int) {
+  /// Asks Dart to search the plan for the model (runs on the main thread, as channels require).
+  private func search(id: String, query: String) async -> String {
+    await withCheckedContinuation { (cont: CheckedContinuation<String, Never>) in
+      DispatchQueue.main.async {
+        guard let methods = self.methods else { return cont.resume(returning: "") }
+        methods.invokeMethod("search", arguments: ["id": id, "query": query]) { result in
+          cont.resume(returning: (result as? String) ?? "Nothing found.")
+        }
+      }
+    }
+  }
+
+  private func generate(id: String, instructions: String, prompt: String, temperature: Double, maxTokens: Int, tools: Bool) {
     #if canImport(FoundationModels)
     if #available(iOS 26.0, macOS 26.0, *) {
       tasks[id] = Task { [weak self] in
         guard let self else { return }
-        let session = LanguageModelSession(instructions: instructions)
+        let session = tools
+          ? LanguageModelSession(
+            tools: [SearchPlanTool(search: { [weak self] q in await self?.search(id: id, query: q) ?? "" })],
+            instructions: instructions)
+          : LanguageModelSession(instructions: instructions)
         let options = GenerationOptions(temperature: temperature, maximumResponseTokens: maxTokens)
         var last = ""
         do {

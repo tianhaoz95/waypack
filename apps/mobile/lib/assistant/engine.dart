@@ -14,7 +14,15 @@ import 'package:flutter/services.dart';
 enum EngineState { available, downloadable, downloading, unavailable }
 
 class EngineStatus {
-  const EngineStatus({required this.engine, required this.state, this.reason});
+  const EngineStatus({
+    required this.engine,
+    required this.state,
+    this.reason,
+    this.tools = false,
+  });
+
+  /// The model can call tools (Apple Foundation Models): it searches the plan itself.
+  final bool tools;
   final String
   engine; // apple-foundation | gemini-nano | none | (later) litert-qwen
   final EngineState state;
@@ -29,6 +37,7 @@ class EngineStatus {
       _ => EngineState.unavailable,
     },
     reason: m['reason'] as String?,
+    tools: m['tools'] == true,
   );
 
   /// Who runs the model, for the screen's footer.
@@ -60,7 +69,11 @@ class AssistantRequest {
     required this.prompt,
     this.temperature = 0.3,
     this.maxTokens = 350,
+    this.tools = false,
   });
+
+  /// Offer the model the searchPlan tool (engines that support tool calling).
+  final bool tools;
   final String instructions;
   final String prompt;
   final double temperature;
@@ -75,14 +88,17 @@ class AssistantException implements Exception {
   String toString() => message;
 }
 
+typedef SearchPlan = Future<String> Function(String query);
+
 abstract class AssistantEngine {
   Future<EngineStatus> status();
 
   /// Fetches the model if [status] says downloadable. Emits progress 0..1 (or -1 if unknown).
   Stream<double> download();
 
-  /// Streams the answer as it grows: every event is the full text so far.
-  Stream<String> generate(AssistantRequest request);
+  /// Streams the answer as it grows: every event is the full text so far. [search] answers the
+  /// model's searchPlan tool calls (engines with tool support).
+  Stream<String> generate(AssistantRequest request, {SearchPlan? search});
 
   Future<void> cancel();
 }
@@ -149,10 +165,34 @@ class NativeAssistantEngine implements AssistantEngine {
     }
   }
 
+  /// Search callbacks of in-flight requests, for the model's tool calls (native → Dart "search").
+  final _searches = <String, SearchPlan>{};
+  bool _handling = false;
+
+  void _handleNativeCalls() {
+    if (_handling) return;
+    _handling = true;
+    _methods.setMethodCallHandler((call) async {
+      if (call.method != 'search') return null;
+      final a = (call.arguments as Map).cast<String, dynamic>();
+      final search = _searches[a['id']];
+      if (search == null) return 'Nothing found.';
+      try {
+        return await search('${a['query'] ?? ''}');
+      } catch (_) {
+        return 'The search failed.';
+      }
+    });
+  }
+
   @override
-  Stream<String> generate(AssistantRequest r) async* {
+  Stream<String> generate(AssistantRequest r, {SearchPlan? search}) async* {
     final id = 'q${++_seq}';
     _current = id;
+    if (search != null) {
+      _searches[id] = search;
+      _handleNativeCalls();
+    }
     final events = _all.where((e) => e['id'] == id);
     final controller = StreamController<String>();
     final sub = events.listen((e) {
@@ -183,11 +223,13 @@ class NativeAssistantEngine implements AssistantEngine {
       'prompt': r.prompt,
       'temperature': r.temperature,
       'maxTokens': r.maxTokens,
+      'tools': r.tools && search != null,
     });
     try {
       yield* controller.stream;
     } finally {
       await sub.cancel();
+      _searches.remove(id);
       if (_current == id) _current = null;
     }
   }
@@ -214,7 +256,7 @@ class UnsupportedEngine implements AssistantEngine {
   @override
   Stream<double> download() => const Stream.empty();
   @override
-  Stream<String> generate(AssistantRequest request) =>
+  Stream<String> generate(AssistantRequest request, {SearchPlan? search}) =>
       Stream.error(AssistantException('unavailable', why.explanation));
   @override
   Future<void> cancel() async {}

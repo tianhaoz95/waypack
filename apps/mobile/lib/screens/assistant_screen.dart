@@ -124,14 +124,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
         .toList();
     final msg = _Message(question);
     setState(() => _messages.add(msg));
-    final request = _brief!.build(
+    final brief = _brief!;
+    final here = _here;
+    final request = brief.build(
       question,
-      here: _here,
+      here: here,
       now: DevFlags.fakeNowTime,
       history: history,
+      toolAvailable: _status?.tools ?? false,
     );
     _answering = _engine!
-        .generate(request)
+        .generate(request, search: (q) async => brief.toolResult(q, here: here))
         .listen(
           (text) {
             setState(() => msg.answer = text);

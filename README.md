@@ -61,7 +61,7 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | **Travel companions (29 checks)**: invites, join, download with owner's maps, permissions, leave/remove, link off, trip deleted | `node services/mcp/scripts/e2e-companions.mjs` (stack running) | ✅ |
 | **Live preview in a browser (11)**: page reloads itself after a push, keeps tab + scroll, map tiles, no console errors | `node services/mcp/scripts/e2e-preview-browser.mjs` (stack running) | ✅ |
 | App unit (49, incl. offline handoff over real sockets and the assistant's trip brief) | `cd apps/mobile && flutter test test/` | ✅ |
-| **Offline assistant vs Apple's on-device model (11 questions, expected facts)** | `apps/mobile/tool/assistant_eval/run.sh` (macOS with Apple Intelligence) | ✅ |
+| **Offline assistant vs Apple's on-device model** (14 questions incl. unknown plan keys; tool calling and pre-filled modes) | `apps/mobile/tool/assistant_eval/run.sh [--no-tools]` (macOS with Apple Intelligence) | ✅ |
 | **Offline handoff, Mac app → iPhone simulator** (different accounts, no server involved) | `node apps/mobile/tool/handoff_e2e.mjs <sim-udid> <out>` | ✅ |
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |
 
