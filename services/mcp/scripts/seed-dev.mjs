@@ -24,6 +24,11 @@ await fetch(`${SUPA}/rest/v1/entitlements?user_id=eq.${uid}`, {
   headers: svc,
   body: JSON.stringify(free ? { tier: "free", expires_at: null } : { tier: "annual", active: true, expires_at: new Date(Date.now() + 365 * 86400000).toISOString(), source: "manual" }),
 });
+// One "seed" token at a time: revoke earlier runs' tokens so the portal's list doesn't grow.
+const auth = { Authorization: `Bearer ${sess.access_token}` };
+for (const t of (await (await fetch(`${BASE}/api/tokens`, { headers: auth })).json()).tokens ?? []) {
+  if (t.label === "seed") await fetch(`${BASE}/api/tokens/${t.id}`, { method: "DELETE", headers: auth });
+}
 const pat = await (await fetch(`${BASE}/api/tokens`, { method: "POST", headers: { Authorization: `Bearer ${sess.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ label: "seed" }) })).json();
 const call = async (name, a) => {
   const r = await (await fetch(`${BASE}/mcp`, { method: "POST", headers: { Authorization: `Bearer ${pat.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: a } }) })).json();
