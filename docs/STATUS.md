@@ -24,7 +24,7 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - Needs for production: a second domain for previews (DEPLOY.md §2).
 
 ## Mac app (2026-10-04)
-- The Flutter app now builds for macOS (universal) and passes the full screenshot walkthrough on this Mac: dev sign-in, download, desktop plan layout (rail + pinned map), native Today, calendar sheet, offline map, Settings.
+- The Flutter app now builds for macOS (universal) and passes `integration_test/app_test.dart` on macOS (sign-in, download + SHA-256, local server token/CSP/Range/traversal/Host checks, WebView, Today, offline Map) and the full screenshot walkthrough on this Mac: dev sign-in, download, desktop plan layout (rail + pinned map), native Today, calendar sheet, offline map, Settings.
 - `apps/mobile/tool/release_mac.sh`: release build → Developer ID signing (hardened runtime) → signed DMG → optional notarize/staple → optional upload to R2. Verified locally up to a signed 36 MB DMG (with local config) uploaded to the dev bucket and downloaded through `/download/mac`. **Not notarized yet**: there's no production backend to point a real build at.
 - Site: "Download for Mac" on the landing page and account page. Worker route tests: 3.
 - Fixed along the way: the trip menu overflowed in short windows (also phones in landscape).
