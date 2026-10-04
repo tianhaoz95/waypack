@@ -2,29 +2,60 @@
   "schema_version": 1,
   "sdk_version": "1",
   "trip_id": null,
-  "title": "SAMPLE — Yosemite Valley Overnight",
+  "title": "SAMPLE \u2014 Yosemite Valley Overnight",
   "summary": "Template sample. Replace every field with researched data; coordinates must come from the geocode tool and route geometry from compute_route.",
   "timezone": "America/Los_Angeles",
   "start_date": "2026-06-12",
   "end_date": "2026-06-13",
-  "travelers": { "adults": 2, "children": [] },
+  "travelers": {
+    "adults": 2,
+    "children": []
+  },
   "nav_app": "google",
-  "map": { "bbox": [-119.66, 37.70, -119.52, 37.77], "max_zoom": 15, "extra_areas": [] },
+  "theme": {
+    "preset": "lake-summer",
+    "accent": "#0e7490",
+    "mood": "SAMPLE \u2014 granite walls, waterfalls and the Merced River in early summer",
+    "scene": {
+      "mountains": "peaks",
+      "water": "river",
+      "trees": "pine",
+      "ground": "grass",
+      "sun": "sun"
+    }
+  },
+  "map": {
+    "bbox": [
+      -119.66,
+      37.7,
+      -119.52,
+      37.77
+    ],
+    "max_zoom": 15,
+    "extra_areas": []
+  },
   "places": [
     {
       "id": "lodge-yvl",
       "name": "Yosemite Valley Lodge",
       "category": "lodging",
-      "lat": 37.7425, "lon": -119.5965,
+      "lat": 37.7425,
+      "lon": -119.5965,
       "address": "9006 Yosemite Lodge Dr, Yosemite Valley, CA 95389",
       "notes": "SAMPLE. Check-in 4pm, check-out 11am. Confirmation #SAMPLE.",
-      "links": [{ "label": "Lodge website", "url": "https://www.travelyosemite.com/" }]
+      "links": [
+        {
+          "label": "Lodge website",
+          "url": "https://www.travelyosemite.com/"
+        }
+      ]
     },
     {
       "id": "trailhead-lower-falls",
       "name": "Lower Yosemite Fall Trailhead",
       "category": "trailhead",
-      "lat": 37.7466, "lon": -119.5960,
+      "lat": 37.7466,
+      "lon": -119.596,
       "notes": "1 mi paved loop, stroller-friendly.",
       "hours": "24 h"
     },
@@ -32,25 +63,49 @@
       "id": "village-store",
       "name": "Yosemite Village Store",
       "category": "shopping",
-      "lat": 37.7485, "lon": -119.5870,
-      "hours": "8am–8pm (verify)"
+      "lat": 37.7485,
+      "lon": -119.587,
+      "hours": "8am\u20138pm (verify)"
     },
     {
       "id": "clinic",
       "name": "Yosemite Medical Clinic (verify status)",
       "category": "medical",
-      "lat": 37.7468, "lon": -119.5813
+      "lat": 37.7468,
+      "lon": -119.5813
     }
   ],
   "routes": [
     {
       "id": "r-lodge-falls",
-      "name": "Lodge → Lower Yosemite Fall",
+      "name": "Lodge \u2192 Lower Yosemite Fall",
       "mode": "walking",
-      "from": "lodge-yvl", "to": "trailhead-lower-falls",
-      "distance_m": 700, "duration_s": 600,
-      "geometry": { "type": "LineString", "coordinates": [[-119.5965, 37.7425], [-119.5968, 37.7440], [-119.5964, 37.7455], [-119.5960, 37.7466]] },
-      "notes": "SAMPLE geometry — use compute_route for real paths."
+      "from": "lodge-yvl",
+      "to": "trailhead-lower-falls",
+      "distance_m": 700,
+      "duration_s": 600,
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -119.5965,
+            37.7425
+          ],
+          [
+            -119.5968,
+            37.744
+          ],
+          [
+            -119.5964,
+            37.7455
+          ],
+          [
+            -119.596,
+            37.7466
+          ]
+        ]
+      },
+      "notes": "SAMPLE geometry \u2014 use compute_route for real paths."
     }
   ],
   "days": [
@@ -58,28 +113,68 @@
       "date": "2026-06-12",
       "title": "Arrive & waterfalls",
       "items": [
-        { "time": "15:00", "end_time": "16:00", "title": "Check in", "place_id": "lodge-yvl", "kind": "lodging" },
-        { "time": "16:30", "end_time": "17:30", "title": "Walk to Lower Yosemite Fall", "place_id": "trailhead-lower-falls", "route_id": "r-lodge-falls", "kind": "activity" },
-        { "time": "18:00", "title": "Groceries for tomorrow", "place_id": "village-store", "kind": "other" }
+        {
+          "time": "15:00",
+          "end_time": "16:00",
+          "title": "Check in",
+          "place_id": "lodge-yvl",
+          "kind": "lodging"
+        },
+        {
+          "time": "16:30",
+          "end_time": "17:30",
+          "title": "Walk to Lower Yosemite Fall",
+          "place_id": "trailhead-lower-falls",
+          "route_id": "r-lodge-falls",
+          "kind": "activity"
+        },
+        {
+          "time": "18:00",
+          "title": "Groceries for tomorrow",
+          "place_id": "village-store",
+          "kind": "other"
+        }
       ]
     },
     {
       "date": "2026-06-13",
       "title": "Morning walk & depart",
       "items": [
-        { "time": "08:00", "title": "Breakfast", "kind": "meal" },
-        { "time": "11:00", "title": "Check out", "place_id": "lodge-yvl", "kind": "lodging" }
+        {
+          "time": "08:00",
+          "title": "Breakfast",
+          "kind": "meal"
+        },
+        {
+          "time": "11:00",
+          "title": "Check out",
+          "place_id": "lodge-yvl",
+          "kind": "lodging"
+        }
       ]
     }
   ],
   "live_checks": [
-    { "label": "Yosemite current conditions (NPS)", "url": "https://www.nps.gov/yose/planyourvisit/conditions.htm" },
-    { "label": "Caltrans QuickMap road conditions", "url": "https://quickmap.dot.ca.gov/" }
+    {
+      "label": "Yosemite current conditions (NPS)",
+      "url": "https://www.nps.gov/yose/planyourvisit/conditions.htm"
+    },
+    {
+      "label": "Caltrans QuickMap road conditions",
+      "url": "https://quickmap.dot.ca.gov/"
+    }
   ],
   "emergency": {
-    "numbers": [{ "label": "Emergency", "value": "911" }],
-    "notes": "SAMPLE — list the nearest hospital and ranger station here.",
-    "places": ["clinic"]
+    "numbers": [
+      {
+        "label": "Emergency",
+        "value": "911"
+      }
+    ],
+    "notes": "SAMPLE \u2014 list the nearest hospital and ranger station here.",
+    "places": [
+      "clinic"
+    ]
   },
   "offline_notes": "Download this trip in Waypack before leaving home."
 }

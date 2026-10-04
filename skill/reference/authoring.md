@@ -26,8 +26,13 @@ worker-src 'self' blob:; frame-src 'none'; object-src 'none'
 - Viewport meta; dark mode via `prefers-color-scheme`.
 - Sections for packing, budget, emergency, backup plans; Navigate buttons via `Waypack.openInMaps`.
 - `live_checks` and `emergency.numbers` present.
+- Add to calendar buttons (`Waypack.addToCalendar` / `data-cal`).
+- A wide-screen layout (`@media (min-width: …)`).
+- A `theme` in the manifest.
 
 ## Design
+- **Look like the trip.** Use `manifest.theme` (preset + scene) so a winter Tahoe plan has snow, a blue lake and pines, and a summer desert plan has mesas and warm light. You can restyle further: override CSS variables from `assets/theme.css` in your own stylesheet. Keep contrast high in both light and dark mode.
+- **Responsive.** Design for phone first, then make it good on iPad (≥ 760px: two columns for Today/Places/Guide) and desktop (≥ 1100px: side navigation rail, map pinned beside the plan). Keep line length readable (max ~75 characters). Never stretch a phone layout to full width.
 - Readable at arm's length: body ≥ 16px, high contrast, generous spacing.
 - One-handed: primary actions at the bottom, tap targets ≥ 44px, no hover-only UI.
 - "What's next" is one tap away (Today tab). Times in local 12h/24h per locale.

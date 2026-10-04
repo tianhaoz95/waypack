@@ -41,11 +41,17 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
    - `map.bbox` = `[minLon, minLat, maxLon, maxLat]` covering every place + a few km. ≤ 40,000 km² per box; use `extra_areas` (≤ 3 more) for far-apart bases instead of one giant box.
    - Every day between `start_date` and `end_date` gets a `days[]` entry; items sorted by `time` (24h `HH:MM`, local to `timezone`).
    - Set `nav_app` to `"google"` or `"apple"` from the interview.
+   - Set `theme` so the plan looks like **the destination in that season** (see "Theme" below).
 2. **`index.html`** — the rich experience. Keep the template's tabs (Today / Plan / Map / Places / Guide); rewrite the **Guide** section content with your research. Add per-day rich notes via `<div data-day-notes="YYYY-MM-DD">`. You may restyle or restructure freely, as long as the rules in `reference/authoring.md` hold.
-3. **Coverage checklist** — every plan must address each item (or say "N/A — reason"):
+3. **Theme**: pick the `theme.preset` closest to the place and season, then compose `theme.scene` from what the traveler will actually see. The template paints the banner from it, and the app tints its native screens with `theme.accent`.
+   - Presets: `alpine-winter`, `winter-forest`, `lake-summer`, `coast`, `tropical`, `desert`, `autumn`, `spring-blossom`, `city`.
+   - Examples: Lake Tahoe in January → `alpine-winter` with `snowy-peaks`, `lake`, `snowy-pine`, snow ground and falling snow. Sequoia in December → `winter-forest` with `sequoia` trees. Zion in October → `desert` with `mesas`, `river`, `autumn`. Kyoto in April → `spring-blossom` with `blossom`, `city` ground, `petals`.
+   - Be accurate: Lake Tahoe never freezes, so use `lake`, not `frozen-lake`. Set `accent` (and `accent_dark`) only when the preset's color doesn't fit. Full field list: `reference/manifest.md`.
+4. **Coverage checklist** — every plan must address each item (or say "N/A — reason"):
    - [ ] **Overview**: one-screen summary, dates, travelers, key reservations, assumptions
    - [ ] **Today view** reachable in one tap (template's Today tab)
-   - [ ] **Day-by-day itinerary** with times, durations, buffers; drive times from `compute_route`
+   - [ ] **Day-by-day itinerary** with times, durations, buffers; drive times from `compute_route`. Give items an `end_time` where you know it
+   - [ ] **Add to calendar** button on every timed item (template's `data-cal` buttons → `Waypack.addToCalendar`)
    - [ ] **Lodging**: address, coordinates, check-in/out, confirmation #, phone, parking
    - [ ] **Routes**: every non-trivial move, with notes (closures, chains, tolls, last fuel)
    - [ ] **Places**: hours ("verify"), cost, reservation needs, kid/accessibility notes
@@ -62,6 +68,7 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
 - Include the SDK: `<script src="/__waypack/sdk/v1/waypack.js"></script>`. Use `Waypack.map()` for maps — never bundle MapLibre/Leaflet or tile URLs.
 - Every place/item gets a **Navigate** button → `Waypack.openInMaps(placeId)`.
 - Mobile-first: tap targets ≥ 44px, body text ≥ 16px, works one-handed, supports dark mode (`prefers-color-scheme`).
+- **Responsive:** the plan also opens on iPad and desktop. Keep the template's wide layouts (two columns from 760px; side rail and pinned map from 1100px), or write your own `@media (min-width: …)` rules. No stretched single column on a wide screen.
 - ≤ 25 MB zipped, ≤ 2,000 files; images WebP/JPEG ≤ 1600px. Prefer inline SVG.
 
 SDK reference: `reference/sdk.md`.
@@ -70,7 +77,7 @@ SDK reference: `reference/sdk.md`.
 
 - CLI: `npx @waypack/cli validate ./waypack/<slug>` — fix **all errors**; fix warnings unless you have a reason (state it to the user).
 - Or MCP `validate_bundle` with the files.
-- Optional: `npx @waypack/cli preview ./waypack/<slug>` and check it in a phone-sized browser.
+- Optional: `npx @waypack/cli preview ./waypack/<slug>` and check it at phone, iPad and desktop widths.
 
 ## Phase 5 — Upload
 

@@ -48,10 +48,16 @@ class _SignInScreenState extends State<SignInScreen> {
 
   /// Google everywhere, and Apple on Android: Supabase OAuth (PKCE) in the system auth session.
   Future<void> _webOAuth(OAuthProvider provider) async {
-    final res = await _sb.auth.getOAuthSignInUrl(provider: provider, redirectTo: Config.authRedirect);
+    final res = await _sb.auth.getOAuthSignInUrl(
+      provider: provider,
+      redirectTo: Config.authRedirect,
+    );
     final String result;
     try {
-      result = await FlutterWebAuth2.authenticate(url: res.url, callbackUrlScheme: Config.authScheme);
+      result = await FlutterWebAuth2.authenticate(
+        url: res.url,
+        callbackUrlScheme: Config.authScheme,
+      );
     } on PlatformException catch (e) {
       if (e.code == 'CANCELED') throw _Cancelled();
       rethrow;
@@ -59,7 +65,9 @@ class _SignInScreenState extends State<SignInScreen> {
     final uri = Uri.parse(result);
     final code = uri.queryParameters['code'];
     if (code == null) {
-      final err = uri.queryParameters['error_description'] ?? uri.queryParameters['error'];
+      final err =
+          uri.queryParameters['error_description'] ??
+          uri.queryParameters['error'];
       if (err == null || err.contains('cancel')) throw _Cancelled();
       throw AuthException(err.replaceAll('+', ' '));
     }
@@ -72,7 +80,10 @@ class _SignInScreenState extends State<SignInScreen> {
     final AuthorizationCredentialAppleID cred;
     try {
       cred = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
         nonce: sha256.convert(utf8.encode(rawNonce)).toString(),
       );
     } on SignInWithAppleAuthorizationException catch (e) {
@@ -80,29 +91,42 @@ class _SignInScreenState extends State<SignInScreen> {
       rethrow;
     }
     final idToken = cred.identityToken;
-    if (idToken == null) throw const AuthException('Apple didn\'t return an identity token.');
-    await _sb.auth.signInWithIdToken(provider: OAuthProvider.apple, idToken: idToken, nonce: rawNonce);
+    if (idToken == null) {
+      throw const AuthException('Apple didn\'t return an identity token.');
+    }
+    await _sb.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
   }
 
   static String _nonce([int length = 32]) {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final r = Random.secure();
     return List.generate(length, (_) => chars[r.nextInt(chars.length)]).join();
   }
 
-  Future<void> _apple() => _run(() => Platform.isIOS ? _appleNative() : _webOAuth(OAuthProvider.apple));
+  Future<void> _apple() => _run(
+    () => Platform.isIOS ? _appleNative() : _webOAuth(OAuthProvider.apple),
+  );
   Future<void> _google() => _run(() => _webOAuth(OAuthProvider.google));
 
   /// Local development / tests only (build with --dart-define=DEV_SIGN_IN=true).
   Future<void> _dev(String email) => _run(() async {
-        final res = await http.post(
-          Uri.parse('${Config.apiUrl}/api/auth/dev'),
-          headers: {'Content-Type': 'application/json', 'X-Waypack': '1'},
-          body: jsonEncode({'email': email}),
-        );
-        if (res.statusCode != 200) throw AuthException('Dev sign-in refused (${res.statusCode})');
-        await _sb.auth.setSession((jsonDecode(res.body) as Map)['refresh_token'] as String);
-      });
+    final res = await http.post(
+      Uri.parse('${Config.apiUrl}/api/auth/dev'),
+      headers: {'Content-Type': 'application/json', 'X-Waypack': '1'},
+      body: jsonEncode({'email': email}),
+    );
+    if (res.statusCode != 200) {
+      throw AuthException('Dev sign-in refused (${res.statusCode})');
+    }
+    await _sb.auth.setSession(
+      (jsonDecode(res.body) as Map)['refresh_token'] as String,
+    );
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -118,29 +142,63 @@ class _SignInScreenState extends State<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.backpack_outlined, size: 56, color: t.colorScheme.primary),
+                  Icon(
+                    Icons.backpack_outlined,
+                    size: 56,
+                    color: t.colorScheme.primary,
+                  ),
                   const SizedBox(height: 12),
-                  Text('Waypack', textAlign: TextAlign.center, style: t.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Waypack',
+                    textAlign: TextAlign.center,
+                    style: t.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Text('Trips planned by your AI agent, ready when the signal isn\'t.',
-                      textAlign: TextAlign.center, style: t.textTheme.bodyLarge?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+                  Text(
+                    'Trips planned by your AI agent, ready when the signal isn\'t.',
+                    textAlign: TextAlign.center,
+                    style: t.textTheme.bodyLarge?.copyWith(
+                      color: t.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 40),
                   SignInWithAppleButton(
                     onPressed: _busy ? () {} : _apple,
                     text: 'Continue with Apple',
                     // The Apple button sizes its label from the height (≈0.43×); the Google label matches it.
                     height: 50,
-                    style: dark ? SignInWithAppleButtonStyle.white : SignInWithAppleButtonStyle.black,
+                    style: dark
+                        ? SignInWithAppleButtonStyle.white
+                        : SignInWithAppleButtonStyle.black,
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                   ),
                   const SizedBox(height: 12),
                   _GoogleButton(onPressed: _busy ? null : _google),
-                  if (_busy) const Padding(padding: EdgeInsets.only(top: 20), child: Center(child: CircularProgressIndicator())),
-                  if (_error != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(_error!, style: TextStyle(color: t.colorScheme.error))),
+                  if (_busy)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: t.colorScheme.error),
+                      ),
+                    ),
                   const SizedBox(height: 28),
-                  Text('Use the same account as your AI agent\'s Waypack connection.',
-                      textAlign: TextAlign.center, style: t.textTheme.bodySmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
-                  if (DevFlags.devSignIn) _DevSignIn(onSubmit: _dev, busy: _busy),
+                  Text(
+                    'Use the same account as your AI agent\'s Waypack connection.',
+                    textAlign: TextAlign.center,
+                    style: t.textTheme.bodySmall?.copyWith(
+                      color: t.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (DevFlags.devSignIn)
+                    _DevSignIn(onSubmit: _dev, busy: _busy),
                 ],
               ),
             ),
@@ -160,29 +218,36 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 50,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF1F1F1F),
-            side: const BorderSide(color: Color(0xFF747775)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-          ),
-          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            _GoogleG(),
-            SizedBox(width: 8),
-            Text('Continue with Google'),
-          ]),
-        ),
-      );
+    height: 50,
+    child: OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1F1F1F),
+        side: const BorderSide(color: Color(0xFF747775)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _GoogleG(),
+          SizedBox(width: 8),
+          Text('Continue with Google'),
+        ],
+      ),
+    ),
+  );
 }
 
 class _GoogleG extends StatelessWidget {
   const _GoogleG();
   @override
-  Widget build(BuildContext context) => const SizedBox(width: 20, height: 20, child: CustomPaint(painter: _GPainter()));
+  Widget build(BuildContext context) => const SizedBox(
+    width: 20,
+    height: 20,
+    child: CustomPaint(painter: _GPainter()),
+  );
 }
 
 /// Draws the four-colour Google "G".
@@ -192,17 +257,48 @@ class _GPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = size.width;
     final stroke = s * 0.2;
-    final rect = Rect.fromCircle(center: Offset(s / 2, s / 2), radius: s / 2 - stroke / 2);
+    final rect = Rect.fromCircle(
+      center: Offset(s / 2, s / 2),
+      radius: s / 2 - stroke / 2,
+    );
     Paint p(Color c) => Paint()
       ..color = c
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke;
     const deg = pi / 180;
-    canvas.drawArc(rect, -40 * deg, -100 * deg, false, p(const Color(0xFFEA4335))); // red (top)
-    canvas.drawArc(rect, -140 * deg, -80 * deg, false, p(const Color(0xFFFBBC05))); // yellow (left)
-    canvas.drawArc(rect, -220 * deg, -95 * deg, false, p(const Color(0xFF34A853))); // green (bottom)
-    canvas.drawArc(rect, -315 * deg, -45 * deg, false, p(const Color(0xFF4285F4))); // blue (right)
-    canvas.drawLine(Offset(s / 2, s / 2), Offset(s - stroke / 2, s / 2), p(const Color(0xFF4285F4))..strokeCap = StrokeCap.butt);
+    canvas.drawArc(
+      rect,
+      -40 * deg,
+      -100 * deg,
+      false,
+      p(const Color(0xFFEA4335)),
+    ); // red (top)
+    canvas.drawArc(
+      rect,
+      -140 * deg,
+      -80 * deg,
+      false,
+      p(const Color(0xFFFBBC05)),
+    ); // yellow (left)
+    canvas.drawArc(
+      rect,
+      -220 * deg,
+      -95 * deg,
+      false,
+      p(const Color(0xFF34A853)),
+    ); // green (bottom)
+    canvas.drawArc(
+      rect,
+      -315 * deg,
+      -45 * deg,
+      false,
+      p(const Color(0xFF4285F4)),
+    ); // blue (right)
+    canvas.drawLine(
+      Offset(s / 2, s / 2),
+      Offset(s - stroke / 2, s / 2),
+      p(const Color(0xFF4285F4))..strokeCap = StrokeCap.butt,
+    );
   }
 
   @override
@@ -221,14 +317,32 @@ class _DevSignInState extends State<_DevSignIn> {
   final _email = TextEditingController(text: 'dev@waypack.test');
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 32),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const Divider(),
-          Text('Dev sign-in (local server only)', style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 8),
-          TextField(key: const Key('dev-email'), controller: _email, decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true)),
-          const SizedBox(height: 8),
-          OutlinedButton(onPressed: widget.busy ? null : () => widget.onSubmit(_email.text.trim()), child: const Text('Dev sign-in')),
-        ]),
-      );
+    padding: const EdgeInsets.only(top: 32),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(),
+        Text(
+          'Dev sign-in (local server only)',
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('dev-email'),
+          controller: _email,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: widget.busy
+              ? null
+              : () => widget.onSubmit(_email.text.trim()),
+          child: const Text('Dev sign-in'),
+        ),
+      ],
+    ),
+  );
 }

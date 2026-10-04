@@ -14,9 +14,23 @@
         "age": 2
       }
     ],
-    "notes": "Toddler naps ~1–3pm; car seat; motion sickness possible on Generals Highway hairpins."
+    "notes": "Toddler naps ~1\u20133pm; car seat; motion sickness possible on Generals Highway hairpins."
   },
   "nav_app": "google",
+  "theme": {
+    "preset": "winter-forest",
+    "accent": "#9a3f1d",
+    "accent_dark": "#e08a62",
+    "mood": "Giant sequoias in fresh snow, red bark, quiet winter light",
+    "scene": {
+      "sun": "low-sun",
+      "mountains": "snowy-peaks",
+      "water": "none",
+      "trees": "sequoia",
+      "ground": "snow",
+      "particles": "snow"
+    }
+  },
   "map": {
     "bbox": [
       -118.95,
@@ -34,7 +48,7 @@
           36.47
         ],
         "max_zoom": 13,
-        "label": "Three Rivers → Visalia (hospital)"
+        "label": "Three Rivers \u2192 Visalia (hospital)"
       }
     ]
   },
@@ -46,7 +60,7 @@
       "lat": 36.43856,
       "lon": -118.90529,
       "address": "41669 Sierra Dr, Three Rivers, CA 93271",
-      "hours": "Morning hours — verify holiday hours",
+      "hours": "Morning hours \u2014 verify holiday hours",
       "notes": "Coffee + breakfast before the climb. Fallback: Sequoia Coffee & Kitchen next door."
     },
     {
@@ -65,12 +79,12 @@
       "lat": 36.44932,
       "lon": -118.89975,
       "address": "42323 Sierra Dr, Three Rivers, CA 93271",
-      "hours": "Verify — may close Dec 25/26",
+      "hours": "Verify \u2014 may close Dec 25/26",
       "notes": "Riverside patio; kid-friendly lunch on the way out."
     },
     {
       "id": "fuel-shell-three-rivers",
-      "name": "Shell — Three Rivers (last gas)",
+      "name": "Shell \u2014 Three Rivers (last gas)",
       "category": "fuel",
       "lat": 36.43955,
       "lon": -118.90485,
@@ -84,7 +98,7 @@
       "lat": 36.49086,
       "lon": -118.82523,
       "address": "Generals Hwy, Three Rivers, CA 93271 (just past Ash Mountain entrance)",
-      "hours": "Usually 8am–4:30pm — verify",
+      "hours": "Usually 8am\u20134:30pm \u2014 verify",
       "notes": "Restrooms, maps, ask rangers about chain controls and Wolverton status."
     },
     {
@@ -93,7 +107,7 @@
       "category": "sight",
       "lat": 36.5647,
       "lon": -118.7727,
-      "hours": "9am–4:30pm through Jan 2 (verify)",
+      "hours": "9am\u20134:30pm through Jan 2 (verify)",
       "cost": "Free (park entry required)",
       "notes": "Small, warm, stroller-friendly. Holiday shuttle stop when running."
     },
@@ -104,7 +118,7 @@
       "lat": 36.56609,
       "lon": -118.76886,
       "cost": "Free",
-      "notes": "1.3 mi loop, paved and flat in summer; snow-covered in winter → bring the toddler carrier or snowshoes. Trail starts across the road from the museum."
+      "notes": "1.3 mi loop, paved and flat in summer; snow-covered in winter \u2192 bring the toddler carrier or snowshoes. Trail starts across the road from the museum."
     },
     {
       "id": "shopping-lodgepole-market",
@@ -113,7 +127,7 @@
       "lat": 36.60447,
       "lon": -118.73118,
       "address": "63204 Lodgepole Rd, Sequoia National Park, CA 93262",
-      "hours": "Winter hours vary — verify",
+      "hours": "Winter hours vary \u2014 verify",
       "notes": "Snacks, basic groceries, sleds when open. Don't count on it on Dec 25."
     },
     {
@@ -122,7 +136,7 @@
       "category": "other",
       "lat": 36.60409,
       "lon": -118.73213,
-      "hours": "Often closed or limited in winter — verify",
+      "hours": "Often closed or limited in winter \u2014 verify",
       "notes": "Restrooms and info when open."
     },
     {
@@ -133,8 +147,8 @@
       "lon": -118.75202,
       "address": "64740 Wuksachi Way, Sequoia National Park, CA 93262",
       "phone": "+1-559-565-4070",
-      "hours": "Check-in 4pm · check-out 11am (verify)",
-      "notes": "Confirmation #REPLACE-ME. 2 nights (Dec 24–26). Parking at the lodge; rooms are in buildings a short walk from the main lodge — bring the bags in one trip with the stroller. Snowshoe and pole rentals here when the lodge is open.",
+      "hours": "Check-in 4pm \u00b7 check-out 11am (verify)",
+      "notes": "Confirmation #REPLACE-ME. 2 nights (Dec 24\u201326). Parking at the lodge; rooms are in buildings a short walk from the main lodge \u2014 bring the bags in one trip with the stroller. Snowshoe and pole rentals here when the lodge is open.",
       "links": [
         {
           "label": "Visit Sequoia (lodge & dining)",
@@ -153,7 +167,7 @@
       "lat": 36.60845,
       "lon": -118.75353,
       "phone": "+1-866-807-3598",
-      "hours": "Breakfast 7–10am; lunch & dinner daily (verify)",
+      "hours": "Breakfast 7\u201310am; lunch & dinner daily (verify)",
       "notes": "Only sit-down restaurant open in the Giant Forest area in winter. Reserve Christmas Eve and Christmas dinner early. High chairs available (verify)."
     },
     {
@@ -167,11 +181,11 @@
     },
     {
       "id": "trailhead-sherman",
-      "name": "General Sherman Tree — parking",
+      "name": "General Sherman Tree \u2014 parking",
       "category": "trailhead",
       "lat": 36.58484,
       "lon": -118.74976,
-      "notes": "Main lot off Wolverton Rd closes once snow accumulates. Then use the accessible parking area on Generals Hwy (open to all in winter) — follow signs."
+      "notes": "Main lot off Wolverton Rd closes once snow accumulates. Then use the accessible parking area on Generals Hwy (open to all in winter) \u2014 follow signs."
     },
     {
       "id": "sight-general-sherman",
@@ -180,7 +194,7 @@
       "lat": 36.58165,
       "lon": -118.75144,
       "cost": "Free",
-      "notes": "Largest tree on Earth by volume. From the main lot it's 0.5 mi each way with stairs and ~200 ft back up — carrier, not stroller. From the winter accessible lot it's a short, flatter walk."
+      "notes": "Largest tree on Earth by volume. From the main lot it's 0.5 mi each way with stairs and ~200 ft back up \u2014 carrier, not stroller. From the winter accessible lot it's a short, flatter walk."
     },
     {
       "id": "sight-hospital-rock",
@@ -188,7 +202,7 @@
       "category": "sight",
       "lat": 36.52124,
       "lon": -118.77129,
-      "notes": "Pictographs and bedrock mortars of the Monache people, 2 minutes from the road. Usually below the snow line — good leg-stretch on the way down."
+      "notes": "Pictographs and bedrock mortars of the Monache people, 2 minutes from the road. Usually below the snow line \u2014 good leg-stretch on the way down."
     },
     {
       "id": "hospital-kaweah",
@@ -199,13 +213,13 @@
       "address": "400 W Mineral King Ave, Visalia, CA 93291",
       "phone": "+1-559-624-2000",
       "hours": "Emergency 24/7",
-      "notes": "Nearest full hospital — about 1.5–2 hours from Wuksachi in winter."
+      "notes": "Nearest full hospital \u2014 about 1.5\u20132 hours from Wuksachi in winter."
     }
   ],
   "routes": [
     {
       "id": "r-d1-entrance",
-      "name": "Three Rivers → Foothills Visitor Center",
+      "name": "Three Rivers \u2192 Foothills Visitor Center",
       "mode": "driving",
       "from": "fuel-shell-three-rivers",
       "to": "vc-foothills",
@@ -1860,7 +1874,7 @@
     },
     {
       "id": "r-d1-climb",
-      "name": "Foothills → Giant Forest (Generals Highway)",
+      "name": "Foothills \u2192 Giant Forest (Generals Highway)",
       "mode": "driving",
       "from": "vc-foothills",
       "to": "sight-giant-forest-museum",
@@ -8743,11 +8757,11 @@
         ],
         "type": "LineString"
       },
-      "notes": "Climbs ~5,000 ft with many hairpins (not recommended for vehicles > 22 ft between Hospital Rock and Wolverton). Chains may be required at any time — carry them even with AWD/4WD. Use pullouts if the toddler gets carsick."
+      "notes": "Climbs ~5,000 ft with many hairpins (not recommended for vehicles > 22 ft between Hospital Rock and Wolverton). Chains may be required at any time \u2014 carry them even with AWD/4WD. Use pullouts if the toddler gets carsick."
     },
     {
       "id": "r-d1-bigtrees",
-      "name": "Museum → Big Trees Trail",
+      "name": "Museum \u2192 Big Trees Trail",
       "mode": "walking",
       "from": "sight-giant-forest-museum",
       "to": "trailhead-big-trees",
@@ -8866,7 +8880,7 @@
     },
     {
       "id": "r-d1-to-lodge",
-      "name": "Giant Forest → Wuksachi Lodge",
+      "name": "Giant Forest \u2192 Wuksachi Lodge",
       "mode": "driving",
       "from": "sight-giant-forest-museum",
       "to": "lodge-wuksachi",
@@ -10453,7 +10467,7 @@
     },
     {
       "id": "r-d2-wolverton",
-      "name": "Wuksachi → Wolverton Snowplay",
+      "name": "Wuksachi \u2192 Wolverton Snowplay",
       "mode": "driving",
       "from": "lodge-wuksachi",
       "to": "activity-wolverton-snowplay",
@@ -11672,7 +11686,7 @@
     },
     {
       "id": "r-d2-sherman-drive",
-      "name": "Wuksachi → General Sherman parking",
+      "name": "Wuksachi \u2192 General Sherman parking",
       "mode": "driving",
       "from": "lodge-wuksachi",
       "to": "trailhead-sherman",
@@ -12990,11 +13004,11 @@
         ],
         "type": "LineString"
       },
-      "notes": "Paved but steep with steps; icy in winter — traction devices (microspikes) help."
+      "notes": "Paved but steep with steps; icy in winter \u2014 traction devices (microspikes) help."
     },
     {
       "id": "r-d3-down",
-      "name": "Wuksachi → Hospital Rock → Three Rivers",
+      "name": "Wuksachi \u2192 Hospital Rock \u2192 Three Rivers",
       "mode": "driving",
       "from": "lodge-wuksachi",
       "to": "food-sequoia-coffee-kitchen",
@@ -23621,7 +23635,7 @@
     },
     {
       "id": "r-hospital",
-      "name": "Three Rivers → Kaweah Health (Visalia)",
+      "name": "Three Rivers \u2192 Kaweah Health (Visalia)",
       "mode": "driving",
       "from": "fuel-shell-three-rivers",
       "to": "hospital-kaweah",
@@ -26366,12 +26380,12 @@
           "title": "Breakfast & coffee",
           "place_id": "food-sequoia-coffee",
           "kind": "meal",
-          "notes": "Use the restroom here — next real one is the visitor center."
+          "notes": "Use the restroom here \u2014 next real one is the visitor center."
         },
         {
           "time": "09:15",
           "end_time": "09:30",
-          "title": "Fill up — last gas",
+          "title": "Fill up \u2014 last gas",
           "place_id": "fuel-shell-three-rivers",
           "kind": "travel",
           "notes": "Check chains are in the car. Call road line (559) 565-3341 while you still have signal."
@@ -26407,7 +26421,7 @@
           "title": "Picnic lunch in the car / museum",
           "place_id": "sight-giant-forest-museum",
           "kind": "meal",
-          "notes": "Bring lunch from Three Rivers — no food for sale here in winter."
+          "notes": "Bring lunch from Three Rivers \u2014 no food for sale here in winter."
         },
         {
           "time": "12:15",
@@ -26444,7 +26458,7 @@
         {
           "time": "17:30",
           "end_time": "18:45",
-          "title": "Christmas Eve dinner — The Peaks",
+          "title": "Christmas Eve dinner \u2014 The Peaks",
           "place_id": "food-the-peaks",
           "kind": "reservation",
           "notes": "Reservation recommended. Early seating suits toddler bedtime."
@@ -26513,7 +26527,7 @@
         {
           "time": "17:30",
           "end_time": "18:45",
-          "title": "Christmas dinner — The Peaks",
+          "title": "Christmas dinner \u2014 The Peaks",
           "place_id": "food-the-peaks",
           "kind": "reservation"
         }
@@ -26536,7 +26550,7 @@
           "title": "One more snow session or Lodgepole walk",
           "place_id": "activity-wolverton-snowplay",
           "kind": "activity",
-          "notes": "Optional — skip if roads are icy or a storm is due; the descent matters more."
+          "notes": "Optional \u2014 skip if roads are icy or a storm is due; the descent matters more."
         },
         {
           "time": "10:45",
@@ -26591,7 +26605,7 @@
       "url": "https://quickmap.dot.ca.gov/"
     },
     {
-      "label": "NWS forecast — Lodgepole",
+      "label": "NWS forecast \u2014 Lodgepole",
       "url": "https://forecast.weather.gov/MapClick.php?lat=36.604&lon=-118.73"
     },
     {
@@ -26622,11 +26636,11 @@
         "value": "(800) 222-1222"
       }
     ],
-    "notes": "There is little or no cell service in most of the park; Wi-Fi and phones at Wuksachi Lodge and Lodgepole work. 911 texts sometimes get through where calls fail. The nearest hospital is in Visalia, 1.5–2 h from the lodge in winter — rangers can coordinate an ambulance or helicopter.",
+    "notes": "There is little or no cell service in most of the park; Wi-Fi and phones at Wuksachi Lodge and Lodgepole work. 911 texts sometimes get through where calls fail. The nearest hospital is in Visalia, 1.5\u20132 h from the lodge in winter \u2014 rangers can coordinate an ambulance or helicopter.",
     "places": [
       "hospital-kaweah",
       "lodge-wuksachi"
     ]
   },
-  "offline_notes": "Download this trip in Waypack (with map) and a Google Maps offline area covering Visalia → Lodgepole before leaving home."
+  "offline_notes": "Download this trip in Waypack (with map) and a Google Maps offline area covering Visalia \u2192 Lodgepole before leaving home."
 }

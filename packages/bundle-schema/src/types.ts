@@ -70,7 +70,26 @@ export interface Manifest {
   live_checks?: Link[];
   emergency?: { numbers?: { label: string; value: string }[]; notes?: string; places?: string[] };
   offline_notes?: string;
+  nav_app?: "google" | "apple";
+  theme?: ManifestTheme;
   [k: string]: unknown;
+}
+
+export interface ManifestTheme {
+  preset?: string;
+  accent?: string;
+  accent_dark?: string;
+  mood?: string;
+  scene?: {
+    sky?: string;
+    sun?: "sun" | "low-sun" | "moon" | "none";
+    mountains?: "none" | "rolling" | "peaks" | "snowy-peaks" | "mesas";
+    water?: "none" | "lake" | "frozen-lake" | "ocean" | "river";
+    trees?: "none" | "pine" | "snowy-pine" | "sequoia" | "palm" | "deciduous" | "autumn" | "blossom" | "cactus";
+    ground?: "snow" | "grass" | "sand" | "rock" | "city";
+    particles?: "none" | "snow" | "leaves" | "petals" | "stars" | "rain";
+    skyline?: boolean;
+  };
 }
 
 export interface Issue {

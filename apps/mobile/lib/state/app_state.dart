@@ -24,7 +24,11 @@ class TripEntry {
   String? get startDate => remote?.startDate ?? local?.startDate;
   String? get endDate => remote?.endDate ?? local?.endDate;
   bool get isOffline => local != null;
-  bool get updateAvailable => remote != null && local != null && remote!.version > local!.version && remote!.status == 'ready';
+  bool get updateAvailable =>
+      remote != null &&
+      local != null &&
+      remote!.version > local!.version &&
+      remote!.status == 'ready';
   bool get isPast {
     final end = endDate;
     if (end == null) return false;
@@ -33,7 +37,8 @@ class TripEntry {
 }
 
 class AppState extends ChangeNotifier {
-  AppState({required this.store, required this.server, required this.api}) : downloader = TripDownloader(api, store);
+  AppState({required this.store, required this.server, required this.api})
+    : downloader = TripDownloader(api, store);
 
   final TripStore store;
   final LocalServer server;
@@ -52,12 +57,17 @@ class AppState extends ChangeNotifier {
   Session? get session => Supabase.instance.client.auth.currentSession;
   User? get user => Supabase.instance.client.auth.currentUser;
 
-  List<TripEntry> get upcoming => _sorted(_trips.values.where((t) => !t.isPast), asc: true);
-  List<TripEntry> get past => _sorted(_trips.values.where((t) => t.isPast), asc: false);
+  List<TripEntry> get upcoming =>
+      _sorted(_trips.values.where((t) => !t.isPast), asc: true);
+  List<TripEntry> get past =>
+      _sorted(_trips.values.where((t) => t.isPast), asc: false);
   TripEntry? trip(String id) => _trips[id];
 
   List<TripEntry> _sorted(Iterable<TripEntry> it, {required bool asc}) {
-    final l = it.toList()..sort((a, b) => (a.startDate ?? '9999').compareTo(b.startDate ?? '9999'));
+    final l = it.toList()
+      ..sort(
+        (a, b) => (a.startDate ?? '9999').compareTo(b.startDate ?? '9999'),
+      );
     return asc ? l : l.reversed.toList();
   }
 
@@ -111,16 +121,26 @@ class AppState extends ChangeNotifier {
       }
       lastSynced = DateTime.now();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('remote_trips', jsonEncode(remote.map((r) => r.toJson()).toList()));
+      await prefs.setString(
+        'remote_trips',
+        jsonEncode(remote.map((r) => r.toJson()).toList()),
+      );
       await prefs.setString('remote_synced', lastSynced!.toIso8601String());
       for (final e in _trips.values) {
-        await Reminders.sync(tripId: e.id, title: e.title, startDate: e.startDate, downloaded: e.isOffline && !e.updateAvailable);
+        await Reminders.sync(
+          tripId: e.id,
+          title: e.title,
+          startDate: e.startDate,
+          downloaded: e.isOffline && !e.updateAvailable,
+        );
       }
       me = await api.me().catchError((_) => <String, dynamic>{});
     } on SocketException {
       listError = 'Offline — showing trips saved on this device.';
     } catch (e) {
-      listError = e is ApiException && e.status == 401 ? 'Session expired — sign in again.' : 'Couldn\'t refresh: $e';
+      listError = e is ApiException && e.status == 401
+          ? 'Session expired — sign in again.'
+          : 'Couldn\'t refresh: $e';
     } finally {
       loading = false;
       notifyListeners();
@@ -137,14 +157,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       final existing = _trips[id]?.local;
-      final local = await downloader.download(id, owner: user?.id, existing: existing, onProgress: (f, stage) {
-        progress[id] = f;
-        progressStage[id] = stage;
-        notifyListeners();
-      });
+      final local = await downloader.download(
+        id,
+        owner: user?.id,
+        existing: existing,
+        onProgress: (f, stage) {
+          progress[id] = f;
+          progressStage[id] = stage;
+          notifyListeners();
+        },
+      );
       (_trips[id] ??= TripEntry()).local = local;
       _register(local);
-      await Reminders.sync(tripId: id, title: local.title, startDate: local.startDate, downloaded: true);
+      await Reminders.sync(
+        tripId: id,
+        title: local.title,
+        startDate: local.startDate,
+        downloaded: true,
+      );
     } catch (e) {
       errors[id] = e.toString();
     } finally {
@@ -162,7 +192,12 @@ class AppState extends ChangeNotifier {
     if (e != null) {
       e.local = null;
       if (e.remote == null) _trips.remove(id);
-      await Reminders.sync(tripId: id, title: e.title, startDate: e.startDate, downloaded: false);
+      await Reminders.sync(
+        tripId: id,
+        title: e.title,
+        startDate: e.startDate,
+        downloaded: false,
+      );
     }
     notifyListeners();
   }

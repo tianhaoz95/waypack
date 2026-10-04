@@ -14,6 +14,21 @@ Authoritative JSON Schema: `packages/bundle-schema/manifest.v1.schema.json` (als
   "end_date": "2026-12-26",
   "travelers": { "adults": 2, "children": [{ "age": 2 }] },
   "nav_app": "google",               // optional: "google" | "apple" (default by platform)
+  "theme": {                         // optional but expected: how the plan looks
+    "preset": "winter-forest",       // alpine-winter|winter-forest|lake-summer|coast|tropical|desert|autumn|spring-blossom|city
+    "accent": "#9a3f1d",             // optional hex overrides of the preset's accent (light / dark mode)
+    "accent_dark": "#e08a62",
+    "mood": "Giant sequoias in fresh snow",  // ≤ 200 chars, for your own notes
+    "scene": {                       // the banner illustration; every field optional
+      "sun": "low-sun",              // sun|low-sun|moon|none
+      "mountains": "snowy-peaks",    // none|rolling|peaks|snowy-peaks|mesas
+      "water": "none",               // none|lake|frozen-lake|ocean|river
+      "trees": "sequoia",            // none|pine|snowy-pine|sequoia|palm|deciduous|autumn|blossom|cactus
+      "ground": "snow",              // snow|grass|sand|rock|city
+      "particles": "snow",           // none|snow|leaves|petals|stars|rain
+      "skyline": false               // city skyline silhouette
+    }
+  },
   "map": {
     "bbox": [-118.95, 36.40, -118.55, 36.80], // [minLon, minLat, maxLon, maxLat], ≤ 40,000 km²
     "max_zoom": 15,                            // 10–16 (basemap detail tops out at 15)
@@ -40,7 +55,7 @@ Authoritative JSON Schema: `packages/bundle-schema/manifest.v1.schema.json` (als
   "days": [{
     "date": "2026-12-24", "title": "Drive in & Giant Forest", "notes": "optional",
     "items": [{
-      "time": "09:00", "end_time": "10:30",   // 24h HH:MM; items sorted by time
+      "time": "09:00", "end_time": "10:30",   // 24h HH:MM; items sorted by time. end_time sets the calendar event's end
       "title": "Drive to park entrance",
       "place_id": "place-three-rivers", "route_id": "r-day1-drive",
       "kind": "travel",                        // travel|activity|meal|lodging|rest|reservation|other

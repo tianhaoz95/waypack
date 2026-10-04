@@ -8,7 +8,10 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/main.dart';
 
-const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
+const email = String.fromEnvironment(
+  'TEST_EMAIL',
+  defaultValue: 'dev@waypack.test',
+);
 
 Future<void> settle(WidgetTester t, [int ms = 1500]) async {
   for (var i = 0; i < ms ~/ 100; i++) {
@@ -34,11 +37,15 @@ void main() {
 
   testWidgets('screenshots', (t) async {
     final state = await bootstrap();
-    if (Supabase.instance.client.auth.currentSession != null) await state.signOut();
+    if (Supabase.instance.client.auth.currentSession != null) {
+      await state.signOut();
+    }
     for (final e in [...state.upcoming, ...state.past]) {
       await state.store.deleteLocal(e.id);
     }
-    await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
+    await t.pumpWidget(
+      ChangeNotifierProvider.value(value: state, child: const WaypackApp()),
+    );
     await shot(t, '01-sign-in');
 
     await t.enterText(find.byKey(const Key('dev-email')), email);
@@ -59,6 +66,10 @@ void main() {
     await t.tap(find.text('Today'));
     await until(t, find.text('Where you\'re staying'));
     await shot(t, '07-native-today');
+    await t.tap(find.byTooltip('Add to calendar').first);
+    await shot(t, '07b-native-calendar-sheet');
+    Navigator.of(t.element(find.text('Apple Calendar'))).pop();
+    await settle(t);
 
     await t.pageBack();
     await settle(t);

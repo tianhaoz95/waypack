@@ -1,0 +1,143 @@
+/* Waypack theme presets. <html data-preset="…"> is set from manifest.theme.preset by app.js;
+ * manifest.theme.accent overrides --accent. Each preset defines the UI palette AND the
+ * scene palette used by scene.js for the illustrated header. Agents can add their own
+ * preset block or override any variable to match the destination and season. */
+
+:root {
+  /* UI */
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #eef1f5; --text: #0f172a; --muted: #5b6577; --line: #dde2ea;
+  --accent: #1d6fe0; --accent-ink: #ffffff; --accent-soft: #e6effc;
+  --ok: #15803d; --warn: #b45309; --danger: #c81e1e;
+  /* Scene */
+  --sky-1: #cfe3f5; --sky-2: #f3f8fc; --sun: #ffd166; --far: #a9bccd; --far-snow: #ffffff; --near: #7f97ab;
+  --water: #6aa9d0; --water-hi: #d6ecf8; --tree: #2f5d50; --tree-2: #3f7363; --trunk: #6b4a36;
+  --ground: #e9eef2; --ground-hi: #ffffff; --particle: #ffffff; --title-ink: #0f172a; --title-sub: #334155;
+  --pattern-opacity: 0.05;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1120; --surface: #141c2f; --surface-2: #1c2640; --text: #e8edf6; --muted: #9aa6bb; --line: #26314a;
+    --accent: #5b9bff; --accent-ink: #06122a; --accent-soft: #15233f;
+    --ok: #4ade80; --warn: #fbbf24; --danger: #f87171;
+    --sky-1: #0c1a2e; --sky-2: #1b2d48; --sun: #e8eefc; --far: #33475f; --far-snow: #c9d6e6; --near: #24364c;
+    --water: #1f4b6e; --water-hi: #5c8fb8; --tree: #10241f; --tree-2: #173229; --trunk: #3d2b20;
+    --ground: #1a2638; --ground-hi: #2a3a52; --particle: #e6eef9; --title-ink: #f1f5fb; --title-sub: #c4cfdf;
+  }
+}
+
+/* ---------- alpine-winter: snowy peaks, frozen blue lake, snowy pines, falling snow (e.g. Tahoe in January) ---------- */
+[data-preset="alpine-winter"] {
+  --bg: #eef4f8; --surface: #ffffff; --surface-2: #e4eef5; --text: #0d2433; --muted: #557081; --line: #d3e1ea;
+  --accent: #1e6fa8; --accent-soft: #e1eef8;
+  --sky-1: #a9cde6; --sky-2: #eef6fb; --sun: #fff4d6; --far: #a3bccf; --far-snow: #ffffff; --near: #7896ad;
+  --water: #5e9cc6; --water-hi: #dff0fb; --tree: #24463f; --tree-2: #2f5a51; --trunk: #4d3a2f;
+  --ground: #f4f8fb; --ground-hi: #ffffff; --particle: #ffffff; --title-ink: #0b2a3d; --title-sub: #2a4b60;
+}
+@media (prefers-color-scheme: dark) {
+  [data-preset="alpine-winter"] {
+    --bg: #08131d; --surface: #0f1e2b; --surface-2: #16293a; --text: #e6f0f7; --muted: #94acbd; --line: #1f3446;
+    --accent: #6cb5e8; --accent-ink: #04121c; --accent-soft: #12283a;
+    --sky-1: #0a1a2b; --sky-2: #1c3550; --sun: #eaf2ff; --far: #3a5269; --far-snow: #d8e6f2; --near: #27405a;
+    --water: #23557a; --water-hi: #7fb4da; --tree: #0b1c1a; --tree-2: #133029; --ground: #182b3d; --ground-hi: #2b4560;
+    --title-ink: #f2f8fc; --title-sub: #b9cddd;
+  }
+}
+
+/* ---------- winter-forest: giant trees in snow, warm bark accent (e.g. Sequoia in December) ---------- */
+[data-preset="winter-forest"] {
+  --bg: #f3f5f2; --surface: #ffffff; --surface-2: #e9eee8; --text: #1b241d; --muted: #5d6a60; --line: #dbe2da;
+  --accent: #9a3f1d; --accent-soft: #f6e9e2;
+  --sky-1: #bcd3df; --sky-2: #f1f6f8; --sun: #fff1d0; --far: #b1c2c9; --far-snow: #ffffff; --near: #8aa2ab;
+  --water: #7aa9c2; --water-hi: #e3f1f8; --tree: #26402f; --tree-2: #355640; --trunk: #8a3b1c;
+  --ground: #f6f8f8; --ground-hi: #ffffff; --particle: #ffffff; --title-ink: #1d2b22; --title-sub: #3e5145;
+}
+@media (prefers-color-scheme: dark) {
+  [data-preset="winter-forest"] {
+    --bg: #0c120e; --surface: #141c17; --surface-2: #1c2820; --text: #e8efe9; --muted: #9eb0a3; --line: #263429;
+    --accent: #e08a62; --accent-ink: #1d0c04; --accent-soft: #2a1a12;
+    --sky-1: #0d1824; --sky-2: #20334a; --sun: #eef3ff; --far: #34485a; --far-snow: #d5e1ea; --near: #26394a;
+    --tree: #0d1a12; --tree-2: #16291c; --trunk: #6e2f16; --ground: #1a2531; --ground-hi: #2e3f52;
+    --title-ink: #f2f6f2; --title-sub: #c1cfc5;
+  }
+}
+
+/* ---------- lake-summer: green peaks, deep blue lake, sun ---------- */
+[data-preset="lake-summer"] {
+  --bg: #f2f8f8; --surface: #ffffff; --surface-2: #e3f0f0; --text: #0b2a2f; --muted: #4e6b70; --line: #d0e3e4;
+  --accent: #0e7490; --accent-soft: #dff2f6;
+  --sky-1: #7cc6ea; --sky-2: #e6f6fd; --sun: #ffd45c; --far: #7ea9a2; --far-snow: #e9f2f0; --near: #4f8a6d;
+  --water: #1f86b4; --water-hi: #bfe7f7; --tree: #1f5136; --tree-2: #2c6a46; --trunk: #5b3d28;
+  --ground: #9cc97f; --ground-hi: #b8dc9d; --particle: #ffffff; --title-ink: #08303a; --title-sub: #255560;
+}
+
+/* ---------- coast: ocean, sand, bright sun ---------- */
+[data-preset="coast"] {
+  --bg: #f4f8fb; --surface: #ffffff; --surface-2: #e4eff6; --text: #0b2638; --muted: #4f6a7c; --line: #d3e2ec;
+  --accent: #0369a1; --accent-soft: #e0f0fa;
+  --sky-1: #8fd0f5; --sky-2: #eef9ff; --sun: #ffcf57; --far: #9cbac9; --near: #7aa0b0;
+  --water: #1489c4; --water-hi: #c9ecfb; --tree: #2d6b4c; --tree-2: #3b825d; --trunk: #8a6a4a;
+  --ground: #efdcb2; --ground-hi: #f7ead0; --title-ink: #0a2a3f; --title-sub: #2f5470;
+}
+
+/* ---------- tropical: turquoise water, palms ---------- */
+[data-preset="tropical"] {
+  --bg: #f1faf8; --surface: #ffffff; --surface-2: #dff3ef; --text: #0a2b28; --muted: #4c6e69; --line: #cde7e2;
+  --accent: #0d9488; --accent-soft: #dcf4f1;
+  --sky-1: #74d3f0; --sky-2: #ecfbff; --sun: #ffd25a; --far: #7fbfa7; --near: #4e9a77;
+  --water: #14b8c4; --water-hi: #c7f3f6; --tree: #1d6b46; --tree-2: #2a8a5a; --trunk: #8b6a44;
+  --ground: #f3e3bd; --ground-hi: #fbf1d8; --title-ink: #08312d; --title-sub: #24564f;
+}
+
+/* ---------- desert: mesas, cacti, warm low sun ---------- */
+[data-preset="desert"] {
+  --bg: #fbf6f1; --surface: #ffffff; --surface-2: #f5e9dd; --text: #33200f; --muted: #7a5f48; --line: #ecdccc;
+  --accent: #c2410c; --accent-soft: #fbe9df;
+  --sky-1: #f6c48f; --sky-2: #fdf0e1; --sun: #ff9f43; --far: #d49a72; --near: #b9714a;
+  --water: #6aa5c2; --water-hi: #d9eef8; --tree: #4f7a4a; --tree-2: #5f8f58; --trunk: #6b4a36;
+  --ground: #e8c497; --ground-hi: #f2d6b2; --title-ink: #3a1e0c; --title-sub: #6b4127;
+}
+
+/* ---------- autumn: warm foliage, falling leaves ---------- */
+[data-preset="autumn"] {
+  --bg: #fbf7f2; --surface: #ffffff; --surface-2: #f4ebe0; --text: #2d1d10; --muted: #74604c; --line: #ebdfd1;
+  --accent: #b45309; --accent-soft: #fbeedd;
+  --sky-1: #b9d8ea; --sky-2: #fbf4ea; --sun: #ffc861; --far: #b8a79a; --near: #8c7a62;
+  --water: #5f93b3; --water-hi: #d7ebf5; --tree: #c2410c; --tree-2: #d97706; --trunk: #5a3a24;
+  --ground: #c9a46c; --ground-hi: #dcbd8a; --particle: #d9631e; --title-ink: #2f1a0b; --title-sub: #6a4a2c;
+}
+
+/* ---------- spring-blossom: pink blossoms, petals ---------- */
+[data-preset="spring-blossom"] {
+  --bg: #fdf6f9; --surface: #ffffff; --surface-2: #f8e7ef; --text: #321523; --muted: #7a5868; --line: #f0d9e4;
+  --accent: #be185d; --accent-soft: #fbe4ee;
+  --sky-1: #bfe0f5; --sky-2: #fdf5f8; --sun: #ffe08a; --far: #b7c6d6; --near: #9bb39a;
+  --water: #6aa7cf; --water-hi: #dcf0fb; --tree: #f29ab8; --tree-2: #f7b9cf; --trunk: #6b4a3e;
+  --ground: #a9d18e; --ground-hi: #c4e3ad; --particle: #f7a8c4; --title-ink: #3a1022; --title-sub: #6d3a52;
+}
+
+/* ---------- city: skyline at dusk ---------- */
+[data-preset="city"] {
+  --bg: #f5f5fa; --surface: #ffffff; --surface-2: #ebebf5; --text: #15132b; --muted: #5f5c7a; --line: #dddcec;
+  --accent: #6d28d9; --accent-soft: #ede5fc;
+  --sky-1: #f3b6a3; --sky-2: #f8e9ef; --sun: #ffb36b; --far: #a7a3c4; --near: #57537a;
+  --water: #5d79b5; --water-hi: #cdd9f3; --tree: #3c6b55; --tree-2: #4e8169; --trunk: #5b4636;
+  --ground: #4a4766; --ground-hi: #5c5980; --particle: #ffe9a8; --title-ink: #1d1838; --title-sub: #4d4770;
+}
+
+/* Dark variants for the remaining presets: keep the scene recognisable at night. */
+@media (prefers-color-scheme: dark) {
+  [data-preset="lake-summer"], [data-preset="coast"], [data-preset="tropical"], [data-preset="desert"],
+  [data-preset="autumn"], [data-preset="spring-blossom"], [data-preset="city"] {
+    --bg: #0b1120; --surface: #141c2f; --surface-2: #1c2640; --text: #e8edf6; --muted: #9aa6bb; --line: #26314a;
+    --accent-ink: #06122a; --accent-soft: #1a2541;
+    --sky-1: #0e1b33; --sky-2: #283a5c; --sun: #f1f4ff; --far: #34425e; --near: #253250;
+    --water: #1d3f66; --water-hi: #5f86b5; --ground: #1c2639; --ground-hi: #2a3650; --title-ink: #f3f6fc; --title-sub: #c3cbe0;
+  }
+  [data-preset="lake-summer"] { --accent: #38bdf8; --tree: #0f2a1d; --tree-2: #16382a; }
+  [data-preset="coast"] { --accent: #38bdf8; --tree: #12302a; --tree-2: #1a4036; }
+  [data-preset="tropical"] { --accent: #2dd4bf; --tree: #0f2e22; --tree-2: #174230; }
+  [data-preset="desert"] { --accent: #fb923c; --tree: #1f3320; --tree-2: #2a4529; --ground: #3a2e25; --ground-hi: #4a3b2f; --far: #4a3a35; --near: #3a2d2a; }
+  [data-preset="autumn"] { --accent: #f59e0b; --tree: #7c2d12; --tree-2: #92400e; }
+  [data-preset="spring-blossom"] { --accent: #f472b6; --tree: #9d4b6b; --tree-2: #b45d80; }
+  [data-preset="city"] { --accent: #a78bfa; --ground: #12112a; --ground-hi: #1d1b3d; --near: #1b1a38; --far: #2a2850; --particle: #ffe08a; }
+}

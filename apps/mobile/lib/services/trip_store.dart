@@ -25,7 +25,8 @@ class TripStore {
   }
 
   Directory tripDir(String id) => Directory('${root.path}/trips/$id');
-  Directory versionDir(String id, int v) => Directory('${root.path}/trips/$id/v$v');
+  Directory versionDir(String id, int v) =>
+      Directory('${root.path}/trips/$id/v$v');
   Directory tilesDir(String id) => Directory('${root.path}/tiles/$id');
   File localMeta(String id) => File('${root.path}/trips/$id/local.json');
   Directory get sdkRoot => Directory('${root.path}/sdk');
@@ -39,9 +40,13 @@ class TripStore {
       final f = File('${d.path}/local.json');
       if (!await f.exists()) continue;
       try {
-        final t = LocalTrip.fromJson(jsonDecode(await f.readAsString()) as Map<String, dynamic>);
+        final t = LocalTrip.fromJson(
+          jsonDecode(await f.readAsString()) as Map<String, dynamic>,
+        );
         if (await versionDir(t.id, t.version).exists()) out[t.id] = t;
-      } catch (_) {/* corrupt meta: treat as not downloaded */}
+      } catch (_) {
+        /* corrupt meta: treat as not downloaded */
+      }
     }
     return out;
   }
@@ -61,7 +66,10 @@ class TripStore {
 
   Future<int> usedBytes() async {
     var n = 0;
-    for (final d in [Directory('${root.path}/trips'), Directory('${root.path}/tiles')]) {
+    for (final d in [
+      Directory('${root.path}/trips'),
+      Directory('${root.path}/tiles'),
+    ]) {
       if (!await d.exists()) continue;
       await for (final e in d.list(recursive: true)) {
         if (e is File) n += await e.length();
@@ -72,7 +80,8 @@ class TripStore {
 
   /// Unpacks the bundled SDK once per SDK version; returns its directory.
   Future<Directory> ensureSdk() async {
-    final version = (await rootBundle.loadString('assets/sdk_version.txt')).trim();
+    final version = (await rootBundle.loadString('assets/sdk_version.txt'))
+        .trim();
     final dir = Directory('${sdkRoot.path}/$version');
     if (await File('${dir.path}/.complete').exists()) return dir;
     final data = await rootBundle.load('assets/sdk.zip');
@@ -99,11 +108,17 @@ class TripStore {
 
 /// Rejects absolute paths, `..`, backslashes and NULs (zip-slip protection).
 String safeRelative(String name) {
-  if (name.isEmpty || name.startsWith('/') || name.contains('\\') || name.contains('\u0000') || RegExp(r'^[A-Za-z]:').hasMatch(name)) {
+  if (name.isEmpty ||
+      name.startsWith('/') ||
+      name.contains('\\') ||
+      name.contains('\u0000') ||
+      RegExp(r'^[A-Za-z]:').hasMatch(name)) {
     throw FormatException('unsafe path in archive: $name');
   }
   final parts = name.split('/');
-  if (parts.any((p) => p == '..')) throw FormatException('unsafe path in archive: $name');
+  if (parts.any((p) => p == '..')) {
+    throw FormatException('unsafe path in archive: $name');
+  }
   return parts.where((p) => p.isNotEmpty && p != '.').join('/');
 }
 
@@ -113,17 +128,27 @@ Future<void> unzipBundle(File zip, Directory dest) async {
   try {
     final archive = ZipDecoder().decodeStream(input);
     // Bundles zipped as a folder: strip the single top-level directory.
-    final names = archive.files.where((f) => f.isFile && !f.name.startsWith('__MACOSX/')).map((f) => f.name).toList();
+    final names = archive.files
+        .where((f) => f.isFile && !f.name.startsWith('__MACOSX/'))
+        .map((f) => f.name)
+        .toList();
     var prefix = '';
     if (!names.contains('manifest.json')) {
       final firsts = names.map((n) => n.split('/').first).toSet();
-      if (firsts.length == 1 && names.contains('${firsts.first}/manifest.json')) prefix = '${firsts.first}/';
+      if (firsts.length == 1 &&
+          names.contains('${firsts.first}/manifest.json')) {
+        prefix = '${firsts.first}/';
+      }
     }
     await dest.create(recursive: true);
     for (final f in archive.files) {
-      if (f.isSymbolicLink) throw const FormatException('symlinks are not allowed in bundles');
+      if (f.isSymbolicLink) {
+        throw const FormatException('symlinks are not allowed in bundles');
+      }
       if (!f.isFile || f.name.startsWith('__MACOSX/')) continue;
-      final rel = safeRelative(f.name.startsWith(prefix) ? f.name.substring(prefix.length) : f.name);
+      final rel = safeRelative(
+        f.name.startsWith(prefix) ? f.name.substring(prefix.length) : f.name,
+      );
       final out = File('${dest.path}/$rel');
       await out.parent.create(recursive: true);
       final os = OutputFileStream(out.path);

@@ -117,7 +117,9 @@ export function validateFiles(input: BundleFile[]): ValidationResult {
     [/emergenc/, "no emergency/safety section detected"],
     [/backup|plan b|rain plan|if closed/, "no backup plans detected"],
     [/openinmaps/, "no Navigate buttons (Waypack.openInMaps) detected"],
+    [/addtocalendar|data-cal/, "no Add to calendar buttons (Waypack.addToCalendar) detected"],
     [/prefers-color-scheme/, "no dark mode support (prefers-color-scheme) detected"],
+    [/@media[^{]*min-width/, "no wide-screen layout (@media (min-width: …)) detected — plans must look good on iPad and desktop"],
   ];
   for (const [re, msg] of nudges) if (allText && !re.test(lower)) warnings.push({ path: "bundle", message: msg });
 

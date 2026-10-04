@@ -5,28 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>Sequoia Winter Weekend</title>
+  <!-- theme.css: palette presets per destination/season (see manifest.theme). style.css: layout. -->
+  <link rel="stylesheet" href="assets/theme.css">
   <link rel="stylesheet" href="assets/style.css">
-  <!-- Waypack SDK: offline maps, Navigate buttons, share. Served by the app; never bundle MapLibre yourself. -->
+  <!-- Waypack SDK: offline maps, Navigate, Add to calendar, share. Served by the app; never bundle MapLibre yourself. -->
   <script src="/__waypack/sdk/v1/waypack.js"></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
+  <!-- Illustrated header drawn by assets/scene.js from manifest.theme (or replace with your own inline SVG). -->
+  <header class="hero-banner" id="hero-banner">
+    <div class="scene" id="scene"></div>
+    <div class="hero-text">
       <h1 id="trip-title">Trip</h1>
-      <p id="trip-dates" class="muted"></p>
+      <p class="hero-dates" id="trip-dates"></p>
+      <span class="hero-chip" id="hero-chip" hidden></span>
     </div>
-    <span id="net" class="net" hidden>Offline</span>
   </header>
+
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner"><h1 id="bar-title">Trip</h1></div>
+    <span id="net" class="net" hidden>Offline</span>
+  </div>
 
   <main id="app">
     <!-- Rendered from manifest.json by assets/app.js -->
     <section id="tab-today" class="tab" data-tab="today"></section>
     <section id="tab-plan" class="tab" data-tab="plan" hidden></section>
     <section id="tab-map" class="tab tab-map" data-tab="map" hidden>
-      <div class="map-tools">
-        <select id="map-day" aria-label="Show day on map"><option value="">All days</option></select>
+      <!-- On desktop these move into #map-pane (map pinned beside the plan). -->
+      <div id="map-block">
+        <div class="map-tools">
+          <select id="map-day" aria-label="Show day on map"><option value="">All days</option></select>
+        </div>
+        <div id="map" class="map"></div>
       </div>
-      <div id="map" class="map"></div>
     </section>
     <section id="tab-places" class="tab" data-tab="places" hidden></section>
 
@@ -40,6 +52,7 @@
         <a href="#g-overview">Overview</a><a href="#g-conditions">Conditions</a><a href="#g-safety">Safety</a>
         <a href="#g-toddler">Toddler</a><a href="#g-packing">Packing</a><a href="#g-budget">Budget</a><a href="#g-backup">Backup plans</a><a href="#g-offline">Offline prep</a>
       </nav>
+      <div class="guide-grid">
 
       <article id="g-overview" class="card">
         <h2>Overview</h2>
@@ -166,6 +179,7 @@
           <li>Check road conditions &amp; chain controls before leaving Three Rivers</li>
         </ul>
       </article>
+      </div>
     </section>
 
     <div hidden>
@@ -175,14 +189,21 @@
     </div>
   </main>
 
+  <aside id="map-pane" aria-label="Map"></aside>
+
   <nav class="tabbar" aria-label="Sections">
+    <div class="rail-head"><b id="rail-title">Trip</b><small id="rail-dates"></small></div>
     <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
     <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
     <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
     <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
     <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+    <div class="rail-foot"><button class="btn secondary small" id="cal-all" hidden>Add whole trip to calendar</button></div>
   </nav>
 
+  <div id="cal-sheet" class="sheet-backdrop" hidden></div>
+
+  <script src="assets/scene.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

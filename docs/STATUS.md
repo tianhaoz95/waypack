@@ -1,4 +1,4 @@
-# Build status — 2026-10-03 (updated: Stripe web billing)
+# Build status — 2026-10-04 (updated: calendar, themes, responsive plans)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -10,6 +10,12 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 | **M3** Offline maps | ✅ iOS verified | Native Map renders the trip's offline extract, offline glyphs, routes and icons in the app (screenshot checked). Blue dot: GeolocateControl wired; needs an on-device walk |
 | **M4** Payments & limits | ✅ Web billing verified locally | **Stripe on the web portal** (`/account`): Checkout (annual subscription, optional lifetime), Customer Portal, signed + idempotent webhook. e2e: subscription.created → Pro and existing trips get maps; subscription.deleted → Free; lifetime payment → Lifetime; forged signatures rejected. Free-tier limit message links to `/account`. Apps are free viewers (no IAP). Needs Stripe test keys to click through real Checkout |
 | **M5** Launch assets | ✅ Drafted | `site/` landing (real screenshots) + **account portal** + privacy + terms, served by the Worker (one deploy), `docs/store-listing.md`, attribution screen in app, `docs/DEPLOY.md` |
+
+## Polish (2026-10-04)
+- **Add to calendar** on every plan item: `Waypack.addToCalendar` / `calendarEvents` / `downloadCalendar` in the SDK. In the app, Apple Calendar opens the native event sheet (works offline) and Google opens Google's add-event page. In a browser, Apple downloads an `.ics`. The native Today view has the same buttons. Tests: SDK calendar unit tests (4), Playwright calendar flow, Dart calendar tests (3).
+- **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
+- **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
+- Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
 
 ## Not done / needs you
 0. **Google + Apple sign-in credentials** (DEPLOY.md §1). Locally the redirect chain, callback validation and PKCE exchange code are tested, plus a dev-only sign-in; a real round trip needs your Google Cloud and Apple Developer setup.

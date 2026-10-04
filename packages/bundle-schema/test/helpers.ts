@@ -27,20 +27,21 @@ export function baseManifest(): Manifest {
     ],
     live_checks: [{ label: "Roads", url: "https://quickmap.dot.ca.gov/" }],
     emergency: { numbers: [{ label: "Emergency", value: "911" }], places: [] },
+    theme: { preset: "alpine-winter", accent: "#1d6fe0" },
   };
 }
 
 export const goodHtml = `<!doctype html><html><head><meta name="viewport" content="width=device-width">
 <link rel="stylesheet" href="assets/style.css"><script src="/__waypack/sdk/v1/waypack.js"></script></head>
 <body><h2>Packing</h2><h2>Budget</h2><h2>Emergency</h2><h2>Backup plan</h2>
-<button onclick="Waypack.openInMaps('lodge')">Navigate</button>
+<button onclick="Waypack.openInMaps('lodge')">Navigate</button><button onclick="Waypack.addToCalendar({date:'2026-12-24',index:0})">Add to calendar</button>
 <a href="https://nps.gov">NPS</a><img src="data:image/png;base64,AAAA"><script src="assets/app.js"></script></body></html>`;
 
 export function goodBundle(m: Manifest = baseManifest(), html = goodHtml): BundleFile[] {
   return [
     f("manifest.json", JSON.stringify(m)),
     f("index.html", html),
-    f("assets/style.css", "@media (prefers-color-scheme: dark){body{background:#000}} .x{background:url(img/a.svg)}"),
+    f("assets/style.css", "@media (prefers-color-scheme: dark){body{background:#000}} @media (min-width: 900px){body{margin:0 auto}} .x{background:url(img/a.svg)}"),
     f("assets/img/a.svg", "<svg/>"),
     f("assets/app.js", "console.log(1)"),
   ];

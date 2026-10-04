@@ -69,6 +69,14 @@ describe("validateFiles", () => {
     expect(all).toMatch(/2026-12-30 is outside/);
   });
 
+  it("validates theme colors and scene values", () => {
+    const m = baseManifest() as any;
+    m.theme = { accent: "blue", scene: { water: "swamp" } };
+    const all = msgs(validateFiles(goodBundle(m))).join("\n");
+    expect(all).toMatch(/theme\.accent/);
+    expect(all).toMatch(/theme\.scene\.water: must be one of/);
+  });
+
   it("rejects impossible dates and bad time zones", () => {
     const m = baseManifest();
     m.end_date = "2026-02-30";
@@ -165,6 +173,7 @@ describe("validateFiles", () => {
     expect(w).toMatch(/emergency: no emergency numbers/);
     expect(w).toMatch(/packing list/);
     expect(w).toMatch(/SDK not included/);
+    expect(w).toMatch(/Add to calendar/);
   });
 });
 

@@ -6,11 +6,17 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../dev_flags.dart';
+import '../services/calendar.dart';
 import '../services/handoff.dart';
 
 /// Renders a trip bundle from the local server with the SDK's native bridge (design §7.2, §8.2).
 class BundleWebView extends StatefulWidget {
-  const BundleWebView({super.key, required this.url, required this.origin, this.navApp});
+  const BundleWebView({
+    super.key,
+    required this.url,
+    required this.origin,
+    this.navApp,
+  });
 
   final String url;
   final String origin; // http://127.0.0.1:<port>
@@ -34,16 +40,22 @@ class _BundleWebViewState extends State<BundleWebView> {
     if (DevFlags.noPermissionPrompts) return;
     try {
       var p = await Geolocator.checkPermission();
-      if (p == LocationPermission.denied) p = await Geolocator.requestPermission();
-    } catch (_) {/* map still works without the blue dot */}
+      if (p == LocationPermission.denied) {
+        p = await Geolocator.requestPermission();
+      }
+    } catch (_) {
+      /* map still works without the blue dot */
+    }
   }
 
-  bool _isLocal(WebUri? u) => u != null && '${u.scheme}://${u.host}:${u.port}' == widget.origin;
+  bool _isLocal(WebUri? u) =>
+      u != null && '${u.scheme}://${u.host}:${u.port}' == widget.origin;
 
   String get _hostScript {
     final platform = Platform.isIOS ? 'ios' : 'android';
     final nav = widget.navApp == null ? '' : ", navApp: '${widget.navApp}'";
-    final host = "window.__WAYPACK_HOST__ = Object.freeze({ platform: '$platform'$nav });";
+    final host =
+        "window.__WAYPACK_HOST__ = Object.freeze({ platform: '$platform'$nav });";
     final t = DevFlags.fakeNowTime;
     if (t == null) return host;
     // Screenshot mode: shift the page clock (Date) to the fake moment.
@@ -54,7 +66,12 @@ class _BundleWebViewState extends State<BundleWebView> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center)));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(_error!, textAlign: TextAlign.center),
+        ),
+      );
     }
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(widget.url)),
@@ -78,7 +95,10 @@ class _BundleWebViewState extends State<BundleWebView> {
         upgradeKnownHostsToHTTPS: false,
       ),
       initialUserScripts: UnmodifiableListView([
-        UserScript(source: _hostScript, injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START),
+        UserScript(
+          source: _hostScript,
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        ),
       ]),
       onWebViewCreated: (c) {
         c.addJavaScriptHandler(
@@ -104,6 +124,18 @@ class _BundleWebViewState extends State<BundleWebView> {
             return true;
           },
         );
+        // Waypack.addToCalendar: the page already chose Apple/Google (iPhone) via its own sheet.
+        c.addJavaScriptHandler(
+          handlerName: 'addToCalendar',
+          callback: (args) async {
+            final a = (args.isNotEmpty ? args.first : {}) as Map;
+            await CalendarHandoff.add(
+              TripEvent.fromBridge(a),
+              app: '${a['app'] ?? 'auto'}',
+            );
+            return true;
+          },
+        );
         c.addJavaScriptHandler(
           handlerName: 'share',
           callback: (args) async {
@@ -116,7 +148,12 @@ class _BundleWebViewState extends State<BundleWebView> {
       // Non-loopback navigations open in the system browser / native app.
       shouldOverrideUrlLoading: (c, action) async {
         final u = action.request.url;
-        if (_isLocal(u) || u?.scheme == 'about' || u?.scheme == 'blob' || u?.scheme == 'data') return NavigationActionPolicy.ALLOW;
+        if (_isLocal(u) ||
+            u?.scheme == 'about' ||
+            u?.scheme == 'blob' ||
+            u?.scheme == 'data') {
+          return NavigationActionPolicy.ALLOW;
+        }
         if (u != null) await Handoff.openExternal(u.toString());
         return NavigationActionPolicy.CANCEL;
       },
@@ -128,14 +165,30 @@ class _BundleWebViewState extends State<BundleWebView> {
       // Android: grant geolocation to our loopback origin only.
       onGeolocationPermissionsShowPrompt: (c, origin) async {
         final ok = origin.startsWith(widget.origin);
-        return GeolocationPermissionShowPromptResponse(origin: origin, allow: ok, retain: ok);
+        return GeolocationPermissionShowPromptResponse(
+          origin: origin,
+          allow: ok,
+          retain: ok,
+        );
       },
       onPermissionRequest: (c, req) async {
-        final ok = _isLocal(req.origin) && req.resources.every((r) => r == PermissionResourceType.GEOLOCATION);
-        return PermissionResponse(resources: req.resources, action: ok ? PermissionResponseAction.GRANT : PermissionResponseAction.DENY);
+        final ok =
+            _isLocal(req.origin) &&
+            req.resources.every((r) => r == PermissionResourceType.GEOLOCATION);
+        return PermissionResponse(
+          resources: req.resources,
+          action: ok
+              ? PermissionResponseAction.GRANT
+              : PermissionResponseAction.DENY,
+        );
       },
       onReceivedError: (c, req, err) {
-        if (req.isForMainFrame == true) setState(() => _error = 'This trip could not be opened (${err.description}). Try re-downloading it.');
+        if (req.isForMainFrame == true) {
+          setState(
+            () => _error =
+                'This trip could not be opened (${err.description}). Try re-downloading it.',
+          );
+        }
       },
     );
   }

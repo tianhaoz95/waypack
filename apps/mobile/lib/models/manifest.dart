@@ -9,18 +9,28 @@ class Manifest {
   String get startDate => raw['start_date'] as String;
   String get endDate => raw['end_date'] as String;
   String? get navApp => raw['nav_app'] as String?;
+  Map<String, dynamic>? get theme => raw['theme'] as Map<String, dynamic>?;
+  String? get accent => theme?['accent'] as String?;
+  String? get accentDark => theme?['accent_dark'] as String?;
 
-  late final List<Place> places =
-      ((raw['places'] as List?) ?? const []).map((p) => Place(p as Map<String, dynamic>)).toList();
-  late final Map<String, Place> placesById = {for (final p in places) p.id: p};
-  late final List<Day> days = ((raw['days'] as List?) ?? const []).map((d) => Day(d as Map<String, dynamic>)).toList()
-    ..sort((a, b) => a.date.compareTo(b.date));
-  late final Map<String, Map<String, dynamic>> routesById = {
-    for (final r in ((raw['routes'] as List?) ?? const []).cast<Map<String, dynamic>>()) r['id'] as String: r,
-  };
-  List<Map<String, String>> get emergencyNumbers => (((raw['emergency'] as Map?)?['numbers'] as List?) ?? const [])
-      .map((e) => {'label': '${e['label']}', 'value': '${e['value']}'})
+  late final List<Place> places = ((raw['places'] as List?) ?? const [])
+      .map((p) => Place(p as Map<String, dynamic>))
       .toList();
+  late final Map<String, Place> placesById = {for (final p in places) p.id: p};
+  late final List<Day> days =
+      ((raw['days'] as List?) ?? const [])
+          .map((d) => Day(d as Map<String, dynamic>))
+          .toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+  late final Map<String, Map<String, dynamic>> routesById = {
+    for (final r
+        in ((raw['routes'] as List?) ?? const []).cast<Map<String, dynamic>>())
+      r['id'] as String: r,
+  };
+  List<Map<String, String>> get emergencyNumbers =>
+      (((raw['emergency'] as Map?)?['numbers'] as List?) ?? const [])
+          .map((e) => {'label': '${e['label']}', 'value': '${e['value']}'})
+          .toList();
 }
 
 class Place {
@@ -41,7 +51,9 @@ class Day {
   final Map<String, dynamic> raw;
   String get date => raw['date'] as String;
   String? get title => raw['title'] as String?;
-  late final List<DayItem> items = ((raw['items'] as List?) ?? const []).map((i) => DayItem(i as Map<String, dynamic>)).toList();
+  late final List<DayItem> items = ((raw['items'] as List?) ?? const [])
+      .map((i) => DayItem(i as Map<String, dynamic>))
+      .toList();
 }
 
 class DayItem {

@@ -25,6 +25,8 @@ export interface TripMap {
   raw: unknown;
 }
 
+export interface CalendarOptions { app?: "apple" | "google" | "auto" }
+
 export interface OpenInMapsOptions { app?: "google" | "apple" | "auto"; navigate?: boolean }
 
 export interface WaypackSDK {
@@ -36,6 +38,12 @@ export interface WaypackSDK {
   openInMaps(target: string | LatLon, opts?: OpenInMapsOptions): void;
   openExternal(url: string): void;
   share(text: string): void;
+  /** Adds one event to the user's calendar: a day item ({date, index}) or an explicit event. */
+  addToCalendar(target: import("./calendar.js").CalTarget, opts?: CalendarOptions): void;
+  /** All manifest day items as calendar events (local times + time zone). */
+  calendarEvents(): Promise<import("./calendar.js").CalEvent[]>;
+  /** Downloads an .ics file with the whole trip (or some dates). Browser only; the app adds events one by one. */
+  downloadCalendar(opts?: { dates?: string[]; filename?: string }): void;
   /** Additive helpers (v1.x). */
   categories: Record<string, { color: string; emoji: string; label: string }>;
   routeModes: Record<string, { color: string; dash?: number[]; label: string }>;

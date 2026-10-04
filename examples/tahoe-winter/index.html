@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Lake Tahoe Winter Weekend</title>
+  <!-- theme.css: palette presets per destination/season (see manifest.theme). style.css: layout. -->
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="stylesheet" href="assets/style.css">
+  <!-- Waypack SDK: offline maps, Navigate, Add to calendar, share. Served by the app; never bundle MapLibre yourself. -->
+  <script src="/__waypack/sdk/v1/waypack.js"></script>
+</head>
+<body>
+  <!-- Illustrated header drawn by assets/scene.js from manifest.theme (or replace with your own inline SVG). -->
+  <header class="hero-banner" id="hero-banner">
+    <div class="scene" id="scene"></div>
+    <div class="hero-text">
+      <h1 id="trip-title">Trip</h1>
+      <p class="hero-dates" id="trip-dates"></p>
+      <span class="hero-chip" id="hero-chip" hidden></span>
+    </div>
+  </header>
+
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner"><h1 id="bar-title">Trip</h1></div>
+    <span id="net" class="net" hidden>Offline</span>
+  </div>
+
+  <main id="app">
+    <!-- Rendered from manifest.json by assets/app.js -->
+    <section id="tab-today" class="tab" data-tab="today"></section>
+    <section id="tab-plan" class="tab" data-tab="plan" hidden></section>
+    <section id="tab-map" class="tab tab-map" data-tab="map" hidden>
+      <!-- On desktop these move into #map-pane (map pinned beside the plan). -->
+      <div id="map-block">
+        <div class="map-tools">
+          <select id="map-day" aria-label="Show day on map"><option value="">All days</option></select>
+        </div>
+        <div id="map" class="map"></div>
+      </div>
+    </section>
+    <section id="tab-places" class="tab" data-tab="places" hidden></section>
+
+    <!-- ===================================================================
+         GUIDE — authored by the agent as plain HTML. Keep every section
+         (write "N/A — reason" rather than deleting one). Cards with
+         class="card" get consistent styling. Use <details> for long lists.
+         =================================================================== -->
+    <section id="tab-guide" class="tab" data-tab="guide" hidden>
+      <nav class="chips" aria-label="Guide sections">
+        <a href="#g-overview">Overview</a><a href="#g-conditions">Conditions</a><a href="#g-safety">Safety</a>
+        <a href="#g-packing">Packing</a><a href="#g-budget">Budget</a><a href="#g-backup">Backup plans</a><a href="#g-offline">Offline prep</a>
+      </nav>
+      <div class="guide-grid">
+      <article id="g-overview" class="card">
+        <h2>Overview</h2>
+        <p>A relaxed MLK weekend on Lake Tahoe's south and east shores: big views from the Heavenly gondola, an easy snowshoe at Spooner Lake, Sand Harbor's granite coves in winter light, and sunrise at Kiva Beach. No skiing needed. Everything is planned around daylight (about 7:15am–4:55pm) and dry roads.</p>
+        <ul class="kv">
+          <li><span>Dates</span><b>Sat Jan 16 – Mon Jan 18, 2027</b></li>
+          <li><span>Travelers</span><b>2 adults · own AWD car</b></li>
+          <li><span>Lodging</span><b>The Landing · 2 nights · #REPLACE-ME</b></li>
+          <li><span>Dinner Sat</span><b>Beach House · reserve</b></li>
+          <li><span>Gondola</span><b>≈ $75 pp · buy online at 10:30am</b></li>
+        </ul>
+        <h3>Assumptions</h3>
+        <p class="muted">Driving from the Bay Area via US-50. Chains in the trunk. No downhill skiing; snowshoes rented in South Lake Tahoe on Saturday afternoon.</p>
+      </article>
+
+      <article id="g-conditions" class="card">
+        <h2>Conditions &amp; live checks</h2>
+        <p>January at the lake (6,200 ft) usually means snow on the ground, sunny days in the 30s–40s °F and nights in the teens. Storms can bring chain controls on <b>Echo Summit (US-50)</b> and <b>Spooner Summit</b> within an hour. <b>CA-89 around Emerald Bay often closes for avalanche danger</b>, so it's only a backup in this plan.</p>
+        <div class="callout">Conditions change by the hour in a storm. Check these before leaving home, before Echo Summit, and each morning.</div>
+        <div id="live-checks" class="link-list"></div>
+      </article>
+
+      <article id="g-safety" class="card">
+        <h2>Emergency &amp; safety</h2>
+        <div id="emergency"></div>
+        <h3>Winter driving</h3>
+        <ul>
+          <li>California can require chains even on AWD/4WD (R2 controls) unless you have snow tires. Know how to fit yours.</li>
+          <li>Never pass a chain-control checkpoint without the required devices; fines are steep and you'll be turned around.</li>
+          <li>Black ice is common on shaded curves of NV-28 after 3pm. Be back in town before dark.</li>
+        </ul>
+        <h3>On the snow</h3>
+        <p>Stay off lake and pond ice. Spooner Lake's ice is never safe. Wear sunglasses and sunscreen; the snow glare is intense at altitude.</p>
+      </article>
+
+      <article id="g-packing" class="card">
+        <h2>Packing list</h2>
+        <details open><summary>Car</summary>
+          <ul class="checklist" data-store="car">
+            <li>Chains that fit your tires (+ gloves, kneeling mat)</li>
+            <li>Ice scraper, small shovel</li>
+            <li>Blankets, water, snacks</li>
+            <li>Full tank leaving Placerville</li>
+          </ul>
+        </details>
+        <details><summary>You</summary>
+          <ul class="checklist" data-store="you">
+            <li>Waterproof boots + wool socks</li>
+            <li>Insulated jacket, hat, gloves</li>
+            <li>Microspikes for icy paths</li>
+            <li>Sunglasses &amp; sunscreen</li>
+            <li>Swimsuit (hotel hot tub)</li>
+            <li>Thermos for sunrise coffee</li>
+            <li>Power bank</li>
+          </ul>
+        </details>
+      </article>
+
+      <article id="g-budget" class="card">
+        <h2>Budget</h2>
+        <table class="table">
+          <thead><tr><th>Category</th><th class="num">Estimate</th></tr></thead>
+          <tbody>
+            <tr><td>The Landing, 2 nights (holiday)</td><td class="num">$900–$1,300</td></tr>
+            <tr><td>Heavenly gondola × 2</td><td class="num">≈ $150</td></tr>
+            <tr><td>Snowshoe rental × 2</td><td class="num">$40–$60</td></tr>
+            <tr><td>Park fees (Spooner, Sand Harbor)</td><td class="num">$25–$35</td></tr>
+            <tr><td>Food</td><td class="num">$300–$400</td></tr>
+            <tr><td>Gas</td><td class="num">$70</td></tr>
+          </tbody>
+          <tfoot><tr><th>Total</th><th class="num">≈ $1,485–$2,025</th></tr></tfoot>
+        </table>
+        <p class="muted">Rough estimates; verify current prices when booking.</p>
+      </article>
+
+      <article id="g-backup" class="card">
+        <h2>Backup plans</h2>
+        <h3>Sat: chain controls on Echo Summit</h3>
+        <p>Chain up at the designated area near Meyers or wait it out in Placerville. If the gondola window (until ~2pm) is gone, swap it to Monday morning before checkout.</p>
+        <h3>Sat: gondola sold out or on wind hold</h3>
+        <p>Walk the Lakeview Commons shoreline and the Heavenly Village shops; try again Monday at 10:30am.</p>
+        <h3>Sun: storm on the east shore</h3>
+        <p>Stay south: snowshoe at Taylor Creek / Kiva Beach (flat, sheltered) and visit Lake Tahoe Historic Sites if open.</p>
+        <h3>CA-89 open and clear?</h3>
+        <p>Then add <a href="#place-sight-inspiration-point">Inspiration Point</a> above Emerald Bay after Monday's sunrise. Only if Caltrans shows it open.</p>
+      </article>
+
+      <article id="g-offline" class="card">
+        <h2>Offline prep</h2>
+        <ul class="checklist" data-store="offline">
+          <li>Download this trip in Waypack (map included)</li>
+          <li>Google Maps offline area: Placerville → Lake Tahoe</li>
+          <li>Add the gondola and dinner to your calendar</li>
+          <li>Charge phones and power banks</li>
+          <li>Screenshot the hotel confirmation</li>
+        </ul>
+      </article>
+      </div>
+    </section>
+
+    <div hidden>
+      <div data-day-notes="2027-01-16"><p><b>Why this order:</b> cross Echo Summit early, before storm-day chain lines build up. The gondola's winter sightseeing window closes around 2pm, and the lake turns gold from Lakeview Commons right before sunset.</p></div>
+      <div data-day-notes="2027-01-17"><p><b>East shore day.</b> The snowshoe loop is best in the cold morning. Sand Harbor's boulders glow around midday, and you're back on US-50 before shaded curves ice over.</p></div>
+      <div data-day-notes="2027-01-18"><p><b>Sunrise, then home early.</b> Kiva Beach faces east across the whole lake. Leave by 11 to avoid the worst of holiday-Monday traffic on US-50.</p></div>
+    </div>
+  </main>
+
+  <aside id="map-pane" aria-label="Map"></aside>
+
+  <nav class="tabbar" aria-label="Sections">
+    <div class="rail-head"><b id="rail-title">Trip</b><small id="rail-dates"></small></div>
+    <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
+    <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
+    <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
+    <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
+    <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+    <div class="rail-foot"><button class="btn secondary small" id="cal-all" hidden>Add whole trip to calendar</button></div>
+  </nav>
+
+  <div id="cal-sheet" class="sheet-backdrop" hidden></div>
+
+  <script src="assets/scene.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

@@ -90,5 +90,11 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Waypack adds trip events you choose to your calendar.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Waypack adds trip events you choose to your calendar.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Used only by the calendar's location field when you add a trip event.</string>
 </dict>
 </plist>

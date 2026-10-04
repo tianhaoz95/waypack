@@ -14,7 +14,9 @@ String dateRange(String? start, String? end) {
   if (a == null) return '';
   final md = DateFormat.MMMd();
   if (b == null || a == b) return DateFormat.yMMMd().format(a);
-  if (a.year != b.year) return '${DateFormat.yMMMd().format(a)} – ${DateFormat.yMMMd().format(b)}';
+  if (a.year != b.year) {
+    return '${DateFormat.yMMMd().format(a)} – ${DateFormat.yMMMd().format(b)}';
+  }
   return '${md.format(a)} – ${md.format(b)}, ${b.year}';
 }
 
@@ -30,5 +32,7 @@ String relativeTime(DateTime t) {
 String formatHm(String? hm) {
   if (hm == null || !RegExp(r'^\d{2}:\d{2}$').hasMatch(hm)) return hm ?? '';
   final parts = hm.split(':');
-  return DateFormat.jm().format(DateTime(2000, 1, 1, int.parse(parts[0]), int.parse(parts[1])));
+  return DateFormat.jm().format(
+    DateTime(2000, 1, 1, int.parse(parts[0]), int.parse(parts[1])),
+  );
 }

@@ -26,7 +26,10 @@ Future<AppState> bootstrap() async {
     url: Config.supabaseUrl,
     publishableKey: Config.supabaseAnonKey,
     // OAuth callbacks are handled by the system auth session (flutter_web_auth_2), not deep links.
-    authOptions: const FlutterAuthClientOptions(authFlowType: AuthFlowType.pkce, detectSessionInUri: false),
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+      detectSessionInUri: false,
+    ),
   );
   final store = await TripStore.open();
   final server = LocalServer(store);
@@ -42,22 +45,29 @@ class WaypackApp extends StatelessWidget {
   const WaypackApp({super.key});
 
   ThemeData _theme(Brightness b) => ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D6FE0), brightness: b),
-        visualDensity: VisualDensity.standard,
-        cardTheme: const CardThemeData(margin: EdgeInsets.symmetric(vertical: 6)),
-        filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(minimumSize: const Size(48, 48))),
-        outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48))),
-      );
+    useMaterial3: true,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF1D6FE0),
+      brightness: b,
+    ),
+    visualDensity: VisualDensity.standard,
+    cardTheme: const CardThemeData(margin: EdgeInsets.symmetric(vertical: 6)),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Waypack',
-        debugShowCheckedModeBanner: false,
-        theme: _theme(Brightness.light),
-        darkTheme: _theme(Brightness.dark),
-        home: const _AuthGate(),
-      );
+    title: 'Waypack',
+    debugShowCheckedModeBanner: false,
+    theme: _theme(Brightness.light),
+    darkTheme: _theme(Brightness.dark),
+    home: const _AuthGate(),
+  );
 }
 
 class _AuthGate extends StatefulWidget {

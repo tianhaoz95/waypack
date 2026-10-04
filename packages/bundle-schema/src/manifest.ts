@@ -202,5 +202,6 @@ function semanticChecks(m: Manifest, errors: Issue[], warnings: Issue[]): void {
   if (!m.emergency?.numbers?.length) warnings.push({ path: "emergency", message: "no emergency numbers" });
   if (!m.places.some((p) => p.category === "lodging")) warnings.push({ path: "places", message: "no lodging place", hint: "add where travelers sleep (or mark the trip as a day trip in the summary)" });
   if (!m.summary) warnings.push({ path: "summary", message: "no summary" });
+  if (!m.theme) warnings.push({ path: "theme", message: "no theme", hint: "style the plan for the destination and season (theme.preset / theme.scene), e.g. alpine-winter for Tahoe in January" });
   if (m.days.every((d) => d.items.length === 0)) warnings.push({ path: "days", message: "every day is empty" });
 }

@@ -12,9 +12,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/config.dart';
 import 'package:waypack/main.dart';
 
-const email = String.fromEnvironment('TEST_EMAIL', defaultValue: 'dev@waypack.test');
+const email = String.fromEnvironment(
+  'TEST_EMAIL',
+  defaultValue: 'dev@waypack.test',
+);
 
-Future<(int, Map<String, String>, List<int>)> get(Uri u, {Map<String, String> headers = const {}}) async {
+Future<(int, Map<String, String>, List<int>)> get(
+  Uri u, {
+  Map<String, String> headers = const {},
+}) async {
   final c = HttpClient();
   final req = await c.getUrl(u);
   req.followRedirects = false;
@@ -26,7 +32,11 @@ Future<(int, Map<String, String>, List<int>)> get(Uri u, {Map<String, String> he
   return (res.statusCode, h, body);
 }
 
-Future<void> pumpUntil(WidgetTester t, Finder f, {Duration timeout = const Duration(seconds: 90)}) async {
+Future<void> pumpUntil(
+  WidgetTester t,
+  Finder f, {
+  Duration timeout = const Duration(seconds: 90),
+}) async {
   final end = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(end)) {
     await t.pump(const Duration(milliseconds: 500));
@@ -46,7 +56,9 @@ void main() {
       await state.store.deleteLocal(e.id);
     }
 
-    await t.pumpWidget(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
+    await t.pumpWidget(
+      ChangeNotifierProvider.value(value: state, child: const WaypackApp()),
+    );
     await t.pumpAndSettle();
     // Only Apple and Google are offered (the dev sign-in exists only in DEV_SIGN_IN builds).
     expect(find.text('Continue with Apple'), findsOneWidget);
@@ -62,7 +74,9 @@ void main() {
     // Download (bundle + offline map), verified by SHA-256 inside the app.
     await t.tap(find.text('Download'));
     await pumpUntil(t, find.text('Available offline'));
-    final trip = state.upcoming.firstWhere((e) => e.title == 'Sequoia Winter Weekend');
+    final trip = state.upcoming.firstWhere(
+      (e) => e.title == 'Sequoia Winter Weekend',
+    );
     expect(trip.local!.tiles.length, 2);
 
     // Local server: token gate, cookie exchange, CSP, tiles index, Range, traversal.
@@ -72,30 +86,61 @@ void main() {
     final first = await get(Uri.parse(s.tripUrl(trip.id)));
     expect(first.$1, 302);
     final cookie = first.$2['set-cookie']!.split(';').first;
-    final index = await get(Uri.parse('${s.origin}/t/${trip.id}/index.html'), headers: {'cookie': cookie});
+    final index = await get(
+      Uri.parse('${s.origin}/t/${trip.id}/index.html'),
+      headers: {'cookie': cookie},
+    );
     expect(index.$1, 200);
     expect(index.$2['content-security-policy'], contains("connect-src 'self'"));
     expect(utf8.decode(index.$3), contains('/__waypack/sdk/v1/waypack.js'));
-    final sdk = await get(Uri.parse('${s.origin}/__waypack/sdk/v1/waypack.js'), headers: {'cookie': cookie});
+    final sdk = await get(
+      Uri.parse('${s.origin}/__waypack/sdk/v1/waypack.js'),
+      headers: {'cookie': cookie},
+    );
     expect(sdk.$1, 200);
-    final glyph = await get(Uri.parse('${s.origin}/__waypack/sdk/v1/assets/fonts/Noto%20Sans%20Regular/0-255.pbf'), headers: {'cookie': cookie});
+    final glyph = await get(
+      Uri.parse(
+        '${s.origin}/__waypack/sdk/v1/assets/fonts/Noto%20Sans%20Regular/0-255.pbf',
+      ),
+      headers: {'cookie': cookie},
+    );
     expect(glyph.$1, 200);
-    final idx = jsonDecode(utf8.decode((await get(Uri.parse('${s.origin}/__waypack/tiles/${trip.id}/index.json'), headers: {'cookie': cookie})).$3)) as Map;
+    final idx = jsonDecode(
+      utf8.decode(
+        (await get(
+          Uri.parse('${s.origin}/__waypack/tiles/${trip.id}/index.json'),
+          headers: {'cookie': cookie},
+        )).$3,
+      ),
+    ) as Map;
     expect((idx['extracts'] as List).length, 2);
     final tileUrl = (idx['extracts'] as List).first['url'] as String;
-    final range = await get(Uri.parse('${s.origin}$tileUrl'), headers: {'cookie': cookie, 'range': 'bytes=0-6'});
+    final range = await get(
+      Uri.parse('${s.origin}$tileUrl'),
+      headers: {'cookie': cookie, 'range': 'bytes=0-6'},
+    );
     expect(range.$1, 206);
     expect(utf8.decode(range.$3), 'PMTiles');
-    final traversal = await get(Uri.parse('${s.origin}/t/${trip.id}/%2E%2E/local.json'), headers: {'cookie': cookie});
+    final traversal = await get(
+      Uri.parse('${s.origin}/t/${trip.id}/%2E%2E/local.json'),
+      headers: {'cookie': cookie},
+    );
     expect(traversal.$1, anyOf(400, 404));
-    final hostCheck = await get(Uri.parse('${s.origin}/t/${trip.id}/index.html'), headers: {'cookie': cookie, 'host': 'evil.example'});
+    final hostCheck = await get(
+      Uri.parse('${s.origin}/t/${trip.id}/index.html'),
+      headers: {'cookie': cookie, 'host': 'evil.example'},
+    );
     expect(hostCheck.$1, 421);
 
     // Open the trip (WebView). Give the map time to render for the host-side screenshot.
     await t.tap(find.text('Open'));
     await t.pump(const Duration(seconds: 2));
     expect(find.byTooltip('Waypack menu'), findsOneWidget);
-    final shotDelay = int.tryParse(const String.fromEnvironment('SHOT_DELAY', defaultValue: '6')) ?? 6;
+    final shotDelay =
+        int.tryParse(
+          const String.fromEnvironment('SHOT_DELAY', defaultValue: '6'),
+        ) ??
+        6;
     for (var i = 0; i < shotDelay * 2; i++) {
       await t.pump(const Duration(milliseconds: 500));
     }

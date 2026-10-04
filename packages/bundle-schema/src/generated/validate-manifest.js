@@ -241,13 +241,15 @@ var require_ucs2length = __commonJS({
 // src/generated/validate-manifest.raw.mjs
 var validate = validate10;
 var validate_manifest_raw_default = validate10;
-var schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "$id": "https://waypack.app/schema/manifest.v1.schema.json", "title": "Waypack trip bundle manifest (v1)", "type": "object", "additionalProperties": true, "required": ["schema_version", "sdk_version", "title", "timezone", "start_date", "end_date", "map", "places", "routes", "days"], "properties": { "schema_version": { "const": 1 }, "sdk_version": { "type": "string", "pattern": "^1(\\.\\d+){0,2}$" }, "trip_id": { "type": ["string", "null"], "format": "uuid" }, "title": { "type": "string", "minLength": 1, "maxLength": 120 }, "summary": { "type": "string", "maxLength": 2e3 }, "timezone": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+\\-]+)*$" }, "start_date": { "$ref": "#/definitions/date" }, "end_date": { "$ref": "#/definitions/date" }, "travelers": { "type": "object", "properties": { "adults": { "type": "integer", "minimum": 0 }, "children": { "type": "array", "items": { "type": "object", "properties": { "age": { "type": "number", "minimum": 0, "maximum": 17 } }, "required": ["age"] } }, "pets": { "type": "array", "items": { "type": "object" } }, "notes": { "type": "string" } } }, "map": { "type": "object", "required": ["bbox"], "properties": { "bbox": { "$ref": "#/definitions/bbox" }, "max_zoom": { "type": "integer", "minimum": 10, "maximum": 16, "default": 15 }, "extra_areas": { "type": "array", "maxItems": 3, "items": { "type": "object", "required": ["bbox"], "properties": { "bbox": { "$ref": "#/definitions/bbox" }, "max_zoom": { "type": "integer", "minimum": 10, "maximum": 16 }, "label": { "type": "string" } } } } } }, "places": { "type": "array", "items": { "type": "object", "required": ["id", "name", "category", "lat", "lon"], "properties": { "id": { "$ref": "#/definitions/id" }, "name": { "type": "string", "minLength": 1 }, "category": { "enum": ["lodging", "food", "sight", "activity", "trailhead", "transport", "fuel", "shopping", "medical", "other"] }, "lat": { "type": "number", "minimum": -90, "maximum": 90 }, "lon": { "type": "number", "minimum": -180, "maximum": 180 }, "address": { "type": "string" }, "phone": { "type": "string" }, "notes": { "type": "string" }, "hours": { "type": "string" }, "cost": { "type": "string" }, "links": { "$ref": "#/definitions/links" } } } }, "routes": { "type": "array", "items": { "type": "object", "required": ["id", "name", "mode", "geometry"], "properties": { "id": { "$ref": "#/definitions/id" }, "name": { "type": "string", "minLength": 1 }, "mode": { "enum": ["driving", "walking", "hiking", "cycling", "transit", "ferry", "flight"] }, "from": { "type": "string" }, "to": { "type": "string" }, "distance_m": { "type": "number", "minimum": 0 }, "duration_s": { "type": "number", "minimum": 0 }, "geometry": { "oneOf": [{ "type": "object", "required": ["type", "coordinates"], "properties": { "type": { "const": "LineString" }, "coordinates": { "$ref": "#/definitions/lineCoords" } } }, { "type": "object", "required": ["type", "coordinates"], "properties": { "type": { "const": "MultiLineString" }, "coordinates": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/lineCoords" } } } }] }, "notes": { "type": "string" } } } }, "days": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["date", "items"], "properties": { "date": { "$ref": "#/definitions/date" }, "title": { "type": "string" }, "notes": { "type": "string" }, "items": { "type": "array", "items": { "type": "object", "required": ["title"], "properties": { "time": { "$ref": "#/definitions/time" }, "end_time": { "$ref": "#/definitions/time" }, "title": { "type": "string", "minLength": 1 }, "place_id": { "type": "string" }, "route_id": { "type": "string" }, "kind": { "enum": ["travel", "activity", "meal", "lodging", "rest", "reservation", "other"] }, "notes": { "type": "string" } } } } } } }, "live_checks": { "$ref": "#/definitions/links" }, "emergency": { "type": "object", "properties": { "numbers": { "type": "array", "items": { "type": "object", "required": ["label", "value"], "properties": { "label": { "type": "string" }, "value": { "type": "string" } } } }, "notes": { "type": "string" }, "places": { "type": "array", "items": { "type": "string" } } } }, "offline_notes": { "type": "string" } }, "definitions": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" }, "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "format": "date" }, "time": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" }, "bbox": { "type": "array", "minItems": 4, "maxItems": 4, "items": [{ "type": "number", "minimum": -180, "maximum": 180 }, { "type": "number", "minimum": -90, "maximum": 90 }, { "type": "number", "minimum": -180, "maximum": 180 }, { "type": "number", "minimum": -90, "maximum": 90 }] }, "position": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "number" } }, "lineCoords": { "type": "array", "minItems": 2, "items": { "$ref": "#/definitions/position" } }, "links": { "type": "array", "items": { "type": "object", "required": ["label", "url"], "properties": { "label": { "type": "string", "minLength": 1 }, "url": { "type": "string", "pattern": "^(https?:|tel:|mailto:|sms:)" } } } } } };
+var schema11 = { "$schema": "http://json-schema.org/draft-07/schema#", "$id": "https://waypack.app/schema/manifest.v1.schema.json", "title": "Waypack trip bundle manifest (v1)", "type": "object", "additionalProperties": true, "required": ["schema_version", "sdk_version", "title", "timezone", "start_date", "end_date", "map", "places", "routes", "days"], "properties": { "schema_version": { "const": 1 }, "sdk_version": { "type": "string", "pattern": "^1(\\.\\d+){0,2}$" }, "trip_id": { "type": ["string", "null"], "format": "uuid" }, "title": { "type": "string", "minLength": 1, "maxLength": 120 }, "summary": { "type": "string", "maxLength": 2e3 }, "timezone": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+\\-]+)*$" }, "start_date": { "$ref": "#/definitions/date" }, "end_date": { "$ref": "#/definitions/date" }, "travelers": { "type": "object", "properties": { "adults": { "type": "integer", "minimum": 0 }, "children": { "type": "array", "items": { "type": "object", "properties": { "age": { "type": "number", "minimum": 0, "maximum": 17 } }, "required": ["age"] } }, "pets": { "type": "array", "items": { "type": "object" } }, "notes": { "type": "string" } } }, "map": { "type": "object", "required": ["bbox"], "properties": { "bbox": { "$ref": "#/definitions/bbox" }, "max_zoom": { "type": "integer", "minimum": 10, "maximum": 16, "default": 15 }, "extra_areas": { "type": "array", "maxItems": 3, "items": { "type": "object", "required": ["bbox"], "properties": { "bbox": { "$ref": "#/definitions/bbox" }, "max_zoom": { "type": "integer", "minimum": 10, "maximum": 16 }, "label": { "type": "string" } } } } } }, "places": { "type": "array", "items": { "type": "object", "required": ["id", "name", "category", "lat", "lon"], "properties": { "id": { "$ref": "#/definitions/id" }, "name": { "type": "string", "minLength": 1 }, "category": { "enum": ["lodging", "food", "sight", "activity", "trailhead", "transport", "fuel", "shopping", "medical", "other"] }, "lat": { "type": "number", "minimum": -90, "maximum": 90 }, "lon": { "type": "number", "minimum": -180, "maximum": 180 }, "address": { "type": "string" }, "phone": { "type": "string" }, "notes": { "type": "string" }, "hours": { "type": "string" }, "cost": { "type": "string" }, "links": { "$ref": "#/definitions/links" } } } }, "routes": { "type": "array", "items": { "type": "object", "required": ["id", "name", "mode", "geometry"], "properties": { "id": { "$ref": "#/definitions/id" }, "name": { "type": "string", "minLength": 1 }, "mode": { "enum": ["driving", "walking", "hiking", "cycling", "transit", "ferry", "flight"] }, "from": { "type": "string" }, "to": { "type": "string" }, "distance_m": { "type": "number", "minimum": 0 }, "duration_s": { "type": "number", "minimum": 0 }, "geometry": { "oneOf": [{ "type": "object", "required": ["type", "coordinates"], "properties": { "type": { "const": "LineString" }, "coordinates": { "$ref": "#/definitions/lineCoords" } } }, { "type": "object", "required": ["type", "coordinates"], "properties": { "type": { "const": "MultiLineString" }, "coordinates": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/lineCoords" } } } }] }, "notes": { "type": "string" } } } }, "days": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["date", "items"], "properties": { "date": { "$ref": "#/definitions/date" }, "title": { "type": "string" }, "notes": { "type": "string" }, "items": { "type": "array", "items": { "type": "object", "required": ["title"], "properties": { "time": { "$ref": "#/definitions/time" }, "end_time": { "$ref": "#/definitions/time" }, "title": { "type": "string", "minLength": 1 }, "place_id": { "type": "string" }, "route_id": { "type": "string" }, "kind": { "enum": ["travel", "activity", "meal", "lodging", "rest", "reservation", "other"] }, "notes": { "type": "string" } } } } } } }, "live_checks": { "$ref": "#/definitions/links" }, "emergency": { "type": "object", "properties": { "numbers": { "type": "array", "items": { "type": "object", "required": ["label", "value"], "properties": { "label": { "type": "string" }, "value": { "type": "string" } } } }, "notes": { "type": "string" }, "places": { "type": "array", "items": { "type": "string" } } } }, "offline_notes": { "type": "string" }, "theme": { "type": "object", "description": "How the plan looks: a preset and/or a scene composed for the destination and season. Rendered by the base template and used by the app to tint native screens.", "properties": { "preset": { "type": "string", "pattern": "^[a-z0-9-]{1,40}$", "description": "e.g. alpine-winter, lake-summer, winter-forest, coast, desert, autumn, spring-blossom, tropical, city" }, "accent": { "$ref": "#/definitions/hex" }, "accent_dark": { "$ref": "#/definitions/hex" }, "mood": { "type": "string", "maxLength": 200 }, "scene": { "type": "object", "properties": { "sky": { "type": "string" }, "sun": { "enum": ["sun", "low-sun", "moon", "none"] }, "mountains": { "enum": ["none", "rolling", "peaks", "snowy-peaks", "mesas"] }, "water": { "enum": ["none", "lake", "frozen-lake", "ocean", "river"] }, "trees": { "enum": ["none", "pine", "snowy-pine", "sequoia", "palm", "deciduous", "autumn", "blossom", "cactus"] }, "ground": { "enum": ["snow", "grass", "sand", "rock", "city"] }, "particles": { "enum": ["none", "snow", "leaves", "petals", "stars", "rain"] }, "skyline": { "type": "boolean" } } } } }, "nav_app": { "enum": ["google", "apple"] } }, "definitions": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" }, "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "format": "date" }, "time": { "type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" }, "bbox": { "type": "array", "minItems": 4, "maxItems": 4, "items": [{ "type": "number", "minimum": -180, "maximum": 180 }, { "type": "number", "minimum": -90, "maximum": 90 }, { "type": "number", "minimum": -180, "maximum": 180 }, { "type": "number", "minimum": -90, "maximum": 90 }] }, "position": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "number" } }, "lineCoords": { "type": "array", "minItems": 2, "items": { "$ref": "#/definitions/position" } }, "links": { "type": "array", "items": { "type": "object", "required": ["label", "url"], "properties": { "label": { "type": "string", "minLength": 1 }, "url": { "type": "string", "pattern": "^(https?:|tel:|mailto:|sms:)" } } } }, "hex": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" } } };
 var pattern0 = new RegExp("^1(\\.\\d+){0,2}$", "u");
 var pattern1 = new RegExp("^[A-Za-z_]+(/[A-Za-z0-9_+\\-]+)*$", "u");
 var pattern2 = new RegExp("^\\d{4}-\\d{2}-\\d{2}$", "u");
 var pattern4 = new RegExp("^[a-z0-9][a-z0-9_-]{0,63}$", "u");
 var pattern5 = new RegExp("^(https?:|tel:|mailto:|sms:)", "u");
 var pattern8 = new RegExp("^([01]\\d|2[0-3]):[0-5]\\d$", "u");
+var pattern11 = new RegExp("^[a-z0-9-]{1,40}$", "u");
+var pattern12 = new RegExp("^#[0-9a-fA-F]{6}$", "u");
 var formats0 = /^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 var formats2 = require_formats().fullFormats.date;
 var func2 = require_ucs2length().default;
@@ -2365,12 +2367,232 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
         errors++;
       }
     }
+    if (data.theme !== void 0) {
+      let data91 = data.theme;
+      if (data91 && typeof data91 == "object" && !Array.isArray(data91)) {
+        if (data91.preset !== void 0) {
+          let data92 = data91.preset;
+          if (typeof data92 === "string") {
+            if (!pattern11.test(data92)) {
+              const err186 = { instancePath: instancePath + "/theme/preset", schemaPath: "#/properties/theme/properties/preset/pattern", keyword: "pattern", params: { pattern: "^[a-z0-9-]{1,40}$" }, message: 'must match pattern "^[a-z0-9-]{1,40}$"' };
+              if (vErrors === null) {
+                vErrors = [err186];
+              } else {
+                vErrors.push(err186);
+              }
+              errors++;
+            }
+          } else {
+            const err187 = { instancePath: instancePath + "/theme/preset", schemaPath: "#/properties/theme/properties/preset/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            if (vErrors === null) {
+              vErrors = [err187];
+            } else {
+              vErrors.push(err187);
+            }
+            errors++;
+          }
+        }
+        if (data91.accent !== void 0) {
+          let data93 = data91.accent;
+          if (typeof data93 === "string") {
+            if (!pattern12.test(data93)) {
+              const err188 = { instancePath: instancePath + "/theme/accent", schemaPath: "#/definitions/hex/pattern", keyword: "pattern", params: { pattern: "^#[0-9a-fA-F]{6}$" }, message: 'must match pattern "^#[0-9a-fA-F]{6}$"' };
+              if (vErrors === null) {
+                vErrors = [err188];
+              } else {
+                vErrors.push(err188);
+              }
+              errors++;
+            }
+          } else {
+            const err189 = { instancePath: instancePath + "/theme/accent", schemaPath: "#/definitions/hex/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            if (vErrors === null) {
+              vErrors = [err189];
+            } else {
+              vErrors.push(err189);
+            }
+            errors++;
+          }
+        }
+        if (data91.accent_dark !== void 0) {
+          let data94 = data91.accent_dark;
+          if (typeof data94 === "string") {
+            if (!pattern12.test(data94)) {
+              const err190 = { instancePath: instancePath + "/theme/accent_dark", schemaPath: "#/definitions/hex/pattern", keyword: "pattern", params: { pattern: "^#[0-9a-fA-F]{6}$" }, message: 'must match pattern "^#[0-9a-fA-F]{6}$"' };
+              if (vErrors === null) {
+                vErrors = [err190];
+              } else {
+                vErrors.push(err190);
+              }
+              errors++;
+            }
+          } else {
+            const err191 = { instancePath: instancePath + "/theme/accent_dark", schemaPath: "#/definitions/hex/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            if (vErrors === null) {
+              vErrors = [err191];
+            } else {
+              vErrors.push(err191);
+            }
+            errors++;
+          }
+        }
+        if (data91.mood !== void 0) {
+          let data95 = data91.mood;
+          if (typeof data95 === "string") {
+            if (func2(data95) > 200) {
+              const err192 = { instancePath: instancePath + "/theme/mood", schemaPath: "#/properties/theme/properties/mood/maxLength", keyword: "maxLength", params: { limit: 200 }, message: "must NOT have more than 200 characters" };
+              if (vErrors === null) {
+                vErrors = [err192];
+              } else {
+                vErrors.push(err192);
+              }
+              errors++;
+            }
+          } else {
+            const err193 = { instancePath: instancePath + "/theme/mood", schemaPath: "#/properties/theme/properties/mood/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+            if (vErrors === null) {
+              vErrors = [err193];
+            } else {
+              vErrors.push(err193);
+            }
+            errors++;
+          }
+        }
+        if (data91.scene !== void 0) {
+          let data96 = data91.scene;
+          if (data96 && typeof data96 == "object" && !Array.isArray(data96)) {
+            if (data96.sky !== void 0) {
+              if (typeof data96.sky !== "string") {
+                const err194 = { instancePath: instancePath + "/theme/scene/sky", schemaPath: "#/properties/theme/properties/scene/properties/sky/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                if (vErrors === null) {
+                  vErrors = [err194];
+                } else {
+                  vErrors.push(err194);
+                }
+                errors++;
+              }
+            }
+            if (data96.sun !== void 0) {
+              let data98 = data96.sun;
+              if (!(data98 === "sun" || data98 === "low-sun" || data98 === "moon" || data98 === "none")) {
+                const err195 = { instancePath: instancePath + "/theme/scene/sun", schemaPath: "#/properties/theme/properties/scene/properties/sun/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.sun.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err195];
+                } else {
+                  vErrors.push(err195);
+                }
+                errors++;
+              }
+            }
+            if (data96.mountains !== void 0) {
+              let data99 = data96.mountains;
+              if (!(data99 === "none" || data99 === "rolling" || data99 === "peaks" || data99 === "snowy-peaks" || data99 === "mesas")) {
+                const err196 = { instancePath: instancePath + "/theme/scene/mountains", schemaPath: "#/properties/theme/properties/scene/properties/mountains/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.mountains.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err196];
+                } else {
+                  vErrors.push(err196);
+                }
+                errors++;
+              }
+            }
+            if (data96.water !== void 0) {
+              let data100 = data96.water;
+              if (!(data100 === "none" || data100 === "lake" || data100 === "frozen-lake" || data100 === "ocean" || data100 === "river")) {
+                const err197 = { instancePath: instancePath + "/theme/scene/water", schemaPath: "#/properties/theme/properties/scene/properties/water/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.water.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err197];
+                } else {
+                  vErrors.push(err197);
+                }
+                errors++;
+              }
+            }
+            if (data96.trees !== void 0) {
+              let data101 = data96.trees;
+              if (!(data101 === "none" || data101 === "pine" || data101 === "snowy-pine" || data101 === "sequoia" || data101 === "palm" || data101 === "deciduous" || data101 === "autumn" || data101 === "blossom" || data101 === "cactus")) {
+                const err198 = { instancePath: instancePath + "/theme/scene/trees", schemaPath: "#/properties/theme/properties/scene/properties/trees/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.trees.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err198];
+                } else {
+                  vErrors.push(err198);
+                }
+                errors++;
+              }
+            }
+            if (data96.ground !== void 0) {
+              let data102 = data96.ground;
+              if (!(data102 === "snow" || data102 === "grass" || data102 === "sand" || data102 === "rock" || data102 === "city")) {
+                const err199 = { instancePath: instancePath + "/theme/scene/ground", schemaPath: "#/properties/theme/properties/scene/properties/ground/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.ground.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err199];
+                } else {
+                  vErrors.push(err199);
+                }
+                errors++;
+              }
+            }
+            if (data96.particles !== void 0) {
+              let data103 = data96.particles;
+              if (!(data103 === "none" || data103 === "snow" || data103 === "leaves" || data103 === "petals" || data103 === "stars" || data103 === "rain")) {
+                const err200 = { instancePath: instancePath + "/theme/scene/particles", schemaPath: "#/properties/theme/properties/scene/properties/particles/enum", keyword: "enum", params: { allowedValues: schema11.properties.theme.properties.scene.properties.particles.enum }, message: "must be equal to one of the allowed values" };
+                if (vErrors === null) {
+                  vErrors = [err200];
+                } else {
+                  vErrors.push(err200);
+                }
+                errors++;
+              }
+            }
+            if (data96.skyline !== void 0) {
+              if (typeof data96.skyline !== "boolean") {
+                const err201 = { instancePath: instancePath + "/theme/scene/skyline", schemaPath: "#/properties/theme/properties/scene/properties/skyline/type", keyword: "type", params: { type: "boolean" }, message: "must be boolean" };
+                if (vErrors === null) {
+                  vErrors = [err201];
+                } else {
+                  vErrors.push(err201);
+                }
+                errors++;
+              }
+            }
+          } else {
+            const err202 = { instancePath: instancePath + "/theme/scene", schemaPath: "#/properties/theme/properties/scene/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+            if (vErrors === null) {
+              vErrors = [err202];
+            } else {
+              vErrors.push(err202);
+            }
+            errors++;
+          }
+        }
+      } else {
+        const err203 = { instancePath: instancePath + "/theme", schemaPath: "#/properties/theme/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+        if (vErrors === null) {
+          vErrors = [err203];
+        } else {
+          vErrors.push(err203);
+        }
+        errors++;
+      }
+    }
+    if (data.nav_app !== void 0) {
+      let data105 = data.nav_app;
+      if (!(data105 === "google" || data105 === "apple")) {
+        const err204 = { instancePath: instancePath + "/nav_app", schemaPath: "#/properties/nav_app/enum", keyword: "enum", params: { allowedValues: schema11.properties.nav_app.enum }, message: "must be equal to one of the allowed values" };
+        if (vErrors === null) {
+          vErrors = [err204];
+        } else {
+          vErrors.push(err204);
+        }
+        errors++;
+      }
+    }
   } else {
-    const err186 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
+    const err205 = { instancePath, schemaPath: "#/type", keyword: "type", params: { type: "object" }, message: "must be object" };
     if (vErrors === null) {
-      vErrors = [err186];
+      vErrors = [err205];
     } else {
-      vErrors.push(err186);
+      vErrors.push(err205);
     }
     errors++;
   }
