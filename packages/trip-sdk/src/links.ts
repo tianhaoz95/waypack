@@ -18,5 +18,5 @@ export function chooseApp(pref: "google" | "apple" | "auto" | undefined, manifes
   if (pref === "google" || pref === "apple") return pref;
   if (hostPref) return hostPref;
   if (manifestPref === "google" || manifestPref === "apple") return manifestPref;
-  return platform === "ios" ? "apple" : "google";
+  return platform === "ios" || platform === "macos" ? "apple" : "google";
 }

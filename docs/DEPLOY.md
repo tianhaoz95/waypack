@@ -90,6 +90,16 @@ flutter build appbundle  …same defines…
 - Android: create an upload keystore and a `signingConfigs.release` (currently signs with debug keys).
 - The apps are **free with no in-app purchases** (App Store 3.1.3(f) companion app: no purchase buttons or links in the app). Listing copy, privacy labels and review notes: `docs/store-listing.md`. Privacy policy: `https://waypack.app/privacy.html`.
 
+## 5b. Mac app (DMG on the site)
+Needs the **Developer ID Application** certificate (in this Mac's keychain) and notary credentials (`FA_ASC_KEY_ID` + `FA_ASC_ISSUER_ID`, already set in `~/.zshrc`, or a `notarytool store-credentials` profile in `WAYPACK_NOTARY_PROFILE`).
+```sh
+cd apps/mobile
+tool/release_mac.sh --check
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<publishable> API_URL=https://waypack.app \
+  tool/release_mac.sh --notarize --upload      # → R2 releases/mac/, served at https://waypack.app/download/mac
+```
+Bump `version:` in `pubspec.yaml` for each release; the DMG URL is versioned and cached forever, `latest.json` is what changes. There's no auto-updater yet: users re-download from the site.
+
 ## 6. Before launch
 - [ ] Field test (design §15): drive into a no-service area with only downloaded data; check the blue dot on a walk.
 - [ ] Android emulator/device run of `integration_test/app_test.dart` (iOS passes; Android was only build-verified).

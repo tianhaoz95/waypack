@@ -44,7 +44,7 @@ async function resolveEvent(target: CalTarget): Promise<{ ev: CalEvent; tz: stri
 /** Which calendar to use when the page doesn't say. */
 function defaultCalendar(): "apple" | "google" {
   const p = host().platform;
-  if (p === "ios") return "apple";
+  if (p === "ios" || p === "macos") return "apple";
   if (p === "android") return "google";
   return /iPhone|iPad|Macintosh/.test(navigator.userAgent) ? "apple" : "google";
 }

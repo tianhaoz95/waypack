@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive.dart';
@@ -155,5 +156,35 @@ void main() {
       'missing item → null',
       () => expect(TripEvent.fromItem(m, '2026-12-25', 9), isNull),
     );
+    test('.ics for the Mac: UTC instants, escaped text, folded lines', () {
+      final e = TripEvent(
+        title: 'Dinner; Beach House, table 4',
+        start: DateTime.utc(2027, 1, 16, 2, 30),
+        end: DateTime.utc(2027, 1, 16, 4, 0),
+        allDay: false,
+        location: 'Beach House, 1 Lake St, South Lake Tahoe, CA 96150, United States of America',
+        notes: 'Line one\nLine two',
+      );
+      final ics = eventIcs(e, now: DateTime.utc(2026, 10, 4));
+      expect(ics, contains('DTSTART:20270116T023000Z\r\n'));
+      expect(ics, contains('DTEND:20270116T040000Z\r\n'));
+      expect(ics, contains(r'SUMMARY:Dinner\; Beach House\, table 4'));
+      expect(ics, contains(r'DESCRIPTION:Line one\nLine two'));
+      for (final l in ics.split('\r\n')) {
+        expect(utf8.encode(l).length, lessThanOrEqualTo(75));
+      }
+      expect(ics.replaceAll('\r\n ', ''), contains('United States of America'));
+    });
+    test('.ics all-day uses DATE values', () {
+      final e = TripEvent(
+        title: 'Drive day',
+        start: DateTime.utc(2027, 1, 18),
+        end: DateTime.utc(2027, 1, 19),
+        allDay: true,
+      );
+      final ics = eventIcs(e, now: DateTime.utc(2026, 10, 4));
+      expect(ics, contains('DTSTART;VALUE=DATE:20270118'));
+      expect(ics, contains('DTEND;VALUE=DATE:20270119'));
+    });
   });
 }

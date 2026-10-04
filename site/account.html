@@ -40,7 +40,7 @@ h2 { font-size: 1.15rem; margin: 0 0 12px; }
 label { display: block; font-weight: 600; margin: 12px 0 6px; }
 input { width: 100%; min-height: 48px; font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
 button, .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: var(--accent-ink); font: 600 .95rem var(--font); cursor: pointer; text-decoration: none; }
-button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button.secondary, a.btn.secondary { background: transparent; color: var(--text) !important; border: 1px solid var(--line); }
 button.danger { background: transparent; color: var(--danger); border: 1px solid var(--line); }
 button:disabled { opacity: .6; cursor: default; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -145,8 +145,8 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
 
     <section class="card">
       <h2>Get the app</h2>
-      <p class="muted">The free Waypack app for iPhone and Android downloads your trips for offline use. Sign in with the same Google or Apple account.</p>
-      <div class="row"><a class="btn" href="/#download">iPhone &amp; Android beta</a></div>
+      <p class="muted">The free Waypack app for iPhone, Android and Mac downloads your trips for offline use. Sign in with the same Google or Apple account.</p>
+      <div class="row"><a class="btn" href="/#download">iPhone &amp; Android beta</a> <a class="btn secondary" href="/download/mac">Download for Mac</a></div>
     </section>
 
     <section class="card">

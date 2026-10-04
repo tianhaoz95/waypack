@@ -33,7 +33,7 @@ export interface WaypackSDK {
   version: string;
   manifest(): Promise<Manifest>;
   isOnline(): boolean;
-  platform(): "ios" | "android" | "web";
+  platform(): "ios" | "android" | "macos" | "web";
   map(container: HTMLElement | string, opts?: MapOptions): Promise<TripMap>;
   openInMaps(target: string | LatLon, opts?: OpenInMapsOptions): void;
   openExternal(url: string): void;
@@ -51,7 +51,7 @@ export interface WaypackSDK {
 
 /** Host info. In-app the native shell injects `window.__WAYPACK_HOST__` before page scripts run. */
 export interface HostInfo {
-  platform: "ios" | "android" | "web";
+  platform: "ios" | "android" | "macos" | "web";
   /** Base URL for tile index; default `/__waypack/tiles/`. */
   tilesBase?: string;
   /** Preferred maps app if the user set one natively. */

@@ -14,6 +14,7 @@ import { serveR2, signedFileUrl } from "./lib/storage.js";
 import { recutExpired } from "./lib/tiles.js";
 import { deleteTripData } from "./mcp/tools.js";
 import { homePage } from "./pages.js";
+import { handleMacDownload } from "./lib/releases.js";
 
 const jsonErr = (status: number, error: string, extra: Record<string, unknown> = {}) => Response.json({ error, ...extra }, { status });
 
@@ -53,6 +54,9 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
     if (!(await verifySignedPath(env.SIGNING_SECRET, url))) return jsonErr(403, "link expired or invalid");
     return serveR2(env, decodeURIComponent(path.slice("/files/".length)), req);
   }
+
+  // Mac app downloads (public): /download/mac → the current DMG; see apps/mobile/tool/release_mac.sh.
+  if (path.startsWith("/download/mac") && (req.method === "GET" || req.method === "HEAD")) return handleMacDownload(req, env, path);
 
   if (path.startsWith("/api/auth/")) return handlePortalAuth(req, env, path);
   if (path.startsWith("/api/")) return handleApi(req, env, url);

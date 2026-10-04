@@ -52,7 +52,11 @@ class _BundleWebViewState extends State<BundleWebView> {
       u != null && '${u.scheme}://${u.host}:${u.port}' == widget.origin;
 
   String get _hostScript {
-    final platform = Platform.isIOS ? 'ios' : 'android';
+    final platform = Platform.isIOS
+        ? 'ios'
+        : Platform.isMacOS
+        ? 'macos'
+        : 'android';
     final nav = widget.navApp == null ? '' : ", navApp: '${widget.navApp}'";
     final host =
         "window.__WAYPACK_HOST__ = Object.freeze({ platform: '$platform'$nav });";
@@ -124,7 +128,7 @@ class _BundleWebViewState extends State<BundleWebView> {
             return true;
           },
         );
-        // Waypack.addToCalendar: the page already chose Apple/Google (iPhone) via its own sheet.
+        // Waypack.addToCalendar: the page already chose Apple/Google (iPhone, Mac) via its own sheet.
         c.addJavaScriptHandler(
           handlerName: 'addToCalendar',
           callback: (args) async {

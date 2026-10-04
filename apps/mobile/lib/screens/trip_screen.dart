@@ -58,98 +58,106 @@ class TripScreen extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      // Five rows don't fit the default 9/16-height cap in a short window (Mac, phone landscape).
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.today_outlined),
-              title: const Text('Today'),
-              subtitle: const Text('What\'s next, from the trip data'),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final m = await s.manifestFor(tripId);
-                if (m != null && context.mounted) {
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.today_outlined),
+                title: const Text('Today'),
+                subtitle: const Text('What\'s next, from the trip data'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final m = await s.manifestFor(tripId);
+                  if (m != null && context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TodayScreen(manifest: m),
+                      ),
+                    );
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.map_outlined),
+                title: const Text('Map'),
+                subtitle: Text(
+                  l.tiles.isEmpty
+                      ? 'Needs a connection (no offline map)'
+                      : 'Offline map with your location',
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => TodayScreen(manifest: m)),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.map_outlined),
-              title: const Text('Map'),
-              subtitle: Text(
-                l.tiles.isEmpty
-                    ? 'Needs a connection (no offline map)'
-                    : 'Offline map with your location',
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => _MapScreen(tripId: tripId)),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('Info'),
-              subtitle: Text(
-                'Version ${l.version} · ${formatBytes(l.bytes)} · saved ${relativeTime(l.downloadedAt)}'
-                '${s.lastSynced != null ? ' · synced ${relativeTime(s.lastSynced!)}' : ''}',
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.refresh),
-              title: Text(
-                e.updateAvailable ? 'Download update' : 'Re-download',
-              ),
-              enabled: e.remote != null,
-              onTap: () {
-                Navigator.pop(ctx);
-                s.download(tripId);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.delete_outline,
-                color: Theme.of(ctx).colorScheme.error,
-              ),
-              title: Text(
-                'Delete from this device',
-                style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-              ),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (d) => AlertDialog(
-                    title: const Text('Delete offline copy?'),
-                    content: const Text(
-                      'The trip stays in your account; you can download it again while online.',
+                    MaterialPageRoute(
+                      builder: (_) => _MapScreen(tripId: tripId),
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(d, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(d, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-                if (ok == true && context.mounted) {
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: const Text('Info'),
+                subtitle: Text(
+                  'Version ${l.version} · ${formatBytes(l.bytes)} · saved ${relativeTime(l.downloadedAt)}'
+                  '${s.lastSynced != null ? ' · synced ${relativeTime(s.lastSynced!)}' : ''}',
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.refresh),
+                title: Text(
+                  e.updateAvailable ? 'Download update' : 'Re-download',
+                ),
+                enabled: e.remote != null,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  s.download(tripId);
                   Navigator.pop(context);
-                  await s.deleteLocal(tripId);
-                }
-              },
-            ),
-          ],
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline,
+                  color: Theme.of(ctx).colorScheme.error,
+                ),
+                title: Text(
+                  'Delete from this device',
+                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (d) => AlertDialog(
+                      title: const Text('Delete offline copy?'),
+                      content: const Text(
+                        'The trip stays in your account; you can download it again while online.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(d, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(d, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true && context.mounted) {
+                    Navigator.pop(context);
+                    await s.deleteLocal(tripId);
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

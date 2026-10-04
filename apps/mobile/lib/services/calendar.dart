@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:add_2_calendar/add_2_calendar.dart' as cal;
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/manifest.dart';
 import 'handoff.dart';
@@ -161,12 +164,80 @@ String googleCalendarUrl({
   ).toString();
 }
 
+/// A one-event iCalendar file (RFC 5545): UTC instants, or a DATE pair for all-day events.
+String eventIcs(TripEvent e, {DateTime? now}) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  String date(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}${two(d.month)}${two(d.day)}';
+  String utc(DateTime d) {
+    final u = d.toUtc();
+    return '${date(u)}T${two(u.hour)}${two(u.minute)}${two(u.second)}Z';
+  }
+
+  String text(String s) => s
+      .replaceAll(r'\', r'\\')
+      .replaceAll(';', r'\;')
+      .replaceAll(',', r'\,')
+      .replaceAll(RegExp(r'\r?\n'), r'\n');
+  // Lines longer than 75 octets are folded with CRLF + space.
+  String fold(String line) {
+    final bytes = utf8.encode(line);
+    if (bytes.length <= 75) return line;
+    final out = StringBuffer();
+    var count = 0;
+    for (final rune in line.runes) {
+      final ch = String.fromCharCode(rune);
+      final n = utf8.encode(ch).length;
+      if (count + n > (out.isEmpty ? 75 : 74)) {
+        out.write('\r\n ');
+        count = 0;
+      }
+      out.write(ch);
+      count += n;
+    }
+    return out.toString();
+  }
+
+  final lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Waypack//Trip//EN',
+    'BEGIN:VEVENT',
+    'UID:${e.start.millisecondsSinceEpoch}-${e.title.hashCode & 0x7fffffff}@waypack.app',
+    'DTSTAMP:${utc(now ?? DateTime.now())}',
+    if (e.allDay) ...[
+      'DTSTART;VALUE=DATE:${date(e.start)}',
+      'DTEND;VALUE=DATE:${date(e.end)}',
+    ] else ...[
+      'DTSTART:${utc(e.start)}',
+      'DTEND:${utc(e.end)}',
+    ],
+    'SUMMARY:${text(e.title)}',
+    if (e.location != null && e.location!.isNotEmpty)
+      'LOCATION:${text(e.location!)}',
+    if (e.notes != null && e.notes!.isNotEmpty) 'DESCRIPTION:${text(e.notes!)}',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return '${lines.map(fold).join('\r\n')}\r\n';
+}
+
 class CalendarHandoff {
   /// Adds to the device calendar with the system's own editor (works offline). On iPhone,
   /// app == "google" opens Google Calendar's add-event page instead (needs a connection).
   static Future<void> add(TripEvent e, {String app = 'auto'}) async {
-    if (Platform.isIOS && app == 'google' && e.googleUrl != null) {
+    if ((Platform.isIOS || Platform.isMacOS) &&
+        app == 'google' &&
+        e.googleUrl != null) {
       await Handoff.openExternal(e.googleUrl!);
+      return;
+    }
+    // Mac: no system "new event" sheet, so hand Calendar.app an .ics file (works offline).
+    if (Platform.isMacOS) {
+      final dir = await getTemporaryDirectory();
+      final f = File('${dir.path}/waypack-event.ics');
+      await f.writeAsString(eventIcs(e));
+      await launchUrl(Uri.file(f.path));
       return;
     }
     final start = e.allDay
@@ -188,9 +259,9 @@ class CalendarHandoff {
     );
   }
 
-  /// iPhone/iPad: let the user pick Apple or Google. Android: the device calendar (Google Calendar) directly.
+  /// iPhone/iPad/Mac: let the user pick Apple or Google. Android: the device calendar (Google Calendar) directly.
   static Future<void> choose(BuildContext context, TripEvent e) async {
-    if (!Platform.isIOS) return add(e);
+    if (!Platform.isIOS && !Platform.isMacOS) return add(e);
     final app = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,

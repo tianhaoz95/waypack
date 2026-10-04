@@ -24,6 +24,11 @@ class Reminders {
           requestBadgePermission: false,
           requestSoundPermission: false,
         ),
+        macOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
       ),
     );
     _ready = true;
@@ -33,6 +38,11 @@ class Reminders {
     await _plugin
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin
+        >()
+        ?.requestPermissions(alert: true, sound: true);
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+          MacOSFlutterLocalNotificationsPlugin
         >()
         ?.requestPermissions(alert: true, sound: true);
     await _plugin
@@ -86,6 +96,7 @@ class Reminders {
           importance: Importance.high,
         ),
         iOS: DarwinNotificationDetails(),
+        macOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: tripId,

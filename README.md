@@ -8,7 +8,7 @@ Design: [`docs/design.md`](docs/design.md) · Deviations: [`docs/DECISIONS.md`](
 
 ## Repository
 ```
-apps/mobile/               Flutter app (iOS + Android), a free viewer: downloads, loopback server, WebView, Today, Map
+apps/mobile/               Flutter app (iOS, Android, macOS), a free viewer: downloads, loopback server, WebView, Today, Map
 services/mcp/              Cloudflare Worker: MCP (11 tools) + OAuth 2.1 + uploads/downloads + Stripe billing + tile queue + crons; also serves site/
 services/tiler/            Go + pmtiles container: extract trip areas; mirror the planet monthly
 supabase/                  Schema + RLS, Google/Apple auth config

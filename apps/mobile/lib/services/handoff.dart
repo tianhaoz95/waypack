@@ -16,9 +16,11 @@ class Handoff {
   }) async {
     final ll = '$lat,$lon';
     final q = label == null ? '' : Uri.encodeComponent(label);
-    final useApple = app == 'apple' || (app == 'auto' && Platform.isIOS);
+    final apple = Platform.isIOS || Platform.isMacOS;
+    final useApple = app == 'apple' || (app == 'auto' && apple);
     final candidates = <Uri>[];
-    if (useApple && Platform.isIOS) {
+    // maps:// opens Apple Maps on iPhone, iPad and Mac.
+    if (useApple && apple) {
       candidates.add(
         Uri.parse(
           navigate

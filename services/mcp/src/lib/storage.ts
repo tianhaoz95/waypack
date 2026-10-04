@@ -18,15 +18,22 @@ export async function signedUploadUrl(env: Env, uploadId: string, ttlSeconds = 9
 }
 
 /** Streams an R2 object honoring a single `Range: bytes=a-b` header (pmtiles + resumable downloads). */
-export async function serveR2(env: Env, key: string, req: Request): Promise<Response> {
+export async function serveR2(env: Env, key: string, req: Request, extra: Record<string, string> = {}): Promise<Response> {
   const head = await env.BUCKET.head(key);
   if (!head) return new Response("not found", { status: 404 });
   const size = head.size;
   const h = new Headers({
     "Accept-Ranges": "bytes",
-    "Content-Type": key.endsWith(".zip") ? "application/zip" : key.endsWith(".json") ? "application/json" : "application/octet-stream",
+    "Content-Type": key.endsWith(".zip")
+      ? "application/zip"
+      : key.endsWith(".json")
+        ? "application/json"
+        : key.endsWith(".dmg")
+          ? "application/x-apple-diskimage"
+          : "application/octet-stream",
     ETag: head.httpEtag,
     "Cache-Control": "private, max-age=3600",
+    ...extra,
   });
   const sha = head.customMetadata?.sha256;
   if (sha) h.set("X-Content-SHA256", sha);

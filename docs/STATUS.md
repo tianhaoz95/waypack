@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: calendar, themes, responsive plans)
+# Build status — 2026-10-04 (updated: Mac app)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -17,6 +17,12 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
 
+## Mac app (2026-10-04)
+- The Flutter app now builds for macOS (universal) and passes the full screenshot walkthrough on this Mac: dev sign-in, download, desktop plan layout (rail + pinned map), native Today, calendar sheet, offline map, Settings.
+- `apps/mobile/tool/release_mac.sh`: release build → Developer ID signing (hardened runtime) → signed DMG → optional notarize/staple → optional upload to R2. Verified locally up to a signed 36 MB DMG (with local config) uploaded to the dev bucket and downloaded through `/download/mac`. **Not notarized yet**: there's no production backend to point a real build at.
+- Site: "Download for Mac" on the landing page and account page. Worker route tests: 3.
+- Fixed along the way: the trip menu overflowed in short windows (also phones in landscape).
+
 ## Not done / needs you
 0. **Google + Apple sign-in credentials** (DEPLOY.md §1). Locally the redirect chain, callback validation and PKCE exchange code are tested, plus a dev-only sign-in; a real round trip needs your Google Cloud and Apple Developer setup.
 1. **Real accounts and deployment**: Cloudflare (Workers Paid), Supabase project, ORS key, Stripe, Apple/Google consoles, domain. Step-by-step in DEPLOY.md.
@@ -24,7 +30,9 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 3. **Android run**: the APK builds, but the emulator image download failed because the disk filled up (I freed ~5 GB of my own build output). Running the integration test needs ~8 GB free.
 4. **Stripe test-mode click-through**: real Checkout + Customer Portal with test keys (`stripe listen` forwards webhooks locally).
 5. **Field test**: no-service drive and the blue dot on a walk.
-6. **Legal review** of privacy/terms drafts; Apple/Google sign-in provider setup (optional).
+6. **Mac release**: first notarized DMG once the backend is deployed (DEPLOY.md §5b). No auto-updater yet.
+7. **App icon**: iOS and Android still use Flutter's default icon; the Mac uses an interim mark drawn from the site favicon. A real icon is needed before any store submission.
+8. **Legal review** of privacy/terms drafts; Apple/Google sign-in provider setup (optional).
 
 ## Known limitations
 - `flutter_inappwebview` is on 6.2.0-beta.3 (stable fails on AGP 9).

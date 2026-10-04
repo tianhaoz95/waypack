@@ -1,17 +1,42 @@
 // Runs integration_test/screenshots_test.dart and captures the simulator at each SHOT marker.
 //   node tool/screenshots.mjs <simulator-udid> <out-dir> [--fake-now 2026-12-25T10:05:00-08:00]
+//   node tool/screenshots.mjs macos <out-dir> …   (captures only the Waypack window, never the whole screen)
 import { spawn, execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { createWriteStream, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 
 const [udid, out] = process.argv.slice(2);
 const fakeNow = process.argv.includes("--fake-now") ? process.argv[process.argv.indexOf("--fake-now") + 1] : "";
 mkdirSync(out, { recursive: true });
+const mac = udid === "macos";
+let windowId;
+if (mac) {
+  // Unlike a fresh simulator install, the Mac app keeps earlier runs' downloads (by design:
+  // downloaded trips stay until "Delete local copy"). Start from no downloads and the default window.
+  const data = join(homedir(), "Library/Containers/com.hejitech.waypack/Data/Library");
+  for (const d of ["trips", "tiles"]) rmSync(join(data, "Application Support/com.hejitech.waypack", d), { recursive: true, force: true });
+  try {
+    execFileSync("defaults", ["delete", join(data, "Preferences/com.hejitech.waypack"), "NSWindow Frame WaypackMain"], { stdio: "ignore" });
+  } catch {
+    /* no saved frame */
+  }
+  windowId = join(mkdtempSync(join(tmpdir(), "waypack-shots-")), "window_id");
+  execFileSync("swiftc", [new URL("window_id.swift", import.meta.url).pathname, "-o", windowId]);
+}
+const capture = (file) => {
+  if (!mac) return execFileSync("xcrun", ["simctl", "io", udid, "screenshot", file], { stdio: "ignore" });
+  const id = execFileSync(windowId, ["Waypack"]).toString().trim();
+  execFileSync("screencapture", ["-x", "-o", "-l", id, file], { stdio: "ignore" });
+};
 const args = ["test", "integration_test/screenshots_test.dart", "-d", udid, "--dart-define=NO_PERMISSION_PROMPTS=true", "--dart-define=DEV_SIGN_IN=true"];
 if (fakeNow) args.push(`--dart-define=FAKE_NOW=${fakeNow}`);
 const p = spawn("flutter", args, { cwd: new URL("..", import.meta.url).pathname });
+const log = createWriteStream(join(out, "run.log")); // full flutter output, for failures
+p.stderr.pipe(log);
 let buf = "";
 p.stdout.on("data", (d) => {
+  log.write(d);
   buf += d;
   let i;
   while ((i = buf.indexOf("\n")) >= 0) {
@@ -20,10 +45,15 @@ p.stdout.on("data", (d) => {
     const m = line.match(/SHOT:([\w-]+)/);
     if (m) {
       setTimeout(() => {
-        execFileSync("xcrun", ["simctl", "io", udid, "screenshot", join(out, `${m[1]}.png`)], { stdio: "ignore" });
+        try {
+          capture(join(out, `${m[1]}.png`));
+        } catch {
+          console.log("could not capture", m[1]);
+          return;
+        }
         console.log("captured", m[1]);
       }, 600);
-    } else if (/passed|failed|Error/.test(line)) console.log(line.trim());
+    } else if (/passed|failed|Error|EXCEPTION|thrown/.test(line)) console.log(line.trim());
   }
 });
 p.stderr.on("data", (d) => process.stderr.write(d));

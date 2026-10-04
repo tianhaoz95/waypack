@@ -110,7 +110,7 @@
       '<div class="sheet-sub">' + esc(it.title) + " · " + esc(fmtDate(date)) + (it.time ? " · " + esc(fmtTime(it.time)) : "") + "</div>" +
       '<button class="btn secondary" data-cal-app="apple"><span class="cal-icon" style="background:#fff;color:#e5483b;border:1px solid var(--line)">31</span>Apple Calendar</button>' +
       '<button class="btn secondary" data-cal-app="google"><span class="cal-icon" style="background:#1a73e8;color:#fff">31</span>Google Calendar</button>' +
-      '<p class="note">' + (platform === "ios" ? "Apple Calendar works offline. Google Calendar opens in your browser and needs a connection." : "Apple Calendar downloads an .ics file. Google Calendar opens in a new tab.") + "</p>" +
+      '<p class="note">' + (platform === "ios" ? "Apple Calendar works offline. Google Calendar opens in your browser and needs a connection." : platform === "macos" ? "Apple Calendar opens the Calendar app and works offline. Google Calendar opens in your browser." : "Apple Calendar downloads an .ics file. Google Calendar opens in a new tab.") + "</p>" +
       '<button class="btn" data-cal-close style="justify-content:center">Cancel</button></div>';
     sheet.hidden = false;
     sheet.onclick = function (e) {
