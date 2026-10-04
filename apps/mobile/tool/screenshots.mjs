@@ -1,6 +1,7 @@
 // Runs integration_test/screenshots_test.dart and captures the simulator at each SHOT marker.
 //   node tool/screenshots.mjs <simulator-udid> <out-dir> [--fake-now 2026-12-25T10:05:00-08:00]
 //   node tool/screenshots.mjs macos <out-dir> …   (captures only the Waypack window, never the whole screen)
+//   … --test integration_test/assistant_flow_test.dart   (another walkthrough)
 import { spawn, execFileSync } from "node:child_process";
 import { createWriteStream, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -29,7 +30,8 @@ const capture = (file) => {
   const id = execFileSync(windowId, ["Waypack"]).toString().trim();
   execFileSync("screencapture", ["-x", "-o", "-l", id, file], { stdio: "ignore" });
 };
-const args = ["test", "integration_test/screenshots_test.dart", "-d", udid, "--dart-define=NO_PERMISSION_PROMPTS=true", "--dart-define=DEV_SIGN_IN=true"];
+const testFile = process.argv.includes("--test") ? process.argv[process.argv.indexOf("--test") + 1] : "integration_test/screenshots_test.dart";
+const args = ["test", testFile, "-d", udid, "--dart-define=NO_PERMISSION_PROMPTS=true", "--dart-define=DEV_SIGN_IN=true"];
 if (fakeNow) args.push(`--dart-define=FAKE_NOW=${fakeNow}`);
 const p = spawn("flutter", args, { cwd: new URL("..", import.meta.url).pathname });
 const log = createWriteStream(join(out, "run.log")); // full flutter output, for failures
@@ -53,7 +55,7 @@ p.stdout.on("data", (d) => {
         }
         console.log("captured", m[1]);
       }, 600);
-    } else if (/passed|failed|Error|EXCEPTION|thrown/.test(line)) console.log(line.trim());
+    } else if (/passed|failed|Error|EXCEPTION|thrown|^ANSWER/.test(line.trim())) console.log(line.trim());
   }
 });
 p.stderr.on("data", (d) => process.stderr.write(d));

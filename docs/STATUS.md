@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: companions + offline handoff)
+# Build status — 2026-10-04 (updated: offline assistant)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,11 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Offline trip assistant (2026-10-04)
+- "Ask about this trip" (trip menu, Today): an on-device model answers from the downloaded plan with no signal. Apple Foundation Models (iOS/iPadOS/macOS 26+), Gemini Nano (Android, ML Kit Prompt API); otherwise "not available on this device yet". Engine layer ready for a LiteRT-LM/Qwen engine later.
+- Verified: **real answers from Apple's model in the Mac app** (integration test `assistant_flow_test.dart`: what's next, lodge phone, gas, plan B), `tool/assistant_eval/run.sh` 11/11 against the real model, app unit tests 49 (brief building, engine selection, channel protocol), Android APK builds with the Gemini Nano bridge, iOS 18 simulator shows the unsupported screen.
+- Not verified: Gemini Nano on a real Android device (no supported device/emulator here); Apple's model in the iOS 26.5 simulator fails inside Apple's own model services on this host (the app now shows a plain message instead of the raw error) — needs a real iPhone with Apple Intelligence.
 
 ## Travel companions + offline handoff (2026-10-04)
 - Companions: invite links from the app (trip menu → Invite travel companions) or portal (Companions); `/join/<code>` page; companions see and download the trip (owner's maps), can leave; owner can remove them or turn the link off.

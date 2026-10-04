@@ -17,6 +17,7 @@ class MainFlutterWindow: NSWindow {
     self.setFrameAutosaveName("WaypackMain")
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    WaypackAssistant.register(messenger: flutterViewController.registrar(forPlugin: "WaypackAssistant").messenger)
 
     super.awakeFromNib()
   }

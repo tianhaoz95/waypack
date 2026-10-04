@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'assistant_screen.dart';
+
 import '../models/manifest.dart';
 import '../services/calendar.dart';
 import '../services/handoff.dart';
@@ -258,7 +260,24 @@ class _TodayScreenState extends State<TodayScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Today')),
+      appBar: AppBar(
+        title: const Text('Today'),
+        actions: [
+          if (widget.manifest.raw['trip_id'] is String)
+            IconButton(
+              tooltip: 'Ask about this trip',
+              icon: const Icon(Icons.auto_awesome_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AssistantScreen(
+                    tripId: widget.manifest.raw['trip_id'] as String,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       // Readable line length on iPad / desktop.
       body: Center(
         child: ConstrainedBox(

@@ -1,0 +1,13 @@
+[
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "What's next?", "expect": ["11:30", "Picnic"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "What's the phone number for Wuksachi Lodge?", "expect": ["565-4070"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "Where can we get gas, and is there any in the park?", "expect": ["Three Rivers"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "What's plan B if Wolverton is closed?", "expect": ["Sherman"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "My toddler has a high fever, what do we do?", "expect": ["911", "624-2000"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "What time is dinner tonight?", "expect": ["17:30"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "Do we need chains?", "expect": ["chain"]},
+  {"trip": "sequoia-winter", "now": "2026-12-24T11:05:00-08:00", "q": "What's the wifi password at the lodge?", "expect": ["doesn't cover"]},
+  {"trip": "tahoe-winter", "now": "2027-01-16T10:50:00-08:00", "here": [38.9567, -119.9421], "q": "Where's the nearest gas?", "expect": ["Chevron"]},
+  {"trip": "tahoe-winter", "now": "2027-01-16T10:50:00-08:00", "here": [38.9567, -119.9421], "q": "What's next?", "expect": ["Base Camp"]},
+  {"trip": "tahoe-winter", "now": "2027-01-16T10:50:00-08:00", "here": [38.9567, -119.9421], "q": "How far is the hospital?", "expect": ["4.3 mi"]}
+]

@@ -39,3 +39,11 @@ Same code, built for macOS 12+ (universal: Apple silicon + Intel). Distributed a
 - Window: opens at 1280×832 so plans get their desktop layout; remembers its size and position.
 - Release: `tool/release_mac.sh --check`, then `SUPABASE_URL=… SUPABASE_ANON_KEY=… API_URL=… tool/release_mac.sh --notarize --upload`. It builds, signs (Developer ID, hardened runtime, frameworks first), makes `build/release/Waypack-<version>.dmg`, notarizes and staples it, and puts it in R2 so `/download/mac` serves it. `--dev --upload-local` makes a local-config build for testing the route with `npm run dev`.
 - Don't open a Developer-ID release build on your development Mac casually: macOS ties the sandbox container to the signature, so switching between debug and release builds shows "Waypack differs from previously opened versions… Open Anyway / Don't Open", and the app (or a running `flutter test`) waits until someone answers. Users installing from the DMG never see this.
+
+## Offline assistant
+"Ask about this trip" answers questions from the downloaded plan with an on-device model: Apple Foundation Models (iOS/iPadOS/macOS 26+ with Apple Intelligence) or Gemini Nano (Android 8+ with AICore). Elsewhere it explains that it isn't available yet.
+- `lib/assistant/engine.dart`: engines + picker (add a LiteRT-LM/Qwen engine to `AssistantEngines.candidates()` later). Native sides: `ios/Runner/WaypackAssistant.swift` (also linked into the macOS target), `android/app/src/main/kotlin/.../WaypackAssistant.kt`.
+- `lib/assistant/context.dart`: builds the per-question brief that fits a ~4k-token model.
+- Quality check against the real model: `tool/assistant_eval/run.sh` (cases in `cases.json`; macOS with Apple Intelligence). Run it after changing the brief or instructions.
+- In-app walkthrough: `node tool/screenshots.mjs macos <out> --test integration_test/assistant_flow_test.dart --fake-now 2026-12-24T11:05:00-08:00`.
+
