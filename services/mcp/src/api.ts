@@ -7,9 +7,9 @@ import { availablePlans, createCheckout, createPortal, handleStripeWebhook, stri
 import { createApiToken, resolveApiToken } from "./auth/tokens.js";
 import { verifySignedPath } from "./lib/crypto.js";
 import { Db, eq } from "./lib/db.js";
-import { LIMITS } from "@waypack/bundle-schema";
+import { LIMITS, type Manifest } from "@waypack/bundle-schema";
 import { planFor } from "./lib/entitlements.js";
-import { ensureTripExtracts, tripStatus, type ExtractRow, type TripRow } from "./lib/pipeline.js";
+import { deviceMaps, deviceTiles, ensureTripExtracts, tripStatus, type ExtractRow, type TripRow } from "./lib/pipeline.js";
 import { serveR2, signedFileUrl } from "./lib/storage.js";
 import { recutExpired } from "./lib/tiles.js";
 import { deleteTripData } from "./mcp/tools.js";
@@ -193,7 +193,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     const joined = await companionTrips(db, user.userId);
     const rows = [...own.map((t) => ({ ...t, role: "owner" as const, owner_email: null })), ...joined.filter((t) => t.current_version > 0).map((t) => ({ ...t, role: "member" as const }))];
     rows.sort((a, b) => String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
-    const out = await Promise.all(rows.map(({ user_id, ...t }) => tripStatus(db, user_id, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
+    const out = await Promise.all(rows.map(({ user_id, ...t }) => tripStatus(env, db, user_id, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
     return Response.json({ trips: out });
   }
 
@@ -306,12 +306,20 @@ async function downloadInfo(env: Env, db: Db, userId: string, tripId: string): P
   if (!access) return jsonErr(404, "trip not found");
   const t = access.trip;
   const ownerId = t.user_id;
-  const v = await db.one<{ version: number; bundle_key: string; bundle_sha256: string; bundle_bytes: number; manifest: Record<string, unknown> }>(
+  const v = await db.one<{ version: number; bundle_key: string; bundle_sha256: string; bundle_bytes: number; manifest: Manifest }>(
     "trip_versions",
     `select=version,bundle_key,bundle_sha256,bundle_bytes,manifest&trip_id=${eq(tripId)}&version=${eq(t.current_version)}`,
   );
   if (!v) return jsonErr(409, "trip has no published version yet");
   const plan = await planFor(db, ownerId);
+  const bundle = { url: await signedFileUrl(env, v.bundle_key, 6 * 3600), sha256: v.bundle_sha256, bytes: v.bundle_bytes };
+  const head = { trip_id: t.id, title: t.title, start_date: t.start_date, end_date: t.end_date, version: v.version, status: t.status, bundle };
+  const tail = { online_tiles_url: env.ONLINE_TILES_URL || null, manifest: v.manifest, expires_in: 6 * 3600 };
+  if (deviceMaps(env)) {
+    // The app cuts the map from the planet itself (apps/mobile/lib/services/pmtiles.dart).
+    const device = plan.offlineMaps ? await deviceTiles(env, plan, v.manifest) : null;
+    return Response.json({ ...head, tiles: [], tiles_status: device ? "device" : "not_included", device_tiles: device, ...tail });
+  }
   let extracts = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(tripId)}&status=in.(pending,processing,ready,failed,expired)&order=area_index`);
   if (plan.offlineMaps && !extracts.length) {
     // Published on the free plan, upgraded since: cut the map now.
@@ -336,20 +344,7 @@ async function downloadInfo(env: Env, db: Db, userId: string, tripId: string): P
     })),
   );
   const tiles_status = !extracts.length ? "not_included" : extracts.some((e) => e.status === "pending" || e.status === "processing") ? "processing" : extracts.some((e) => e.status === "failed") ? "failed" : "ready";
-  return Response.json({
-    trip_id: t.id,
-    title: t.title,
-    start_date: t.start_date,
-    end_date: t.end_date,
-    version: v.version,
-    status: t.status,
-    bundle: { url: await signedFileUrl(env, v.bundle_key, 6 * 3600), sha256: v.bundle_sha256, bytes: v.bundle_bytes },
-    tiles,
-    tiles_status,
-    online_tiles_url: env.ONLINE_TILES_URL || null,
-    manifest: v.manifest,
-    expires_in: 6 * 3600,
-  });
+  return Response.json({ ...head, tiles, tiles_status, ...tail });
 }
 
 const r_invite = (path: string) => path.match(/^\/api\/trips\/([0-9a-f-]{36})\/invite$/)?.[1];

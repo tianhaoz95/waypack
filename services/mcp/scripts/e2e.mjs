@@ -4,6 +4,7 @@
 // pipeline, tile extraction, entitlement limits and the app download API.
 //
 //   node scripts/e2e.mjs [--bundle ../../examples/sequoia-winter]
+//   MAP_EXTRACTS=device node scripts/e2e.mjs   # against `npx wrangler dev --var MAP_EXTRACTS:device` (no tiler needed)
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -14,6 +15,8 @@ const SUPA = process.env.SUPABASE_URL ?? "http://127.0.0.1:55421";
 const bundleDir = process.argv.includes("--bundle") ? process.argv[process.argv.indexOf("--bundle") + 1] : new URL("../../../examples/sequoia-winter", import.meta.url).pathname;
 const env = Object.fromEntries(readFileSync(new URL("../.dev.vars", import.meta.url), "utf8").split("\n").filter((l) => l.includes("=")).map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]));
 
+const DEVICE = process.env.MAP_EXTRACTS === "device";
+const MAPS_OK = DEVICE ? ["device"] : ["processing", "ready"];
 let failures = 0;
 const ok = (cond, msg) => { console.log(`${cond ? "✓" : "✗"} ${msg}`); if (!cond) failures++; return cond; };
 const b64url = (b) => b.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -183,10 +186,10 @@ const subObj = { id: "sub_e2e", status: "active", customer: `cus_e2e_${Date.now(
 const wh = await (await stripeEvent("customer.subscription.created", subObj)).json();
 ok(wh.tier === "annual", `Stripe subscription.created → ${wh.tier}`);
 const afterUpgrade = await call("get_trip_status", { trip_id: tripId });
-ok(["processing", "ready"].includes(afterUpgrade.structuredContent.tiles_status), `trip published on free plan gets an offline map after upgrade (${afterUpgrade.structuredContent.tiles_status})`);
+ok(MAPS_OK.includes(afterUpgrade.structuredContent.tiles_status), `trip published on free plan gets an offline map after upgrade (${afterUpgrade.structuredContent.tiles_status})`);
 
 const v2 = await call("upload_bundle_inline", { trip_id: tripId, files });
-ok(!v2.isError && v2.structuredContent.version === 2 && ["processing", "ready"].includes(v2.structuredContent.tiles_status), `inline update → v2, tiles ${v2.structuredContent.tiles_status}`);
+ok(!v2.isError && v2.structuredContent.version === 2 && MAPS_OK.includes(v2.structuredContent.tiles_status), `inline update → v2, tiles ${v2.structuredContent.tiles_status}`);
 
 let st;
 for (let i = 0; i < 60; i++) {
@@ -194,12 +197,13 @@ for (let i = 0; i < 60; i++) {
   if (st.structuredContent.status !== "processing") break;
   await sleep(3000);
 }
-ok(st.structuredContent.status === "ready" && st.structuredContent.tiles_status === "ready", `get_trip_status → ${st.text}`);
-ok(st.structuredContent.extracts.length === 2, `2 map areas extracted (${st.structuredContent.extracts.map((e) => e.bytes).join(", ")} bytes)`);
+ok(st.structuredContent.status === "ready" && st.structuredContent.tiles_status === (DEVICE ? "device" : "ready"), `get_trip_status → ${st.text}`);
+if (DEVICE) ok(st.structuredContent.extracts.length === 0, "device maps: nothing extracted on the server");
+else ok(st.structuredContent.extracts.length === 2, `2 map areas extracted (${st.structuredContent.extracts.map((e) => e.bytes).join(", ")} bytes)`);
 
 // Same map → no re-cut on v3.
 const v3 = await call("upload_bundle_inline", { trip_id: tripId, files });
-ok(!v3.isError && v3.structuredContent.tiles_status === "ready", `unchanged map is not re-cut (v3 tiles ${v3.structuredContent.tiles_status})`);
+ok(!v3.isError && v3.structuredContent.tiles_status === (DEVICE ? "device" : "ready"), `unchanged map is not re-cut (v3 tiles ${v3.structuredContent.tiles_status})`);
 
 const lt = await call("list_trips");
 ok(lt.structuredContent.trips.some((t) => t.trip_id === tripId && t.version === 3), "list_trips shows v3");
@@ -213,13 +217,27 @@ const H = { Authorization: `Bearer ${sess.access_token}` };
 const me = await (await fetch(`${BASE}/api/me`, { headers: H })).json();
 ok(me.plan?.tier === "annual", `/api/me → ${me.plan?.tier}`);
 const dl = await (await fetch(`${BASE}/api/trips/${tripId}/download`, { headers: H })).json();
-ok(dl.version === 3 && dl.tiles.length === 2, `/download → v${dl.version}, ${dl.tiles.length} tile files`);
 const bz = Buffer.from(await (await fetch(dl.bundle.url)).arrayBuffer());
 ok(createHash("sha256").update(bz).digest("hex") === dl.bundle.sha256, "bundle download matches sha256");
+if (DEVICE) {
+  const areas = dl.device_tiles?.areas ?? [];
+  ok(dl.version === 3 && dl.tiles.length === 0 && dl.tiles_status === "device" && areas.length === 2, `/download → v${dl.version}, device_tiles with ${areas.length} areas from ${dl.device_tiles?.source}`);
+  const again = await (await fetch(`${BASE}/api/trips/${tripId}/download`, { headers: H })).json();
+  ok(JSON.stringify(again.device_tiles.areas) === JSON.stringify(areas), "area hashes are stable between downloads (the app reuses its maps)");
+  // The app's extractor, run from the command line on the first area.
+  const out = `/tmp/waypack-e2e-${Date.now()}.pmtiles`;
+  const a = areas[0];
+  const log = execSync(`dart run tool/pmtiles_extract.dart ${dl.device_tiles.source} ${a.bbox.join(",")} ${a.max_zoom} ${out}`, { cwd: new URL("../../../apps/mobile", import.meta.url).pathname, encoding: "utf8" });
+  const head = readFileSync(out).subarray(0, 7).toString();
+  ok(head === "PMTiles", `device extract of area 0 → ${log.trim().split("\n").pop()}`);
+  execSync(`rm -f ${out}`);
+} else {
+ok(dl.version === 3 && dl.tiles.length === 2, `/download → v${dl.version}, ${dl.tiles.length} tile files`);
 const rng = await fetch(dl.tiles[0].url, { headers: { Range: "bytes=0-6" } });
 ok(rng.status === 206 && Buffer.from(await rng.arrayBuffer()).toString() === "PMTiles", "tiles support HTTP Range (PMTiles magic)");
 const full = Buffer.from(await (await fetch(dl.tiles[0].url)).arrayBuffer());
 ok(createHash("sha256").update(full).digest("hex") === dl.tiles[0].sha256, "tile download matches sha256");
+}
 
 // RLS: the app can read its own trip summary straight from Supabase.
 const rls = await (await fetch(`${SUPA}/rest/v1/trip_summaries?select=id,title,current_version`, { headers: { apikey: env.SUPABASE_ANON_KEY, ...H } })).json();

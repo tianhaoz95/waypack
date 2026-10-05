@@ -4,7 +4,7 @@ import { sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
 import { activeTripCount, planFor, upgradeHint, type Plan } from "./entitlements.js";
 import { keys } from "./storage.js";
-import { resolvePlanet } from "./planet.js";
+import { devicePlanet, resolvePlanet, type Planet } from "./planet.js";
 
 export interface TripRow {
   id: string;
@@ -41,7 +41,7 @@ export type PublishResult =
       trip_id: string;
       version: number;
       status: "processing" | "ready";
-      tiles_status: "processing" | "ready" | "not_included";
+      tiles_status: "processing" | "ready" | "not_included" | "device";
       warnings: Issue[];
       app_hint: string;
       message: string;
@@ -51,6 +51,9 @@ export type PublishResult =
 export class PublishError extends Error {
   constructor(message: string, public upgrade = false) { super(message); }
 }
+
+/** Offline maps are cut by the app from the planet (MAP_EXTRACTS=device) instead of the tiler container. */
+export const deviceMaps = (env: Env) => env.MAP_EXTRACTS === "device";
 
 export async function areaHash(bbox: number[], maxZoom: number, build: string): Promise<string> {
   return (await sha256(`${bbox.map((n) => n.toFixed(4)).join(",")}|z${maxZoom}|${build}`)).slice(0, 24);
@@ -162,6 +165,8 @@ export async function publishBundle(
       ? "Offline map is being prepared (usually 1–3 minutes) — poll get_trip_status until ready."
       : tilesStatus === "ready"
         ? "Offline map ready."
+        : tilesStatus === "device"
+          ? "The app downloads the offline map itself when the user taps Download (needs a connection; larger areas take a minute or two)."
         : "No offline map on the free plan (the map needs a connection). " + upgradeHint(env.PUBLIC_URL);
   return {
     ok: true,
@@ -177,22 +182,19 @@ export async function publishBundle(
 
 async function planExtracts(env: Env, db: Db, plan: Plan, trip: TripRow, version: number, m: Manifest) {
   const warnings: Issue[] = [];
-  const existing = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(trip.id)}`);
   if (!plan.offlineMaps) {
     return { tilesStatus: "not_included" as const, mapHash: null, warnings };
   }
-  const planet = await resolvePlanet(env);
-  const zMax = Number(env.BASEMAP_MAX_ZOOM || 15);
-  const areas = mapAreas(m).slice(0, plan.maxAreas);
   if (mapAreas(m).length > plan.maxAreas) warnings.push({ path: "map.extra_areas", message: `only the first ${plan.maxAreas} map areas are extracted on your plan` });
-
-  const wanted = await Promise.all(
-    areas.map(async (a, i) => {
-      const z = Math.min(a.max_zoom, zMax);
-      return { index: i, bbox: a.bbox, max_zoom: z, hash: await areaHash(a.bbox, z, planet.build) };
-    }),
-  );
-  const mapHash = (await sha256(wanted.map((w) => w.hash).sort().join("|"))).slice(0, 24);
+  if (deviceMaps(env)) {
+    // Nothing to cut or queue: the app builds the map on download.
+    const wanted = await wantedAreas(env, plan, m, await devicePlanet(env));
+    return { tilesStatus: "device" as const, mapHash: await mapHashOf(wanted), warnings };
+  }
+  const existing = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(trip.id)}`);
+  const planet = await resolvePlanet(env);
+  const wanted = await wantedAreas(env, plan, m, planet);
+  const mapHash = await mapHashOf(wanted);
   const expiresAt = addDays(m.end_date, 30);
   const live = new Set(["pending", "processing", "ready"]);
 
@@ -235,6 +237,35 @@ async function planExtracts(env: Env, db: Db, plan: Plan, trip: TripRow, version
   return { tilesStatus, mapHash, warnings };
 }
 
+/** The map areas a plan gets for a manifest (capped by plan and BASEMAP_MAX_ZOOM). */
+async function wantedAreas(env: Env, plan: Plan, m: Pick<Manifest, "map">, planet: Planet) {
+  const zMax = Number(env.BASEMAP_MAX_ZOOM || 15);
+  return Promise.all(
+    mapAreas(m)
+      .slice(0, plan.maxAreas)
+      .map(async (a, i) => {
+        const z = Math.min(a.max_zoom, zMax);
+        return { index: i, bbox: a.bbox, max_zoom: z, hash: await areaHash(a.bbox, z, planet.build) };
+      }),
+  );
+}
+
+const mapHashOf = async (wanted: { hash: string }[]) => (await sha256(wanted.map((w) => w.hash).sort().join("|"))).slice(0, 24);
+
+/**
+ * Device-map mode: what the app should cut from the planet itself. `area_hash`
+ * changes with the planet build, so unchanged areas are reused across trip updates.
+ */
+export async function deviceTiles(env: Env, plan: Plan, m: Pick<Manifest, "map">) {
+  const planet = await devicePlanet(env);
+  const wanted = await wantedAreas(env, plan, m, planet);
+  return {
+    source: planet.url,
+    build: planet.build,
+    areas: wanted.map((w) => ({ area_index: w.index, area_hash: w.hash, bbox: w.bbox, max_zoom: w.max_zoom })),
+  };
+}
+
 /**
  * Cuts offline maps for a published trip that doesn't have them yet — e.g. after the
  * user upgrades from free. No-op if the plan has no offline maps or extracts already exist.
@@ -247,7 +278,7 @@ export async function ensureTripExtracts(env: Env, db: Db, userId: string, tripI
   if (!v) return "not_included";
   const r = await planExtracts(env, db, plan, trip, trip.current_version, v.manifest);
   await db.update("trips", `id=${eq(tripId)}`, { status: r.tilesStatus === "processing" ? "processing" : "ready" });
-  return r.tilesStatus;
+  return r.tilesStatus === "device" ? "ready" : r.tilesStatus;
 }
 
 /** After an upgrade: provision maps for every trip that hasn't ended yet. */
@@ -265,7 +296,8 @@ export async function refreshTripStatus(db: Db, tripId: string): Promise<void> {
   await db.update("trips", `id=${eq(tripId)}`, { status });
 }
 
-export async function tripStatus(db: Db, userId: string, tripId: string) {
+/** `userId` is the trip's owner: maps follow the owner's plan. */
+export async function tripStatus(env: Env, db: Db, userId: string, tripId: string) {
   const trip = await db.one<TripRow>("trips", `select=*&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
   if (!trip) return null;
   const [ver] = await db.select<{ bundle_bytes: number; created_at: string }>(
@@ -274,7 +306,8 @@ export async function tripStatus(db: Db, userId: string, tripId: string) {
   );
   const ex = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(tripId)}&status=in.(pending,processing,ready,failed,expired)&order=area_index`);
   const tiles_status =
-    ex.length === 0 ? "not_included"
+    deviceMaps(env) ? ((await planFor(db, userId)).offlineMaps ? "device" : "not_included")
+    : ex.length === 0 ? "not_included"
       : ex.every((e) => e.status === "expired") ? "expired"
       : ex.some((e) => e.status === "failed") ? "failed"
         : ex.some((e) => e.status === "pending" || e.status === "processing") ? "processing"

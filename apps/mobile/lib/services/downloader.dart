@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 
 import '../models/trip.dart';
 import 'api.dart';
+import 'pmtiles.dart';
 import 'trip_store.dart';
 
 typedef Progress = void Function(double fraction, String stage);
@@ -19,6 +20,7 @@ class DownloadException implements Exception {
 
 /// Downloads a trip (bundle + map extracts), verifies SHA-256, unzips and swaps it in
 /// atomically. The previous version stays usable until the new one is complete (§8.3).
+/// In device-map mode the extracts are cut here from the planet instead of downloaded.
 class TripDownloader {
   TripDownloader(this.api, this.store);
   final Api api;
@@ -36,10 +38,10 @@ class TripDownloader {
         'The offline map is still being prepared. Try again in a minute.',
       );
     }
-    final total = info.totalBytes.clamp(1, 1 << 62);
+    var total = info.totalBytes; // grows once device-cut maps are planned
     var done = 0;
     void report(int bytes, String stage) => onProgress?.call(
-      ((done + bytes) / total).clamp(0, 1).toDouble(),
+      ((done + bytes) / total.clamp(1, 1 << 62)).clamp(0, 1).toDouble(),
       stage,
     );
 
@@ -99,6 +101,63 @@ class TripDownloader {
       );
     }
 
+    // 2b. Device-map mode: cut each area from the planet with range requests.
+    // Plan every area first (directories only) so progress has a real total.
+    final source = info.deviceSource;
+    if (info.tilesStatus == 'device' && source != null) {
+      onProgress?.call(done / total.clamp(1, 1 << 62), 'Offline map');
+      final planet = HttpRangeSource(source);
+      final ex = PmtilesExtractor(planet);
+      final slots = <int, LocalTiles>{};
+      final todo = <(int, Map<String, dynamic>, ExtractPlan)>[];
+      try {
+        for (final a in info.deviceAreas) {
+          final index = (a['area_index'] as num).toInt();
+          final hash = a['area_hash'] as String;
+          final bbox = (a['bbox'] as List)
+              .map((e) => (e as num).toDouble())
+              .toList();
+          final maxZoom = (a['max_zoom'] as num).toInt();
+          final prev = existing?.tiles
+              .where((x) => x.areaHash == hash)
+              .firstOrNull;
+          final dest = File('${tilesDir.path}/$hash.pmtiles');
+          if (prev != null &&
+              await dest.exists() &&
+              await dest.length() == prev.bytes) {
+            slots[index] = prev;
+            continue;
+          }
+          final plan = await ex.plan(bbox, maxZoom);
+          total += plan.tileBytes;
+          todo.add((index, a, plan));
+        }
+        for (final (index, a, plan) in todo) {
+          final hash = a['area_hash'] as String;
+          final name = '$hash.pmtiles';
+          final part = File('${work.path}/$name');
+          await ex.write(plan, part, onBytes: (b) => report(b, 'Offline map'));
+          final sha = (await sha256.bind(part.openRead()).first).toString();
+          final bytes = await part.length();
+          await part.rename('${tilesDir.path}/$name');
+          done += plan.tileBytes;
+          slots[index] = LocalTiles(
+            areaHash: hash,
+            file: name,
+            sha256: sha,
+            bytes: bytes,
+            bbox: plan.bbox,
+            maxZoom: plan.maxZoom,
+          );
+        }
+      } on PmtilesException catch (e) {
+        throw DownloadException('Couldn\'t download the offline map. $e');
+      } finally {
+        planet.close();
+      }
+      tiles.addAll([for (final k in slots.keys.toList()..sort()) slots[k]!]);
+    }
+
     // 3. Unzip into a staging dir, then swap into place.
     onProgress?.call(1, 'Unpacking');
     final staging = Directory('${work.path}/bundle');
@@ -121,7 +180,7 @@ class TripDownloader {
       endDate: info.endDate,
       bundleSha256: info.bundleSha256,
       tiles: tiles,
-      bytes: info.totalBytes,
+      bytes: info.bundleBytes + tiles.fold(0, (n, t) => n + t.bytes),
       downloadedAt: DateTime.now(),
       tilesIncluded: info.tilesStatus != 'not_included',
       owner: owner,

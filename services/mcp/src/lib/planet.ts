@@ -23,6 +23,24 @@ export async function resolvePlanet(env: Env): Promise<Planet> {
   return latestBuild(env);
 }
 
+/**
+ * The planet the app reads directly in device-map mode. Protomaps drops older builds
+ * from build.protomaps.com, so the pinned build is re-checked once a day and replaced
+ * with the newest one when it stops answering.
+ */
+export async function devicePlanet(env: Env): Promise<Planet> {
+  const p = await resolvePlanet(env);
+  const okKey = `planet:ok:${p.build}`;
+  if (await env.CACHE_KV.get(okKey)) return p;
+  const res = await fetch(p.url, { headers: { Range: "bytes=0-6" } }).catch(() => null);
+  if (res?.status === 206) {
+    await env.CACHE_KV.put(okKey, "1", { expirationTtl: 86400 });
+    return p;
+  }
+  if (res && (res.status === 404 || res.status === 410 || res.status === 403)) return latestBuild(env, true);
+  return p; // transient failure: keep the pinned build; the app retries
+}
+
 /** Newest daily Protomaps build (cached 30 days so area hashes stay stable). */
 export async function latestBuild(env: Env, fresh = false): Promise<Planet> {
   if (!fresh) {

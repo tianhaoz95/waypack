@@ -5,7 +5,7 @@ Everything runs locally today (see the root README). This is the checklist to go
 ## 0. Accounts you need
 | Service | Used for | Plan |
 |---|---|---|
-| Cloudflare | Worker (site + portal + API + MCP), R2, KV, Queues, Containers | **Workers Paid** (Containers + Queues) |
+| Cloudflare | Worker (site + portal + API + MCP), R2, KV, Queues, Containers | **Workers Paid** (Containers + Queues); not needed with device maps (§2a) |
 | Supabase | Auth + Postgres + Edge Function | Free → Pro at launch |
 | OpenRouteService | `geocode` / `compute_route` | Free key for dogfooding |
 | Stripe | Pro subscriptions on the web portal | Standard |
@@ -68,6 +68,13 @@ WAYPACK_URL=https://waypack.app WAYPACK_PREVIEW_URL=https://waypackpreview.com n
 WAYPACK_URL=https://waypack.app SUPABASE_URL=https://<ref>.supabase.co node scripts/e2e.mjs   # dev sign-in is disabled in production: sign in with a real Google/Apple test account and run the agent steps manually
 ```
 Then connect for real: `claude mcp add --transport http waypack https://waypack.app/mcp`, and add it as a claude.ai custom connector (design §6.1 says to test real clients early; MCP Inspector works too).
+
+## 2a. Device maps (no tiler container)
+Until there are paying users, run without the container (DECISIONS #54): set `vars.MAP_EXTRACTS = "device"` and remove the `containers` block from `wrangler.jsonc`. Publishing then cuts nothing on the server: `/api/trips/{id}/download` returns `tiles_status: "device"` and `device_tiles: { source, build, areas: [{ area_hash, bbox, max_zoom }] }`, and the app reads just those tiles from the planet with range requests and writes the `.pmtiles` itself (`apps/mobile/lib/services/pmtiles.dart`). Same plan gating as before (Pro gets maps), no map storage in R2, no queue traffic.
+- Planet: `PLANET_URL = "latest"` reads build.protomaps.com directly. The Worker pins one build for 30 days (so unchanged areas keep their `area_hash` and aren't re-downloaded) and checks daily that it still answers, moving to the newest build when Protomaps drops it. **Check Protomaps' terms** for direct reads by many devices; the R2 mirror (`PLANET_URL = "mirror"`, needs the container's `/mirror`) is the fix if it becomes a problem.
+- Dev: `npx wrangler dev --var MAP_EXTRACTS:device`, then `MAP_EXTRACTS=device node scripts/e2e.mjs` (needs `dart`, runs the app's extractor on the first area).
+- Back to the container later: set `MAP_EXTRACTS = "server"`, restore `containers`. Trips get server extracts on their next download (`ensureTripExtracts`).
+- Compare against the reference: `dart run tool/pmtiles_extract.dart <planet> <bbox> <z> out.pmtiles` (apps/mobile), then `pmtiles verify out.pmtiles`. Verified tile-for-tile against `pmtiles extract` (go-pmtiles 1.31.2).
 
 ## 3. Site + account portal
 `site/` is deployed with the Worker (Workers static assets), so `npm run deploy` publishes the landing page and `https://waypack.app/account` too. Replace the beta `mailto:` links with TestFlight / Play links when ready.

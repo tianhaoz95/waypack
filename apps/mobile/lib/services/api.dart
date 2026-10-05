@@ -94,6 +94,16 @@ class DownloadInfo {
   String? get onlineTilesUrl => raw['online_tiles_url'] as String?;
   List<Map<String, dynamic>> get tiles =>
       (raw['tiles'] as List).cast<Map<String, dynamic>>();
+
+  /// Device-map mode (`tiles_status == 'device'`): the planet to cut from and the
+  /// areas to cut. The app builds these extracts itself (services/pmtiles.dart).
+  String? get deviceSource =>
+      (raw['device_tiles'] as Map?)?['source'] as String?;
+  List<Map<String, dynamic>> get deviceAreas =>
+      (((raw['device_tiles'] as Map?)?['areas'] as List?) ?? const [])
+          .cast<Map<String, dynamic>>();
+
+  /// Bundle + server-cut tiles. Device-cut tiles are sized after planning.
   int get totalBytes =>
       bundleBytes +
       tiles.fold<int>(0, (n, t) => n + ((t['bytes'] as num?)?.toInt() ?? 0));

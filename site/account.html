@@ -344,7 +344,7 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
       }
       $("trips").innerHTML = '<table><thead><tr><th>Trip</th><th class="hide-sm">Dates</th><th>Status</th><th class="hide-sm">Size</th><th></th></tr></thead><tbody>' +
         r.trips.map(function (t) {
-          var map = t.tiles_status === "not_included" ? "no offline map" : "map " + t.tiles_status;
+          var map = t.tiles_status === "not_included" ? "no offline map" : t.tiles_status === "device" ? "offline map on download" : "map " + t.tiles_status;
           var size = t.sizes ? fmtBytes(t.sizes.bundle_bytes + t.sizes.tiles_bytes) : "";
           var sh = shares[t.id];
           var shareCell = !sharing ? "" : sh

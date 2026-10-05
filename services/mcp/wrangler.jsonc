@@ -31,6 +31,9 @@
     "BASEMAP_MAX_ZOOM": "15",
     // Leave TILER_URL empty to use the Cloudflare Container binding; set it to call a tiler over HTTP (local docker).
     "TILER_URL": "http://127.0.0.1:8090",
+    // "server": the tiler cuts maps into R2. "device": the app cuts them from PLANET_URL itself
+    // (no container, queue or map storage; see docs/DEPLOY.md and DECISIONS #54).
+    "MAP_EXTRACTS": "server",
     // Optional online basemap for free-tier users / previews (TileJSON or .pmtiles URL). Empty = none.
     "ONLINE_TILES_URL": "",
     "ENVIRONMENT": "development"

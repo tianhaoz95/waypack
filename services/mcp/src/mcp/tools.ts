@@ -149,7 +149,7 @@ export const tools: ToolDef<ToolCtx>[] = [
         "trip_versions",
         `select=manifest,bundle_key,version&trip_id=${eq(id)}&version=${eq(t.current_version)}`,
       );
-      const status = await tripStatus(ctx.db, ctx.userId, id);
+      const status = await tripStatus(ctx.env, ctx.db, ctx.userId, id);
       if (!v) return { text: `Trip "${t.title}" has no published version yet.`, structured: { trip_id: id, version: 0, status } };
       const obj = await ctx.env.BUCKET.get(v.bundle_key);
       const u = obj ? unzipBundle(new Uint8Array(await obj.arrayBuffer())) : { files: [] as BundleFile[], errors: [] };
@@ -495,13 +495,14 @@ export const tools: ToolDef<ToolCtx>[] = [
     annotations: { readOnlyHint: true, openWorldHint: false },
     async run(args, ctx) {
       const id = tripIdArg(args, true)!;
-      const s = await tripStatus(ctx.db, ctx.userId, id);
+      const s = await tripStatus(ctx.env, ctx.db, ctx.userId, id);
       if (!s) throw new ToolError(`Trip ${id} not found in your account.`);
       const mb = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
       const failed = s.extracts.filter((e) => e.status === "failed").map((e) => e.error).join("; ");
       const text =
         `"${s.title}" v${s.version}: ${s.status}. Offline map: ${s.tiles_status}` +
         (s.tiles_status === "not_included" ? " (free plan — map needs a connection)" : "") +
+        (s.tiles_status === "device" ? " (the app downloads it when the user taps Download)" : "") +
         `. Download size ≈ ${mb(s.sizes.bundle_bytes + s.sizes.tiles_bytes)}.` +
         (failed ? ` Map extraction failed: ${failed}. Re-upload to retry.` : "") +
         (s.status === "ready" ? " Tell the user to open Waypack and tap Download." : "");

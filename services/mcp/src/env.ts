@@ -20,6 +20,11 @@ export interface Env {
   PLANET_URL: string;
   BASEMAP_MAX_ZOOM: string;
   TILER_URL?: string;
+  /**
+   * Who cuts offline maps. "server" (default): the tiler container, stored in R2.
+   * "device": the app reads the trip's tiles straight from the planet (no container, no queue).
+   */
+  MAP_EXTRACTS?: "server" | "device";
   ONLINE_TILES_URL?: string;
   ENVIRONMENT: string;
   /** Public base URL of the BASEMAP bucket (custom domain), e.g. https://planet.waypack.app */
