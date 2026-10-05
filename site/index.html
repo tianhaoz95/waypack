@@ -160,6 +160,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-panel="p-cc">Claude Code</button>
       <button role="tab" aria-selected="false" data-panel="p-claude">Claude (web &amp; desktop)</button>
+      <button role="tab" aria-selected="false" data-panel="p-gemini">Gemini (web)</button>
       <button role="tab" aria-selected="false" data-panel="p-cursor">Cursor &amp; others</button>
     </div>
     <div class="panel" id="p-cc" role="tabpanel">
@@ -172,6 +173,11 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
       <p>Settings → Connectors → Add custom connector, and paste:</p>
       <pre><code><span data-origin>https://waypack.hejitech.workers.dev</span>/mcp</code><button type="button">Copy</button></pre>
       <p>No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
+    </div>
+    <div class="panel" id="p-gemini" role="tabpanel" hidden>
+      <p>On <a href="https://gemini.google.com">gemini.google.com</a>: Settings → Connected Apps → Custom apps → Add a custom app, paste the URL, click Next and sign in with Google or Apple:</p>
+      <pre><code><span data-origin>https://waypack.hejitech.workers.dev</span>/mcp</code><button type="button">Copy</button></pre>
+      <p>Then type <code class="inline">@</code>, pick Waypack, and ask: <code class="inline">Plan a weekend in Lake Tahoe in January</code>. Google offers custom apps to personal accounts in the US (18+) with Keep Activity on.</p>
     </div>
     <div class="panel" id="p-cursor" role="tabpanel" hidden>
       <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
