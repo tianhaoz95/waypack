@@ -4,7 +4,7 @@
 #   tool/release_mac.sh --check              # verify identity, notary credentials and config; build nothing
 #   tool/release_mac.sh                      # release build → signed .app → signed DMG (build/release/)
 #   tool/release_mac.sh --notarize           # ...then notarize + staple (required before anyone else can open it)
-#   tool/release_mac.sh --notarize --upload  # ...then put it in R2 so https://<site>/download/mac serves it
+#   tool/release_mac.sh --notarize --upload  # ...then publish a GitHub release; https://<site>/download/mac redirects to it
 #   tool/release_mac.sh --skip-build         # re-sign/re-package the last build
 #   tool/release_mac.sh --dev                # allow localhost config (local testing only; never ship this)
 #
@@ -15,10 +15,9 @@
 # Notarization auth, best first:
 #   WAYPACK_NOTARY_PROFILE                         a `xcrun notarytool store-credentials` profile
 #   FA_ASC_KEY_ID + FA_ASC_ISSUER_ID (+ FA_KEY_LOCATION or ~/.appstoreconnect/private_keys/AuthKey_<id>.p8)
-# Upload: into Supabase Storage (bucket "waypack", where the Worker serves /download/mac from).
-#   --upload needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (the project's secret key).
-#   --upload-local writes to the local Supabase instead (for testing /download/mac with `npm run dev`).
-#   Supabase's free plan caps files at 50 MB; a bigger DMG needs a higher limit (Pro).
+# Upload: a GitHub release `mac-v<version>` on WAYPACK_RELEASE_REPO (default tianhaoz95/waypack) with
+#   the DMG as `Waypack.dmg`, via `gh` (logged in with write access). The site's /download/mac
+#   redirects to .../releases/latest/download/Waypack.dmg.
 #
 # Why sign by hand instead of `codesign --deep`: --deep applies the app's entitlements to every nested
 # framework. Sign innermost-first: each framework with no entitlements, then the app with its own.
@@ -30,18 +29,17 @@ ROOT="$(cd ../.. && pwd)"
 ENTITLEMENTS="$MOBILE/macos/Runner/Release.entitlements"
 APP="$MOBILE/build/macos/Build/Products/Release/Waypack.app"
 OUT="$MOBILE/build/release"
-BUCKET="waypack"   # Supabase Storage bucket (supabase/migrations/20261009000000_file_storage.sql)
+REPO="${WAYPACK_RELEASE_REPO:-tianhaoz95/waypack}"   # keep in sync with MAC_RELEASES_REPO in services/mcp
 
 CHECK=0 NOTARIZE=0 UPLOAD="" SKIP_BUILD=0 DEV=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) CHECK=1 ;;
     --notarize) NOTARIZE=1 ;;
-    --upload) UPLOAD=remote ;;
-    --upload-local) UPLOAD=local ;;
+    --upload) UPLOAD=1 ;;
     --skip-build) SKIP_BUILD=1 ;;
     --dev) DEV=1 ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
     *) echo "!! unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -57,7 +55,7 @@ DMG="$OUT/Waypack-$VERSION.dmg"
 DEFINES=()
 if [ "$DEV" -eq 1 ]; then
   echo "==> --dev: local config (127.0.0.1); this build only works on this Mac with the dev stack running"
-  [ "$UPLOAD" = remote ] && { echo "!! refusing to upload a --dev build to the real site" >&2; exit 1; }
+  [ -n "$UPLOAD" ] && { echo "!! refusing to upload a --dev build to the real site" >&2; exit 1; }
 else
   missing=()
   for v in SUPABASE_URL SUPABASE_ANON_KEY API_URL; do [ -n "${!v:-}" ] || missing+=("$v"); done
@@ -103,9 +101,17 @@ if [ "$NOTARIZE" -eq 1 ] && [ ${#NOTARY[@]} -eq 0 ]; then
   echo "!! --notarize needs WAYPACK_NOTARY_PROFILE or FA_ASC_KEY_ID + FA_ASC_ISSUER_ID (see the header)" >&2
   exit 1
 fi
-if [ "$UPLOAD" = remote ] && [ "$NOTARIZE" -eq 0 ]; then
+if [ -n "$UPLOAD" ] && [ "$NOTARIZE" -eq 0 ]; then
   echo "!! --upload requires --notarize: an un-notarized DMG won't open on other Macs" >&2
   exit 1
+fi
+# Fail before a long build if the release can't be published.
+if [ -n "$UPLOAD" ]; then
+  gh auth status >/dev/null 2>&1 || { echo "!! --upload needs the GitHub CLI logged in (gh auth login)" >&2; exit 1; }
+  if gh release view "mac-v$VERSION" --repo "$REPO" >/dev/null 2>&1; then
+    echo "!! release mac-v$VERSION already exists on $REPO: bump version: in pubspec.yaml" >&2
+    exit 1
+  fi
 fi
 
 # ------------------------------------------------------------------ build
@@ -173,25 +179,12 @@ echo "==> $DMG  ($((SIZE / 1024 / 1024)) MB, sha256 $SHA)"
 # ----------------------------------------------------------------- upload
 
 if [ -n "$UPLOAD" ]; then
-  FILE="$(basename "$DMG")"
-  printf '{"version":"%s","build":%s,"file":"%s","size":%s,"sha256":"%s","min_macos":"12.0","released_at":"%s"}\n' \
-    "$VERSION" "$BUILD" "$FILE" "$SIZE" "$SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$OUT/latest.json"
-  if [ "$UPLOAD" = local ]; then
-    STORE_URL="http://127.0.0.1:55421"
-    STORE_KEY="$(grep '^SUPABASE_SERVICE_ROLE_KEY=' "$ROOT/services/mcp/.dev.vars" | cut -d= -f2-)"
-  else
-    STORE_URL="${SUPABASE_URL:-}" STORE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
-    [ -n "$STORE_KEY" ] || { echo "!! --upload needs SUPABASE_SERVICE_ROLE_KEY (the project's secret key)" >&2; exit 1; }
-  fi
-  [ "$SIZE" -le $((50 * 1024 * 1024)) ] || echo "!! the DMG is over 50 MB: Supabase's free plan will refuse it" >&2
-  put() {  # put <key> <file> <content-type>
-    curl -fsS -X POST "$STORE_URL/storage/v1/object/$BUCKET/$1" \
-      -H "apikey: $STORE_KEY" -H "Authorization: Bearer $STORE_KEY" \
-      -H "Content-Type: $3" -H "x-upsert: true" --data-binary "@$2" >/dev/null
-  }
-  echo "==> uploading to Supabase Storage ($UPLOAD): releases/mac/$FILE, then latest.json"
-  put "releases/mac/$FILE" "$DMG" application/x-apple-diskimage
-  # latest.json last, so /download/mac never points at a file that isn't there yet.
-  put "releases/mac/latest.json" "$OUT/latest.json" application/json
-  echo "==> live at /download/mac"
+  # Fixed asset name, so github.com/<repo>/releases/latest/download/Waypack.dmg is always the newest.
+  TAG="mac-v$VERSION"
+  cp "$DMG" "$OUT/Waypack.dmg"
+  echo "==> publishing GitHub release $TAG on $REPO (asset Waypack.dmg)"
+  gh release create "$TAG" "$OUT/Waypack.dmg" --repo "$REPO" --latest \
+    --title "Waypack for Mac $VERSION" \
+    --notes "Waypack for Mac $VERSION (build $BUILD). macOS 12+, Apple silicon and Intel. SHA-256 \`$SHA\`."
+  echo "==> live at /download/mac (redirects to the latest release)"
 fi

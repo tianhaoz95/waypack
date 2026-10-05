@@ -28,6 +28,8 @@ export interface Env {
    */
   MAP_EXTRACTS?: "server" | "device";
   ONLINE_TILES_URL?: string;
+  /** GitHub repo whose latest release has the Mac DMG (default tianhaoz95/waypack). */
+  MAC_RELEASES_REPO?: string;
   ENVIRONMENT: string;
   /** Public base URL of the BASEMAP bucket (custom domain), e.g. https://planet.waypack.app */
   BASEMAP_PUBLIC_URL?: string;

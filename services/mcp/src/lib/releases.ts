@@ -1,24 +1,15 @@
-// Public Mac app downloads, written to storage by apps/mobile/tool/release_mac.sh.
+// Public Mac app downloads: DMGs are GitHub release assets (apps/mobile/tool/release_mac.sh).
 import type { Env } from "../env.js";
-import { serveStored } from "./storage.js";
 
-/** Storage layout written by the release script: releases/mac/latest.json + releases/mac/Waypack-<version>.dmg. */
-export const MAC_RELEASES = "releases/mac/";
+/** Repo whose latest release carries `Waypack.dmg`; override with the MAC_RELEASES_REPO var. */
+export const DEFAULT_MAC_RELEASES_REPO = "tianhaoz95/waypack";
 
-export async function handleMacDownload(req: Request, env: Env, path: string): Promise<Response> {
-  if (path === "/download/mac" || path === "/download/mac/") {
-    const latest = await env.BUCKET.get(`${MAC_RELEASES}latest.json`);
-    if (!latest) return new Response("The Mac app isn't available yet. Check back soon.", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
-    const { file } = (await latest.json()) as { file: string };
-    // Versioned URL, so the browser saves "Waypack-1.2.0.dmg" and caches can't serve a stale build.
-    return new Response(null, { status: 302, headers: { Location: `/download/mac/${encodeURIComponent(file)}`, "Cache-Control": "no-store" } });
-  }
-  if (path === "/download/mac/latest.json") return serveStored(env, `${MAC_RELEASES}latest.json`, req, { "Cache-Control": "no-cache" });
-  const m = path.match(/^\/download\/mac\/(Waypack-[0-9][0-9A-Za-z.+-]{0,40}\.dmg)$/);
-  if (!m) return Response.json({ error: "not found" }, { status: 404 });
-  return serveStored(env, MAC_RELEASES + m[1], req, {
-    "Cache-Control": "public, max-age=31536000, immutable",
-    "Content-Disposition": `attachment; filename="${m[1]}"`,
+/** /download/mac → the newest release's DMG on GitHub (a stable link for the site's buttons). */
+export function handleMacDownload(_req: Request, env: Env, path: string): Response {
+  if (path !== "/download/mac" && path !== "/download/mac/") return Response.json({ error: "not found" }, { status: 404 });
+  const repo = env.MAC_RELEASES_REPO || DEFAULT_MAC_RELEASES_REPO;
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `https://github.com/${repo}/releases/latest/download/Waypack.dmg`, "Cache-Control": "no-store" },
   });
 }
-

@@ -6,7 +6,7 @@ Everything runs locally today (see the root README). This is the checklist to go
 | Service | Used for | Plan |
 |---|---|---|
 | Cloudflare | Worker (site + portal + API + MCP), KV, Queues, Containers | **Workers Paid** (Containers + Queues); not needed with device maps (§2a) |
-| Supabase | Auth + Postgres + **Storage** (all files: bundles, uploads, previews, shares, Mac DMG) | Free (50 MB per file, 1 GB total) → Pro at launch |
+| Supabase | Auth + Postgres + **Storage** (all files: bundles, uploads, previews, shares) | Free (50 MB per file, 1 GB total) → Pro at launch |
 | OpenRouteService | `geocode` / `compute_route` | Free key for dogfooding |
 | Stripe | Pro subscriptions on the web portal | Standard |
 | Apple Developer / Google Play Console | App distribution | — |
@@ -105,9 +105,9 @@ Needs the **Developer ID Application** certificate (in this Mac's keychain) and 
 cd apps/mobile
 tool/release_mac.sh --check
 SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<publishable> API_URL=https://waypack.app \
-  tool/release_mac.sh --notarize --upload      # → Supabase Storage releases/mac/, served at https://waypack.app/download/mac
+  tool/release_mac.sh --notarize --upload      # → GitHub release mac-v<version> (asset Waypack.dmg); /download/mac redirects to it
 ```
-Bump `version:` in `pubspec.yaml` for each release; the DMG URL is versioned and cached forever, `latest.json` is what changes. There's no auto-updater yet: users re-download from the site.
+Needs `gh` logged in with write access to the repo. Bump `version:` in `pubspec.yaml` for each release (the script refuses an existing tag); `/download/mac` always redirects to `releases/latest/download/Waypack.dmg`. There's no auto-updater yet: users re-download from the site.
 
 ## 6. Before launch
 - [ ] Field test (design §15): drive into a no-service area with only downloaded data; check the blue dot on a walk.

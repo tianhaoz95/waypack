@@ -59,7 +59,7 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
     return serveStored(env, decodeURIComponent(path.slice("/files/".length)), req);
   }
 
-  // Mac app downloads (public): /download/mac → the current DMG; see apps/mobile/tool/release_mac.sh.
+  // Mac app downloads (public): /download/mac → the latest GitHub release's DMG; see apps/mobile/tool/release_mac.sh.
   if (path.startsWith("/download/mac") && (req.method === "GET" || req.method === "HEAD")) return handleMacDownload(req, env, path);
 
   // Public, remixable trips: the remix page (static, site/remix.html) and its data.
