@@ -17,8 +17,8 @@ export async function signedUploadUrl(env: Env, uploadId: string, ttlSeconds = 9
   return `${env.PUBLIC_URL}${await signPath(env.SIGNING_SECRET, `/upload/${uploadId}`, ttlSeconds)}`;
 }
 
-/** Streams an R2 object honoring a single `Range: bytes=a-b` header (pmtiles + resumable downloads). */
-export async function serveR2(env: Env, key: string, req: Request, extra: Record<string, string> = {}): Promise<Response> {
+/** Streams a stored file honoring a single `Range: bytes=a-b` header (pmtiles + resumable downloads). */
+export async function serveStored(env: Env, key: string, req: Request, extra: Record<string, string> = {}): Promise<Response> {
   const head = await env.BUCKET.head(key);
   if (!head) return new Response("not found", { status: 404 });
   const size = head.size;
@@ -35,8 +35,6 @@ export async function serveR2(env: Env, key: string, req: Request, extra: Record
     "Cache-Control": "private, max-age=3600",
     ...extra,
   });
-  const sha = head.customMetadata?.sha256;
-  if (sha) h.set("X-Content-SHA256", sha);
   const range = req.headers.get("Range");
   const m = range && /^bytes=(\d*)-(\d*)$/.exec(range.trim());
   if (m) {

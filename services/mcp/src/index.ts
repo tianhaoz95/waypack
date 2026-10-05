@@ -5,6 +5,7 @@ import { handlePreviewHost } from "./lib/hosted.js";
 import { expirePreviews, isPreviewHost } from "./lib/previews.js";
 import { resolveApiToken } from "./auth/tokens.js";
 import { Db } from "./lib/db.js";
+import { SupabaseBucket } from "./lib/bucket.js";
 import { callTiler, runExpiry, runTileJob } from "./lib/tiles.js";
 import { checkPlanetMirror, startPlanetMirror } from "./lib/planet.js";
 import { handleMcpRequest } from "./mcp/protocol.js";
@@ -52,14 +53,20 @@ function getProvider(env: Env): OAuthProvider<Env> {
   return provider;
 }
 
+/** Attaches file storage (Supabase Storage) to env; tests pass their own BUCKET. */
+const withStorage = (env: Env): Env =>
+  env.BUCKET ? env : { ...env, BUCKET: new SupabaseBucket(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY) };
+
 export default {
-  fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  fetch(req: Request, rawEnv: Env, ctx: ExecutionContext): Promise<Response> {
+    const env = withStorage(rawEnv);
     // The preview origin serves only previews: no OAuth, MCP, API, portal or cookies.
     if (isPreviewHost(req, env)) return handlePreviewHost(req, env);
     return getProvider(env).fetch(req, env, ctx);
   },
 
-  async queue(batch: MessageBatch<TileJob>, env: Env): Promise<void> {
+  async queue(batch: MessageBatch<TileJob>, rawEnv: Env): Promise<void> {
+    const env = withStorage(rawEnv);
     for (const msg of batch.messages) {
       try {
         await runTileJob(env, msg.body);
@@ -71,7 +78,8 @@ export default {
     }
   },
 
-  async scheduled(event: ScheduledController, env: Env): Promise<void> {
+  async scheduled(event: ScheduledController, rawEnv: Env): Promise<void> {
+    const env = withStorage(rawEnv);
     if (event.cron === "17 3 * * *") {
       console.log("expiry", await runExpiry(env));
       console.log("previews expired", await expirePreviews(env, new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)));

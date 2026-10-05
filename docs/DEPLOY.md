@@ -5,8 +5,8 @@ Everything runs locally today (see the root README). This is the checklist to go
 ## 0. Accounts you need
 | Service | Used for | Plan |
 |---|---|---|
-| Cloudflare | Worker (site + portal + API + MCP), R2, KV, Queues, Containers | **Workers Paid** (Containers + Queues); not needed with device maps (§2a) |
-| Supabase | Auth + Postgres + Edge Function | Free → Pro at launch |
+| Cloudflare | Worker (site + portal + API + MCP), KV, Queues, Containers | **Workers Paid** (Containers + Queues); not needed with device maps (§2a) |
+| Supabase | Auth + Postgres + **Storage** (all files: bundles, uploads, previews, shares, Mac DMG) | Free (50 MB per file, 1 GB total) → Pro at launch |
 | OpenRouteService | `geocode` / `compute_route` | Free key for dogfooding |
 | Stripe | Pro subscriptions on the web portal | Standard |
 | Apple Developer / Google Play Console | App distribution | — |
@@ -33,8 +33,8 @@ cd services/mcp
 npx wrangler login
 npx wrangler kv namespace create OAUTH_KV           # put ids into wrangler.jsonc
 npx wrangler kv namespace create CACHE_KV
-npx wrangler r2 bucket create waypack
-npx wrangler r2 bucket create waypack-basemap      # then connect custom domain planet.waypack.app (public)
+# Files live in Supabase Storage (bucket "waypack", created by the migrations); no R2 bucket for them.
+npx wrangler r2 bucket create waypack-basemap      # container mode's planet mirror only; connect planet.waypack.app (public)
 npx wrangler queues create waypack-tiles
 npx wrangler queues create waypack-tiles-dlq
 ```
@@ -105,7 +105,7 @@ Needs the **Developer ID Application** certificate (in this Mac's keychain) and 
 cd apps/mobile
 tool/release_mac.sh --check
 SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<publishable> API_URL=https://waypack.app \
-  tool/release_mac.sh --notarize --upload      # → R2 releases/mac/, served at https://waypack.app/download/mac
+  tool/release_mac.sh --notarize --upload      # → Supabase Storage releases/mac/, served at https://waypack.app/download/mac
 ```
 Bump `version:` in `pubspec.yaml` for each release; the DMG URL is versioned and cached forever, `latest.json` is what changes. There's no auto-updater yet: users re-download from the site.
 

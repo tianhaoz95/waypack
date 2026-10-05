@@ -36,7 +36,7 @@ export async function callTiler(env: Env, body: unknown, path: "/extract" | "/mi
   return getContainer(env.TILER as never, name).fetch(new Request(`http://tiler${path}`, init));
 }
 
-/** Queue consumer: cut one PMTiles extract and store it in R2. */
+/** Queue consumer: cut one PMTiles extract and store it. */
 export async function runTileJob(env: Env, job: TileJob): Promise<void> {
   const db = new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   const ex = await db.one<ExtractRow & { trips: { user_id: string } }>("map_extracts", `select=*,trips(user_id)&id=${eq(job.extract_id)}`);
@@ -50,12 +50,12 @@ export async function runTileJob(env: Env, job: TileJob): Promise<void> {
     const len = Number(res.headers.get("Content-Length"));
     if (!len) throw new Error("tiler response has no Content-Length");
 
-    // Hash while streaming into R2.
-    const [toR2, toHash] = res.body.tee();
+    // Hash while streaming into storage.
+    const [toStore, toHash] = res.body.tee();
     const digest = new crypto.DigestStream("SHA-256");
     const hashing = toHash.pipeTo(digest);
     const fixed = new FixedLengthStream(len);
-    const piping = toR2.pipeTo(fixed.writable);
+    const piping = toStore.pipeTo(fixed.writable);
     const key = keys.tiles(ex.trips.user_id, ex.trip_id, ex.area_hash);
     await env.BUCKET.put(key, fixed.readable, { httpMetadata: { contentType: "application/octet-stream" } });
     await piping;

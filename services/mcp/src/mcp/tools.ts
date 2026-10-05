@@ -535,7 +535,7 @@ async function ownUpload(ctx: ToolCtx, id: string) {
   return up;
 }
 
-/** Soft-deletes the trip row and removes its R2 objects (bundles + tiles). */
+/** Soft-deletes the trip row and removes its stored files (bundles + tiles). */
 export async function deleteTripData(env: Env, db: Db, userId: string, tripId: string): Promise<void> {
   await unshareTrip(env, db, userId, tripId);
   for (const prefix of [`bundles/${userId}/${tripId}/`, `tiles/${userId}/${tripId}/`]) {

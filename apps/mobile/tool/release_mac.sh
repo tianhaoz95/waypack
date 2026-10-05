@@ -15,8 +15,10 @@
 # Notarization auth, best first:
 #   WAYPACK_NOTARY_PROFILE                         a `xcrun notarytool store-credentials` profile
 #   FA_ASC_KEY_ID + FA_ASC_ISSUER_ID (+ FA_KEY_LOCATION or ~/.appstoreconnect/private_keys/AuthKey_<id>.p8)
-# Upload: `wrangler r2 object put` into the Worker's bucket (services/mcp/wrangler.jsonc, binding BUCKET).
-#   --upload-local writes to the local dev bucket instead (for testing /download/mac with `npm run dev`).
+# Upload: into Supabase Storage (bucket "waypack", where the Worker serves /download/mac from).
+#   --upload needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (the project's secret key).
+#   --upload-local writes to the local Supabase instead (for testing /download/mac with `npm run dev`).
+#   Supabase's free plan caps files at 50 MB; a bigger DMG needs a higher limit (Pro).
 #
 # Why sign by hand instead of `codesign --deep`: --deep applies the app's entitlements to every nested
 # framework. Sign innermost-first: each framework with no entitlements, then the app with its own.
@@ -28,7 +30,7 @@ ROOT="$(cd ../.. && pwd)"
 ENTITLEMENTS="$MOBILE/macos/Runner/Release.entitlements"
 APP="$MOBILE/build/macos/Build/Products/Release/Waypack.app"
 OUT="$MOBILE/build/release"
-BUCKET="waypack"   # services/mcp/wrangler.jsonc → r2_buckets[BUCKET].bucket_name
+BUCKET="waypack"   # Supabase Storage bucket (supabase/migrations/20261009000000_file_storage.sql)
 
 CHECK=0 NOTARIZE=0 UPLOAD="" SKIP_BUILD=0 DEV=0
 while [ $# -gt 0 ]; do
@@ -39,7 +41,7 @@ while [ $# -gt 0 ]; do
     --upload-local) UPLOAD=local ;;
     --skip-build) SKIP_BUILD=1 ;;
     --dev) DEV=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "!! unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -174,12 +176,22 @@ if [ -n "$UPLOAD" ]; then
   FILE="$(basename "$DMG")"
   printf '{"version":"%s","build":%s,"file":"%s","size":%s,"sha256":"%s","min_macos":"12.0","released_at":"%s"}\n' \
     "$VERSION" "$BUILD" "$FILE" "$SIZE" "$SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$OUT/latest.json"
-  echo "==> uploading to R2 ($UPLOAD): releases/mac/$FILE, then latest.json"
-  cd "$ROOT/services/mcp"
-  npx wrangler r2 object put "$BUCKET/releases/mac/$FILE" --file "$DMG" \
-    --content-type application/x-apple-diskimage "--$UPLOAD"
+  if [ "$UPLOAD" = local ]; then
+    STORE_URL="http://127.0.0.1:55421"
+    STORE_KEY="$(grep '^SUPABASE_SERVICE_ROLE_KEY=' "$ROOT/services/mcp/.dev.vars" | cut -d= -f2-)"
+  else
+    STORE_URL="${SUPABASE_URL:-}" STORE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
+    [ -n "$STORE_KEY" ] || { echo "!! --upload needs SUPABASE_SERVICE_ROLE_KEY (the project's secret key)" >&2; exit 1; }
+  fi
+  [ "$SIZE" -le $((50 * 1024 * 1024)) ] || echo "!! the DMG is over 50 MB: Supabase's free plan will refuse it" >&2
+  put() {  # put <key> <file> <content-type>
+    curl -fsS -X POST "$STORE_URL/storage/v1/object/$BUCKET/$1" \
+      -H "apikey: $STORE_KEY" -H "Authorization: Bearer $STORE_KEY" \
+      -H "Content-Type: $3" -H "x-upsert: true" --data-binary "@$2" >/dev/null
+  }
+  echo "==> uploading to Supabase Storage ($UPLOAD): releases/mac/$FILE, then latest.json"
+  put "releases/mac/$FILE" "$DMG" application/x-apple-diskimage
   # latest.json last, so /download/mac never points at a file that isn't there yet.
-  npx wrangler r2 object put "$BUCKET/releases/mac/latest.json" --file "$OUT/latest.json" \
-    --content-type application/json "--$UPLOAD"
+  put "releases/mac/latest.json" "$OUT/latest.json" application/json
   echo "==> live at /download/mac"
 fi

@@ -1,11 +1,13 @@
 import type { OAuthHelpers } from "@cloudflare/workers-oauth-provider";
+import type { Bucket } from "./lib/bucket.js";
 
 export interface Env {
   // bindings
   OAUTH_KV: KVNamespace;
   CACHE_KV: KVNamespace;
-  BUCKET: R2Bucket;
-  /** Public bucket holding the monthly basemap planet mirror (design §6.6). Optional in dev. */
+  /** Files (bundles, uploads, previews, shares, releases) in Supabase Storage; attached in index.ts. */
+  BUCKET: Bucket;
+  /** R2 bucket for the monthly planet mirror (design §6.6). Container mode only; optional. */
   BASEMAP?: R2Bucket;
   TILE_QUEUE: Queue<TileJob>;
   TILER?: DurableObjectNamespace;
@@ -21,7 +23,7 @@ export interface Env {
   BASEMAP_MAX_ZOOM: string;
   TILER_URL?: string;
   /**
-   * Who cuts offline maps. "server" (default): the tiler container, stored in R2.
+   * Who cuts offline maps. "server" (default): the tiler container, stored with the other files.
    * "device": the app reads the trip's tiles straight from the planet (no container, no queue).
    */
   MAP_EXTRACTS?: "server" | "device";

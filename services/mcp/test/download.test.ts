@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handleMacDownload as route } from "../src/lib/releases.js";
 import type { Env } from "../src/env.js";
 
-/** In-memory stand-in for the R2 bucket: just the calls serveR2 and the download route make. */
+/** In-memory stand-in for the R2 bucket: just the calls serveStored and the download route make. */
 function bucket(files: Record<string, string>) {
   const obj = (k: string, body: string) => ({
     size: body.length,

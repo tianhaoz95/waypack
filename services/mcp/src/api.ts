@@ -11,7 +11,7 @@ import { LIMITS, type Manifest } from "@waypack/bundle-schema";
 import { onlineTilesUrl } from "./lib/planet.js";
 import { planFor } from "./lib/entitlements.js";
 import { deviceMaps, deviceTiles, ensureTripExtracts, tripStatus, type ExtractRow, type TripRow } from "./lib/pipeline.js";
-import { serveR2, signedFileUrl } from "./lib/storage.js";
+import { serveStored, signedFileUrl } from "./lib/storage.js";
 import { recutExpired } from "./lib/tiles.js";
 import { deleteTripData } from "./mcp/tools.js";
 import { homePage } from "./pages.js";
@@ -56,7 +56,7 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
   // Signed, credential-less download with Range support (bundles, tiles).
   if (path.startsWith("/files/") && (req.method === "GET" || req.method === "HEAD")) {
     if (!(await verifySignedPath(env.SIGNING_SECRET, url))) return jsonErr(403, "link expired or invalid");
-    return serveR2(env, decodeURIComponent(path.slice("/files/".length)), req);
+    return serveStored(env, decodeURIComponent(path.slice("/files/".length)), req);
   }
 
   // Mac app downloads (public): /download/mac → the current DMG; see apps/mobile/tool/release_mac.sh.
@@ -277,7 +277,7 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   }
 
   if (path === "/api/account" && req.method === "DELETE") {
-    // Design §12: account deletion removes DB rows and R2 objects. Cancel any subscription first.
+    // Design §12: account deletion removes DB rows and stored files. Cancel any subscription first.
     const ent = await db.one<{ stripe_subscription_id: string | null }>("entitlements", `select=stripe_subscription_id&user_id=${eq(user.userId)}`);
     if (ent?.stripe_subscription_id && env.STRIPE_SECRET_KEY) {
       await stripe(env, "POST", `subscriptions/${ent.stripe_subscription_id}/cancel`, {}).catch(() => undefined);

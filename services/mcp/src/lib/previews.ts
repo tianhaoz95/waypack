@@ -4,7 +4,7 @@
 // - A preview is a draft, not a version: it never reaches the app, never counts toward trip
 //   limits and never cuts offline maps (the page uses the online basemap). publish_preview
 //   turns the current files into a normal trip version.
-// - Files are content-addressed blobs in R2; the DB row maps path → sha256. A push uploads
+// - Files are content-addressed blobs in storage; the DB row maps path → sha256. A push uploads
 //   the new blobs first, then swaps the map in one conditional update, so a viewer never
 //   sees half a push.
 // - Previews are agent-written HTML, so they're served from a separate origin (PREVIEW_URL)

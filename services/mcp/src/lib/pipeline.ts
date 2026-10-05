@@ -133,7 +133,7 @@ export async function publishBundle(
   // Store the bundle and manifest.
   const bundleSha = await sha256(zip);
   const bundleKey = keys.bundle(userId, tripId, version);
-  await env.BUCKET.put(bundleKey, zip, { httpMetadata: { contentType: "application/zip" }, customMetadata: { sha256: bundleSha } });
+  await env.BUCKET.put(bundleKey, zip, { httpMetadata: { contentType: "application/zip" } });
   await env.BUCKET.put(keys.manifest(userId, tripId, version), JSON.stringify(stored), { httpMetadata: { contentType: "application/json" } });
 
   // Map extracts.
