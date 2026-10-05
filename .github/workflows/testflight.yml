@@ -22,9 +22,11 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
+      - name: Select the newest Xcode (local releases build with the newest too)
+        run: |
+          XCODE="$(find /Applications -maxdepth 1 -name "Xcode_*.app" | sort -V | tail -1)"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
       - uses: ./.github/actions/app-toolchain
       - uses: ./.github/actions/apple-signing
         with:
