@@ -9,6 +9,9 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/feedbackkit-web/dist/feedbackkit.iife.js"></script>
+<script>if(!window.FeedbackKit){document.write('<script src="/vendor/feedbackkit.iife.js"><\/script>');}</script>
+<script src="/feedback.js"></script>
 <style>
 :root {
   --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
@@ -269,6 +272,9 @@ code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5p
   function load() {
     return api("GET", "/api/me").then(function (m) {
       me = m;
+      if (window.FeedbackKit && m) {
+        FeedbackKit.setUser({ id: m.id, email: m.email });
+      }
       $("signin").hidden = true;
       $("dash").hidden = false;
       $("who").textContent = m.email || "";
@@ -541,6 +547,7 @@ code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5p
   });
 
   $("signout").addEventListener("click", function () {
+    if (window.FeedbackKit) FeedbackKit.setUser(null);
     api("POST", "/api/auth/signout").then(function () { location.href = "/"; });
   });
   $("delete-account").addEventListener("click", function () {
