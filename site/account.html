@@ -73,7 +73,13 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
 .banner.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); }
 .banner.err { background: color-mix(in srgb, var(--danger) 15%, transparent); }
 .error { color: var(--danger); font-weight: 600; margin-top: 10px; }
-.empty { color: var(--muted); padding: 12px 0; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 12px; }
+.tabs button { min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .92rem var(--font); cursor: pointer; transition: all .15s ease; }
+.tabs button:not([aria-selected="true"]):hover { background: var(--soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.panel { margin-top: 12px; }
+.panel[hidden] { display: none; }
+code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
 [hidden] { display: none !important; }
 </style>
 </head>
@@ -141,14 +147,58 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
       <div id="previews"></div>
     </section>
 
-    <section class="card">
+    <section class="card" id="connect">
       <h2>Connect your AI agent</h2>
-      <p class="muted">Add this MCP server to Claude, Cursor or any MCP client. Sign in with the same Google or Apple account when it asks.</p>
-      <pre><code id="mcp-url"></code><button type="button" data-copy="mcp-url">Copy</button></pre>
-      <p class="small">Claude Code:</p>
-      <pre><code id="cc-cmd"></code><button type="button" data-copy="cc-cmd">Copy</button></pre>
-      <p class="small">Install the Waypack skill for best results:</p>
-      <pre><code id="skill-cmd">npx @waypack/cli skill install</code><button type="button" data-copy="skill-cmd">Copy</button></pre>
+      <p class="muted">Add this MCP server to your agent. For the best plans, also install the Waypack skill so your agent learns the interview, coverage checklist and bundle format.</p>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-panel="p-cc">Claude Code</button>
+        <button role="tab" aria-selected="false" data-panel="p-claude">Claude (web &amp; desktop)</button>
+        <button role="tab" aria-selected="false" data-panel="p-gemini">Gemini (web)</button>
+        <button role="tab" aria-selected="false" data-panel="p-muse">Meta Muse</button>
+        <button role="tab" aria-selected="false" data-panel="p-cursor">Cursor &amp; others</button>
+      </div>
+
+      <div class="panel" id="p-cc" role="tabpanel">
+        <p>Add the server, then install the skill:</p>
+        <pre><code id="cc-cmd"></code><button type="button" data-copy="cc-cmd">Copy</button></pre>
+        <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Sign in with <strong class="user-email-display">your account</strong> when Claude opens the browser. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
+      </div>
+
+      <div class="panel" id="p-claude" role="tabpanel" hidden>
+        <p>In Claude: <strong>Settings → Connectors → Add custom connector</strong>, and paste your MCP URL:</p>
+        <pre><code id="claude-url"></code><button type="button" data-copy="claude-url">Copy</button></pre>
+        <p>Sign in with <strong class="user-email-display">your account</strong> when prompted. No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
+      </div>
+
+      <div class="panel" id="p-gemini" role="tabpanel" hidden>
+        <p>On <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer">gemini.google.com</a>: <strong>Settings → Connected Apps → Custom apps → Add a custom app</strong>, paste the URL, click Next and sign in with <strong class="user-email-display">your account</strong>:</p>
+        <pre><code id="gemini-url"></code><button type="button" data-copy="gemini-url">Copy</button></pre>
+        <p>Then type <code class="inline">@</code>, pick Waypack, and ask: <code class="inline">Plan a weekend in Lake Tahoe in January</code>. Google offers custom apps to personal accounts in the US (18+) with Keep Activity on.</p>
+      </div>
+
+      <div class="panel" id="p-muse" role="tabpanel" hidden>
+        <p>1. In your Muse chat (iOS, Android, web, or WhatsApp), ask:</p>
+        <pre><code id="muse-cmd"></code><button type="button" data-copy="muse-cmd">Copy</button></pre>
+        <p>2. When Muse prompts for your credential, paste your personal API token:</p>
+        <div id="muse-token-box" hidden>
+          <pre><code id="muse-token-val"></code><button type="button" data-copy="muse-token-val">Copy</button></pre>
+        </div>
+        <div id="muse-token-prompt">
+          <p class="muted small" style="margin-bottom:8px">Generate a token ready to paste into Muse:</p>
+          <button type="button" class="secondary" id="muse-create-token">Generate token for Muse</button>
+        </div>
+        <p style="margin-top:12px">3. Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>.</p>
+      </div>
+
+      <div class="panel" id="p-cursor" role="tabpanel" hidden>
+        <p>For clients supporting remote MCP over Streamable HTTP with OAuth (e.g. Cursor):</p>
+        <pre><code id="cursor-oauth-cfg"></code><button type="button" data-copy="cursor-oauth-cfg">Copy</button></pre>
+        <p>For headless clients or clients that use an API token (send as <code class="inline">Authorization: Bearer wpk_…</code>):</p>
+        <pre><code id="cursor-token-cfg"></code><button type="button" data-copy="cursor-token-cfg">Copy</button></pre>
+        <div id="cursor-token-prompt">
+          <button type="button" class="secondary" id="cursor-create-token">Generate Bearer token</button>
+        </div>
+      </div>
     </section>
 
     <section class="card">
@@ -225,9 +275,19 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
       renderPlan();
       loadTrips();
       loadPreviews();
-      loadTokens();
-      $("mcp-url").textContent = m.mcp_url;
-      $("cc-cmd").textContent = "claude mcp add --transport http waypack " + m.mcp_url;
+      $("cc-cmd").textContent = "claude mcp add --transport http waypack " + m.mcp_url + "\nnpx @waypack/cli skill install";
+      $("claude-url").textContent = m.mcp_url;
+      $("gemini-url").textContent = m.mcp_url;
+      $("muse-cmd").textContent = "Create a custom connector for Waypack with the MCP server at " + m.mcp_url + " using an API key";
+      $("cursor-oauth-cfg").textContent = JSON.stringify({
+        mcpServers: {
+          waypack: { url: m.mcp_url }
+        }
+      }, null, 2);
+      updateCursorTokenCfg();
+      document.querySelectorAll(".user-email-display").forEach(function (el) {
+        el.textContent = m.email || "your account";
+      });
     }).catch(function (err) {
       if (err.status === 401) {
         $("dash").hidden = true; $("signin").hidden = false; $("who").textContent = "";
@@ -417,6 +477,33 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
     }).catch(function () { $("previews-card").hidden = true; });
   }
 
+  var currentToken = null;
+
+  function updateCursorTokenCfg() {
+    if (!me || !me.mcp_url) return;
+    $("cursor-token-cfg").textContent = JSON.stringify({
+      mcpServers: {
+        waypack: {
+          url: me.mcp_url,
+          headers: {
+            Authorization: "Bearer " + (currentToken || "wpk_…")
+          }
+        }
+      }
+    }, null, 2);
+  }
+
+  function applyNewToken(token) {
+    currentToken = token;
+    $("muse-token-val").textContent = token;
+    $("muse-token-box").hidden = false;
+    $("muse-token-prompt").hidden = true;
+    $("new-token-value").textContent = token;
+    $("new-token").hidden = false;
+    $("cursor-token-prompt").innerHTML = '<p class="muted small" style="margin-top:6px;color:var(--ok)">✓ Bearer token applied above.</p>';
+    updateCursorTokenCfg();
+  }
+
   function loadTokens() {
     api("GET", "/api/tokens").then(function (r) {
       $("tokens").innerHTML = r.tokens.length
@@ -428,12 +515,29 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
     });
   }
 
-  $("create-token").addEventListener("click", function () {
-    api("POST", "/api/tokens", { label: "Created on the web" }).then(function (t) {
-      $("new-token-value").textContent = t.token;
-      $("new-token").hidden = false;
+  function handleGenToken(label) {
+    return api("POST", "/api/tokens", { label: label || "Created on the web" }).then(function (t) {
+      applyNewToken(t.token);
       loadTokens();
+      banner("ok", "API token created and filled in for your connectors.");
+      return t;
     }).catch(function (err) { banner("err", err.message); });
+  }
+
+  $("create-token").addEventListener("click", function () { handleGenToken("Created on the web"); });
+  $("muse-create-token").addEventListener("click", function () { handleGenToken("Meta Muse connector"); });
+  $("cursor-create-token").addEventListener("click", function () { handleGenToken("Cursor / headless"); });
+
+  document.querySelectorAll('#connect [role="tab"]').forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      var panelId = tab.getAttribute("data-panel");
+      document.querySelectorAll('#connect [role="tab"]').forEach(function (t) {
+        t.setAttribute("aria-selected", String(t === tab));
+      });
+      document.querySelectorAll('#connect .panel').forEach(function (p) {
+        p.hidden = p.id !== panelId;
+      });
+    });
   });
 
   $("signout").addEventListener("click", function () {

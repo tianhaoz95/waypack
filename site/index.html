@@ -28,69 +28,91 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 var(--font); }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 var(--font); -webkit-font-smoothing: antialiased; }
 a { color: var(--accent); }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
 nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 nav.top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
 .brand img { display: block; width: 30px; height: 30px; }
-nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: .95rem; }
-nav.top .links a { color: var(--muted); text-decoration: none; }
+nav.top .links { margin-left: auto; display: flex; align-items: center; gap: 18px; font-size: .95rem; }
+nav.top .links a { color: var(--muted); text-decoration: none; transition: color .15s ease; }
 nav.top .links a:hover { color: var(--text); }
-@media (max-width: 640px) { nav.top .links a:not(.cta) { display: none; } }
-.cta, .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 10px 18px; border-radius: 12px; background: var(--accent); color: var(--accent-ink) !important; font-weight: 700; text-decoration: none; }
+@media (max-width: 768px) { nav.top .links a:not(.cta):not([href="/account"]) { display: none; } }
+@media (max-width: 480px) { nav.top .links a:not(.cta) { display: none; } }
+.cta, .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 10px 18px; border-radius: 12px; background: var(--accent); color: var(--accent-ink) !important; font-weight: 700; text-decoration: none; transition: opacity .15s ease, background .15s ease; border: 0; cursor: pointer; }
+.cta:hover, .btn:hover { opacity: .92; }
 .btn.ghost { background: transparent; color: var(--text) !important; border: 1px solid var(--line); }
+.btn.ghost:hover { background: var(--soft); color: var(--accent) !important; border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
 header.hero { padding: 64px 0 40px; }
 .hero .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
 @media (max-width: 860px) { .hero .grid { grid-template-columns: 1fr; } }
 .eyebrow { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--soft); padding: 4px 12px; border-radius: 999px; }
-h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -.02em; margin: 16px 0; }
-.lead { font-size: 1.2rem; color: var(--muted); max-width: 36em; }
+h1 { font-size: clamp(2.1rem, 4.5vw, 3.2rem); line-height: 1.15; letter-spacing: -.025em; margin: 16px 0; }
+.lead { font-size: 1.2rem; color: var(--muted); max-width: 36em; margin: 0; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .phone { width: min(320px, 80vw); margin: 0 auto; border-radius: 36px; padding: 10px; background: #0b0f19; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .45); }
 .phone img { display: block; width: 100%; height: auto; border-radius: 28px; }
 section { padding: 56px 0; }
 section h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; margin: 0 0 12px; }
-section .sub { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
+section .sub { color: var(--muted); max-width: 42em; margin: 0 0 28px; line-height: 1.6; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: s; }
 @media (max-width: 1060px) { .steps { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .steps { grid-template-columns: 1fr; } }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
-.steps .card::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 800; margin-bottom: 10px; }
-.card h3 { margin: 0 0 6px; font-size: 1.1rem; }
-.card p { margin: 0; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; transition: border-color .15s ease, box-shadow .15s ease; }
+.steps .card { display: flex; flex-direction: column; }
+.steps .card::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 800; margin-bottom: 12px; font-size: .95rem; }
+.card h3 { margin: 0 0 8px; font-size: 1.15rem; }
+.card p { margin: 0; color: var(--muted); line-height: 1.55; }
 .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
 .gallery figure { margin: 0; }
-.gallery img { width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); display: block; }
-.gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 8px; text-align: center; }
+.gallery img { width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); display: block; box-shadow: 0 8px 24px -8px rgba(15, 23, 42, .12); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gallery img { box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5); }
+}
+.gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 10px; text-align: center; }
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 860px) { .features { grid-template-columns: 1fr; } }
-.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.tabs button { min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .92rem var(--font); cursor: pointer; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+@media (max-width: 640px) {
+  .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+}
+.tabs button { min-height: 42px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .92rem var(--font); cursor: pointer; white-space: nowrap; transition: all .15s ease; }
+.tabs button:not([aria-selected="true"]):hover { background: var(--soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
 .tabs button[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
 .panel[hidden] { display: none; }
-pre { position: relative; background: var(--code); color: var(--code-ink); border-radius: 14px; padding: 40px 18px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 10px 0 16px; }
-pre button { position: absolute; top: 8px; right: 8px; border: 0; border-radius: 8px; background: rgba(255,255,255,.12); color: inherit; font: 600 12px var(--font); padding: 6px 10px; cursor: pointer; }
+pre { position: relative; background: var(--code); color: var(--code-ink); border-radius: 14px; padding: 42px 18px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 12px 0 16px; border: 1px solid color-mix(in srgb, var(--code-ink) 12%, transparent); }
+pre button { position: absolute; top: 10px; right: 10px; border: 0; border-radius: 8px; background: rgba(255,255,255,.14); color: inherit; font: 600 12px var(--font); padding: 6px 12px; cursor: pointer; transition: background .15s ease; }
+pre button:hover { background: rgba(255,255,255,.26); }
 code.inline { font-family: var(--mono); background: var(--soft); padding: 2px 6px; border-radius: 6px; font-size: .92em; }
-.pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
 @media (max-width: 860px) { .pricing { grid-template-columns: 1fr; } }
-.price { font-size: 2rem; font-weight: 800; margin: 8px 0; }
+.pricing .card { display: flex; flex-direction: column; position: relative; }
+.price { font-size: 2.2rem; font-weight: 800; margin: 8px 0; }
 .price small { font-size: .95rem; color: var(--muted); font-weight: 600; }
-.pricing ul { padding-left: 18px; margin: 12px 0 0; color: var(--muted); }
-.pricing .featured { border: 2px solid var(--accent); }
-details { border-top: 1px solid var(--line); padding: 14px 0; }
-details summary { cursor: pointer; font-weight: 700; }
-details p { color: var(--muted); margin: 8px 0 0; }
+.pricing ul { padding-left: 18px; margin: 14px 0 24px; color: var(--muted); flex: 1; line-height: 1.6; }
+.pricing .card .btn { width: 100%; margin-top: auto; }
+.pricing .featured { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 12px 28px -10px rgba(29, 111, 224, .18); }
+.pricing-badge { position: absolute; top: -11px; right: 20px; font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; padding: 2px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+details { border-top: 1px solid var(--line); padding: 18px 0; }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+details summary { cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; align-items: center; list-style: none; user-select: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: "+"; font-size: 1.4rem; font-weight: 400; color: var(--muted); line-height: 1; margin-left: 12px; }
+details[open] summary::after { content: "−"; }
+details p { color: var(--muted); margin: 12px 0 0; line-height: 1.6; }
 footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted); font-size: .9rem; }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
+footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+footer a:hover { color: var(--text); }
 </style>
 </head>
 <body>
 <nav class="top" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="#"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
+    <a class="brand" href="#"><img src="img/logo.svg" alt="" width="30" height="30">Waypack</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#connect">Connect your agent</a>
@@ -178,14 +200,14 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
       <p>No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
     </div>
     <div class="panel" id="p-gemini" role="tabpanel" hidden>
-      <p>On <a href="https://gemini.google.com">gemini.google.com</a>: Settings → Connected Apps → Custom apps → Add a custom app, paste the URL, click Next and sign in with Google or Apple:</p>
+      <p>On <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer">gemini.google.com</a>: Settings → Connected Apps → Custom apps → Add a custom app, paste the URL, click Next and sign in with Google or Apple:</p>
       <pre><code><span data-origin>https://waypack.hejitech.workers.dev</span>/mcp</code><button type="button">Copy</button></pre>
       <p>Then type <code class="inline">@</code>, pick Waypack, and ask: <code class="inline">Plan a weekend in Lake Tahoe in January</code>. Google offers custom apps to personal accounts in the US (18+) with Keep Activity on.</p>
     </div>
     <div class="panel" id="p-muse" role="tabpanel" hidden>
-      <p>Sign in to <a href="/account">your account</a> and click <strong>Create token</strong> under API tokens to generate a <code class="inline">wpk_…</code> token. Then in your Muse chat (iOS, Android, web, or WhatsApp), ask:</p>
+      <p>In your Muse chat (iOS, Android, web, or WhatsApp), ask:</p>
       <pre><code>Create a custom connector for Waypack with the MCP server at <span data-origin>https://waypack.hejitech.workers.dev</span>/mcp using an API key</code><button type="button">Copy</button></pre>
-      <p>When Muse prompts for your credential, paste your <code class="inline">wpk_…</code> token into the secure prompt. Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>.</p>
+      <p>When Muse prompts for your credential, paste your personal <code class="inline">wpk_…</code> token. Generate one in <a href="/account#connect">Settings → API tokens</a>. Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>.</p>
     </div>
     <div class="panel" id="p-cursor" role="tabpanel" hidden>
       <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
@@ -194,7 +216,11 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
     "waypack": { "url": "<span data-origin>https://waypack.hejitech.workers.dev</span>/mcp" }
   }
 }</code><button type="button">Copy</button></pre>
-      <p>Headless or no OAuth? Create a personal API token in the app (Settings → API tokens) and send it as <code class="inline">Authorization: Bearer wpk_…</code>.</p>
+      <p>Headless or no OAuth? Create a personal API token in <a href="/account#connect">Settings → API tokens</a> and send it as <code class="inline">Authorization: Bearer wpk_…</code>.</p>
+    </div>
+    <div style="margin-top: 24px; padding: 14px 18px; border-radius: 12px; background: var(--soft); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+      <span><strong>Ready to connect?</strong> Open Settings for ready-to-copy commands with your personal MCP server URL and API tokens.</span>
+      <a class="btn" style="min-height:38px; padding: 6px 16px; font-size:.92rem;" href="/account#connect">Open Settings</a>
     </div>
   </div>
 </section>
@@ -204,15 +230,28 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
     <h2>Pricing</h2>
     <p class="sub">You pay for the cloud part: storing your trips and cutting offline maps. The iPhone, Android and Mac apps are free. Subscribe and manage billing from <a href="/account">your account</a>.</p>
     <div class="pricing">
-      <div class="card"><h3>Free</h3><div class="price">$0</div><p>Try the whole flow.</p>
+      <div class="card">
+        <h3>Free</h3>
+        <div class="price">$0</div>
+        <p>Try the whole flow.</p>
         <ul><li>1 active trip</li><li>Full trip guide offline</li><li>Map works with a connection</li></ul>
-        <p style="margin-top:16px"><a class="btn ghost" href="/account">Start free</a></p></div>
-      <div class="card featured"><h3>Pro · Annual</h3><div class="price">$14.99 <small>/ year</small></div><p>For people who travel off-grid.</p>
+        <a class="btn ghost" href="/account">Start free</a>
+      </div>
+      <div class="card featured">
+        <span class="pricing-badge">Popular</span>
+        <h3>Pro · Annual</h3>
+        <div class="price">$14.99 <small>/ year</small></div>
+        <p>For people who travel off-grid.</p>
         <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul>
-        <p style="margin-top:16px"><a class="btn" href="/account">Subscribe</a></p></div>
-      <div class="card"><h3>Pro · Lifetime</h3><div class="price">$39.99 <small>once</small></div><p>Founding members, limited.</p>
+        <a class="btn" href="/account">Subscribe</a>
+      </div>
+      <div class="card">
+        <h3>Pro · Lifetime</h3>
+        <div class="price">$39.99 <small>once</small></div>
+        <p>Founding members, limited.</p>
         <ul><li>Everything in Pro</li><li>Pay once</li></ul>
-        <p style="margin-top:16px"><a class="btn ghost" href="/account">Buy lifetime</a></p></div>
+        <a class="btn ghost" href="/account">Buy lifetime</a>
+      </div>
     </div>
   </div>
 </section>
@@ -226,7 +265,7 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
       <a class="btn ghost" href="mailto:beta@waypack.app?subject=Waypack%20beta%20(Android)">Android beta</a>
       <a class="btn ghost" href="/download/mac">Download for Mac</a>
     </div>
-    <p class="sub" style="font-size:14px;margin-top:10px">Mac: macOS 12 or later, Apple silicon or Intel. Free, no purchases in the app.</p>
+    <p class="muted small" style="margin-top:14px">Mac: macOS 12 or later, Apple silicon or Intel. Free, no purchases in the app.</p>
   </div>
 </section>
 

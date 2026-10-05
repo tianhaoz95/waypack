@@ -83,6 +83,9 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
     return Response.json(publicSummary(env, s), { headers: { "Cache-Control": "no-store" } });
   }
 
+  if ((path === "/settings" || path === "/settings/") && (req.method === "GET" || req.method === "HEAD")) {
+    return Response.redirect(new URL("/account", req.url).toString(), 302);
+  }
   if (path.startsWith("/api/auth/")) return handlePortalAuth(req, env, path);
   if (path.startsWith("/api/")) return handleApi(req, env, url);
   // Landing page, account portal and other static files (site/) — same origin as the API.
