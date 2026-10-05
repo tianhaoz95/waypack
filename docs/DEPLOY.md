@@ -95,6 +95,16 @@ Until there are paying users, run without the container (DECISIONS #54): set `va
 - Test (milestone M4): with test keys, subscribe from `/account` using card `4242 4242 4242 4242` → plan shows Pro and existing trips get offline maps; cancel in the portal → back to Free at period end; as a free user, upload a 2nd trip and confirm the agent shows the upgrade link.
 - Local: `stripe listen --forward-to 127.0.0.1:8787/stripe/webhook` and put its `whsec_…` in `services/mcp/.dev.vars`.
 
+## 4b. Releases (GitHub Actions)
+- **CI** (`.github/workflows/ci.yml`): every push/PR runs package builds, typechecks and tests (incl. the SDK's Playwright tests), plus `flutter analyze` and `flutter test`.
+- **Ship a version:** publish a GitHub Release tagged `v<major>.<minor>.<patch>` (e.g. `gh release create v1.1.0 --generate-notes`). That starts:
+  - `testflight.yml`: iOS build `<version> (1000 + run number)` → App Store Connect → TestFlight (`apps/mobile/tool/release_ios.sh`).
+  - `mac-release.yml`: Mac build → Developer ID signing → notarization → `Waypack.dmg` attached to the release (`release_mac.sh --attach`). `/download/mac` serves it once attached (~20–30 min).
+  Both can also be started from the Actions tab.
+- **Secrets:** `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8_BASE64` (App Store Connect API key: uploads, signing profiles, notarization), `SIGNING_P12_BASE64` + `SIGNING_P12_PASSWORD` (Apple Distribution: HEJI TECHNOLOGY LLC), `MAC_SIGNING_P12_BASE64` + `MAC_SIGNING_P12_PASSWORD` (Developer ID Application: HEJI TECHNOLOGY LLC). **Variables:** `SUPABASE_URL`, `SUPABASE_ANON_KEY` (publishable), `API_URL`.
+- CI imports one exported certificate per run instead of letting Xcode create one: a fresh certificate per run would fill Apple's per-team certificate limit and break all signing.
+- The Worker deploys separately (Cloudflare Workers Builds, §2); database migrations are still pushed by hand (`supabase db push`).
+
 ## 5. Mobile app
 ```sh
 npm run build -w @waypack/trip-sdk && node apps/mobile/tool/bundle_sdk.mjs

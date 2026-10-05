@@ -5,6 +5,7 @@
 #   tool/release_mac.sh                      # release build → signed .app → signed DMG (build/release/)
 #   tool/release_mac.sh --notarize           # ...then notarize + staple (required before anyone else can open it)
 #   tool/release_mac.sh --notarize --upload  # ...then publish a GitHub release; https://<site>/download/mac redirects to it
+#   tool/release_mac.sh --notarize --attach v1.2.0   # CI: add Waypack.dmg to the existing release v1.2.0
 #   tool/release_mac.sh --skip-build         # re-sign/re-package the last build
 #   tool/release_mac.sh --dev                # allow localhost config (local testing only; never ship this)
 #
@@ -31,15 +32,16 @@ APP="$MOBILE/build/macos/Build/Products/Release/Waypack.app"
 OUT="$MOBILE/build/release"
 REPO="${WAYPACK_RELEASE_REPO:-tianhaoz95/waypack}"   # keep in sync with MAC_RELEASES_REPO in services/mcp
 
-CHECK=0 NOTARIZE=0 UPLOAD="" SKIP_BUILD=0 DEV=0
+CHECK=0 NOTARIZE=0 UPLOAD="" ATTACH="" SKIP_BUILD=0 DEV=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) CHECK=1 ;;
     --notarize) NOTARIZE=1 ;;
     --upload) UPLOAD=1 ;;
+    --attach) UPLOAD=1 ATTACH="${2:?--attach needs a release tag}"; shift ;;
     --skip-build) SKIP_BUILD=1 ;;
     --dev) DEV=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "!! unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -48,6 +50,7 @@ done
 VERSION_LINE="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
 VERSION="${VERSION_LINE%%+*}"
 BUILD="${VERSION_LINE#*+}"; [ "$BUILD" = "$VERSION_LINE" ] && BUILD=1
+VERSION="${BUILD_NAME:-$VERSION}" BUILD="${BUILD_NUMBER:-$BUILD}"   # CI passes the release tag's version
 DMG="$OUT/Waypack-$VERSION.dmg"
 
 # ------------------------------------------------------------------ config
@@ -93,7 +96,7 @@ fi
 if [ ${#NOTARY[@]} -gt 0 ]; then echo "==> notary credentials: found"; else echo "==> notary credentials: none (needed for --notarize)"; fi
 
 if [ "$CHECK" -eq 1 ]; then
-  command -v npx >/dev/null && echo "==> wrangler: available via npx (for --upload)"
+  if gh auth status >/dev/null 2>&1; then echo "==> gh: logged in (for --upload / --attach)"; else echo "==> gh: not logged in (needed for --upload / --attach)"; fi
   echo "==> would build Waypack $VERSION ($BUILD) → $DMG"
   exit 0
 fi
@@ -108,7 +111,9 @@ fi
 # Fail before a long build if the release can't be published.
 if [ -n "$UPLOAD" ]; then
   gh auth status >/dev/null 2>&1 || { echo "!! --upload needs the GitHub CLI logged in (gh auth login)" >&2; exit 1; }
-  if gh release view "mac-v$VERSION" --repo "$REPO" >/dev/null 2>&1; then
+  if [ -n "$ATTACH" ]; then
+    gh release view "$ATTACH" --repo "$REPO" >/dev/null 2>&1 || { echo "!! no release $ATTACH on $REPO" >&2; exit 1; }
+  elif gh release view "mac-v$VERSION" --repo "$REPO" >/dev/null 2>&1; then
     echo "!! release mac-v$VERSION already exists on $REPO: bump version: in pubspec.yaml" >&2
     exit 1
   fi
@@ -119,7 +124,7 @@ fi
 if [ "$SKIP_BUILD" -eq 0 ]; then
   echo "==> building Waypack $VERSION ($BUILD)"
   (cd "$ROOT" && node apps/mobile/tool/bundle_sdk.mjs)
-  flutter build macos --release ${DEFINES[@]+"${DEFINES[@]}"}
+  flutter build macos --release --build-name="$VERSION" --build-number="$BUILD" ${DEFINES[@]+"${DEFINES[@]}"}
 fi
 [ -d "$APP" ] || { echo "!! no app at $APP — build first" >&2; exit 1; }
 
@@ -180,11 +185,16 @@ echo "==> $DMG  ($((SIZE / 1024 / 1024)) MB, sha256 $SHA)"
 
 if [ -n "$UPLOAD" ]; then
   # Fixed asset name, so github.com/<repo>/releases/latest/download/Waypack.dmg is always the newest.
-  TAG="mac-v$VERSION"
   cp "$DMG" "$OUT/Waypack.dmg"
-  echo "==> publishing GitHub release $TAG on $REPO (asset Waypack.dmg)"
-  gh release create "$TAG" "$OUT/Waypack.dmg" --repo "$REPO" --latest \
-    --title "Waypack for Mac $VERSION" \
-    --notes "Waypack for Mac $VERSION (build $BUILD). macOS 12+, Apple silicon and Intel. SHA-256 \`$SHA\`."
+  if [ -n "$ATTACH" ]; then
+    echo "==> attaching Waypack.dmg to release $ATTACH on $REPO"
+    gh release upload "$ATTACH" "$OUT/Waypack.dmg" --repo "$REPO" --clobber
+  else
+    TAG="mac-v$VERSION"
+    echo "==> publishing GitHub release $TAG on $REPO (asset Waypack.dmg)"
+    gh release create "$TAG" "$OUT/Waypack.dmg" --repo "$REPO" --latest \
+      --title "Waypack for Mac $VERSION" \
+      --notes "Waypack for Mac $VERSION (build $BUILD). macOS 12+, Apple silicon and Intel. SHA-256 \`$SHA\`."
+  fi
   echo "==> live at /download/mac (redirects to the latest release)"
 fi

@@ -1,0 +1,59 @@
+name: Release to TestFlight
+
+# Publishing a GitHub Release tagged v<version> (e.g. v1.2.0) uploads that version to TestFlight;
+# mac-release.yml attaches the Mac DMG to the same release. Also runnable from the Actions tab
+# (then the version comes from pubspec.yaml). Deliberately not on push: it uploads a real build.
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    name: Build & upload iOS
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: ./.github/actions/app-toolchain
+      - uses: ./.github/actions/apple-signing
+        with:
+          p12-base64: ${{ secrets.SIGNING_P12_BASE64 }}
+          p12-password: ${{ secrets.SIGNING_P12_PASSWORD }}
+          asc-key-id: ${{ secrets.ASC_KEY_ID }}
+          asc-key-p8-base64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+      - name: Version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ -n "$TAG" ]; then
+            V="${TAG#v}"
+            [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::release tag must look like v1.2.3 (got $TAG)"; exit 1; }
+            echo "BUILD_NAME=$V" >> "$GITHUB_ENV"
+          fi
+          # Unique and increasing across runs; well above the hand-made builds (1–4).
+          echo "BUILD_NUMBER=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+      - name: Build and upload
+        working-directory: apps/mobile
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          API_URL: ${{ vars.API_URL }}
+          FA_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          FA_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: tool/release_ios.sh
+      - name: Clean up signing material
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/private_keys"
+          [ -n "${SIGNING_KEYCHAIN_PATH:-}" ] && security delete-keychain "$SIGNING_KEYCHAIN_PATH" || true

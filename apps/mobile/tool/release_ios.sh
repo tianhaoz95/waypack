@@ -4,6 +4,7 @@
 #   SUPABASE_URL=… SUPABASE_ANON_KEY=… API_URL=… tool/release_ios.sh
 #
 # Bump `version:` in pubspec.yaml first (1.0.0+2 → version 1.0.0, build 2); build numbers can't repeat.
+# CI (.github/workflows/testflight.yml) overrides both with BUILD_NAME / BUILD_NUMBER.
 # Signing: automatic, team 68CTFST8W2, authorized by the App Store Connect API key, so Xcode needs no
 # signed-in account: FA_ASC_KEY_ID + FA_ASC_ISSUER_ID (+ FA_KEY_LOCATION or
 # ~/.appstoreconnect/private_keys/AuthKey_<id>.p8). Upload settings: ios/ExportOptions.plist.
@@ -19,8 +20,12 @@ KEY="${KEY/#\~/$HOME}"
 [ -f "$KEY" ] || { echo "!! API key not found: $KEY" >&2; exit 1; }
 AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$FA_ASC_KEY_ID" -authenticationKeyIssuerID "$FA_ASC_ISSUER_ID")
 
-echo "==> $(grep -E '^version:' pubspec.yaml)"
-flutter build ios --release --no-codesign \
+VERSION_LINE="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
+BUILD_NAME="${BUILD_NAME:-${VERSION_LINE%%+*}}"
+BUILD_NUMBER="${BUILD_NUMBER:-${VERSION_LINE#*+}}"
+echo "==> Waypack $BUILD_NAME ($BUILD_NUMBER)"
+(cd ../.. && node apps/mobile/tool/bundle_sdk.mjs)   # the trip SDK the app serves (packages/trip-sdk/dist)
+flutter build ios --release --no-codesign --build-name="$BUILD_NAME" --build-number="$BUILD_NUMBER" \
   --dart-define="SUPABASE_URL=$SUPABASE_URL" --dart-define="SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" --dart-define="API_URL=$API_URL"
 rm -rf build/ios/archive/Runner.xcarchive build/ios/export
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \

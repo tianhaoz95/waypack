@@ -1,0 +1,47 @@
+name: CI
+
+# Checks every push and PR. Deploys are separate: Cloudflare Workers Builds deploys the Worker
+# on push to main; testflight.yml and mac-release.yml ship apps on a published GitHub Release.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: Packages + Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run typecheck
+      - name: Browsers for the trip SDK's Playwright tests
+        run: npx playwright install --with-deps chromium
+      - run: npm test
+
+  app:
+    name: Mobile app
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/app-toolchain
+      - name: Analyze
+        working-directory: apps/mobile
+        run: flutter analyze
+      - name: Test
+        working-directory: apps/mobile
+        run: flutter test
