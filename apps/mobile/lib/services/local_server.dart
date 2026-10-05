@@ -51,6 +51,8 @@ String contentTypeFor(String path) =>
 ///   device can't guess it.
 /// - `/t/{trip}/…` bundle files (current local version), `/__waypack/sdk/v1/…` SDK,
 ///   `/__waypack/tiles/{trip}/…` PMTiles with Range support. CSP on HTML.
+/// - `/__waypack/tiles/{trip}/online.pmtiles` proxies range reads to the online
+///   basemap, so pages can show it under `connect-src 'self'`.
 class LocalServer {
   LocalServer(this.store);
   final TripStore store;
@@ -62,9 +64,17 @@ class LocalServer {
   /// Current version per trip (set by the app when trips load/download).
   final Map<String, int> versions = {};
 
-  /// Tile files per trip, plus optional online fallback URL.
+  /// Tile files per trip.
   final Map<String, List<String>> tiles = {};
-  final Map<String, String?> onlineTiles = {};
+
+  /// Online basemap (.pmtiles URL from the server), shown when connected and
+  /// [useOnlineMap] is on. Downloaded extracts still win where they cover.
+  String? onlineMap;
+  bool useOnlineMap = true;
+
+  final HttpClient _upstream = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 8)
+    ..autoUncompress = false;
 
   int get port => _server?.port ?? 0;
   String get origin => 'http://127.0.0.1:$port';
@@ -91,7 +101,10 @@ class LocalServer {
     _server!.listen(_handle, onError: (_) {});
   }
 
-  Future<void> stop() async => _server?.close(force: true);
+  Future<void> stop() async {
+    _upstream.close(force: true);
+    await _server?.close(force: true);
+  }
 
   bool _authorized(HttpRequest req) {
     if (req.uri.queryParameters['k'] == token) return true;
@@ -188,12 +201,61 @@ class LocalServer {
           'extracts': [
             for (final f in files) {'url': '/__waypack/tiles/$tripId/$f'},
           ],
-          'online': onlineTiles[tripId],
+          'online': useOnlineMap && onlineMap != null
+              ? '/__waypack/tiles/$tripId/online.pmtiles'
+              : null,
         }),
       );
       return res.close();
     }
+    if (rest.length == 1 && rest[0] == 'online.pmtiles') {
+      return _proxyOnline(req);
+    }
     return _serveFile(req, store.tilesDir(tripId), rest);
+  }
+
+  /// Forwards one range read to the online basemap. Range is required: the
+  /// planet is ~130 GB, so a plain GET is never passed through.
+  Future<void> _proxyOnline(HttpRequest req) async {
+    final res = req.response;
+    final url = onlineMap;
+    final range = req.headers.value(HttpHeaders.rangeHeader);
+    if (!useOnlineMap || url == null) return _status(res, 404);
+    if (range == null) return _status(res, 416);
+    HttpClientResponse up;
+    try {
+      final r = await _upstream.openUrl(req.method, Uri.parse(url));
+      r.headers.set(HttpHeaders.rangeHeader, range);
+      up = await r.close().timeout(const Duration(seconds: 20));
+    } catch (_) {
+      return _status(
+        res,
+        502,
+      ); // offline or captive network: the page skips the online map
+    }
+    res.statusCode = up.statusCode;
+    for (final h in const [
+      'content-range',
+      'content-type',
+      'content-encoding',
+      'etag',
+      'last-modified',
+    ]) {
+      final v = up.headers.value(h);
+      if (v != null) res.headers.set(h, v);
+    }
+    if (up.contentLength >= 0) res.contentLength = up.contentLength;
+    res.headers.set('Cache-Control', 'no-store');
+    if (req.method == 'HEAD') {
+      await up.drain<void>();
+      return res.close();
+    }
+    try {
+      await res.addStream(up);
+    } catch (_) {
+      // Upstream dropped mid-body; closing ends the response short.
+    }
+    return res.close();
   }
 
   Future<void> _serveFile(

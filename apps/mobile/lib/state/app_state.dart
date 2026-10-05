@@ -71,9 +71,21 @@ class AppState extends ChangeNotifier {
     return asc ? l : l.reversed.toList();
   }
 
+  /// Show the online map when connected (Settings). Off = downloaded maps only.
+  bool get useOnlineMap => server.useOnlineMap;
+
+  Future<void> setUseOnlineMap(bool on) async {
+    server.useOnlineMap = on;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('use_online_map', on);
+  }
+
   /// Loads what's on the device first (works offline), then refreshes from the server.
   Future<void> init() async {
     _trips.clear();
+    final prefs = await SharedPreferences.getInstance();
+    server.useOnlineMap = prefs.getBool('use_online_map') ?? true;
     final locals = await store.loadAll();
     for (final l in locals.values) {
       if (l.owner != null && l.owner != user?.id) continue;
@@ -95,7 +107,15 @@ class AppState extends ChangeNotifier {
   void _register(LocalTrip l) {
     server.versions[l.id] = l.version;
     server.tiles[l.id] = l.tiles.map((t) => t.file).toList();
+    // One planet serves every trip; the newest download's URL wins.
+    if (l.onlineMap != null &&
+        (_onlineMapAt == null || l.downloadedAt.isAfter(_onlineMapAt!))) {
+      server.onlineMap = l.onlineMap;
+      _onlineMapAt = l.downloadedAt;
+    }
   }
+
+  DateTime? _onlineMapAt;
 
   Future<void> _loadCachedRemote() async {
     final prefs = await SharedPreferences.getInstance();

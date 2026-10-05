@@ -504,6 +504,7 @@ class TransferClient {
         accent: trip['accent'] as String?,
         accentDark: trip['accent_dark'] as String?,
         receivedNearby: true,
+        onlineMap: trip['online_map'] as String?,
       );
       await store.saveMeta(local);
 

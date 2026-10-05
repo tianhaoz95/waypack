@@ -8,6 +8,7 @@ import { createApiToken, resolveApiToken } from "./auth/tokens.js";
 import { verifySignedPath } from "./lib/crypto.js";
 import { Db, eq } from "./lib/db.js";
 import { LIMITS, type Manifest } from "@waypack/bundle-schema";
+import { onlineTilesUrl } from "./lib/planet.js";
 import { planFor } from "./lib/entitlements.js";
 import { deviceMaps, deviceTiles, ensureTripExtracts, tripStatus, type ExtractRow, type TripRow } from "./lib/pipeline.js";
 import { serveR2, signedFileUrl } from "./lib/storage.js";
@@ -314,7 +315,7 @@ async function downloadInfo(env: Env, db: Db, userId: string, tripId: string): P
   const plan = await planFor(db, ownerId);
   const bundle = { url: await signedFileUrl(env, v.bundle_key, 6 * 3600), sha256: v.bundle_sha256, bytes: v.bundle_bytes };
   const head = { trip_id: t.id, title: t.title, start_date: t.start_date, end_date: t.end_date, version: v.version, status: t.status, bundle };
-  const tail = { online_tiles_url: env.ONLINE_TILES_URL || null, manifest: v.manifest, expires_in: 6 * 3600 };
+  const tail = { online_tiles_url: await onlineTilesUrl(env), manifest: v.manifest, expires_in: 6 * 3600 };
   if (deviceMaps(env)) {
     // The app cuts the map from the planet itself (apps/mobile/lib/services/pmtiles.dart).
     const device = plan.offlineMaps ? await deviceTiles(env, plan, v.manifest) : null;

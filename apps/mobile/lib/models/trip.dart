@@ -74,7 +74,11 @@ class LocalTrip {
     this.accent,
     this.accentDark,
     this.receivedNearby = false,
+    this.onlineMap,
   });
+
+  /// Online basemap (.pmtiles URL) the server named at download time.
+  final String? onlineMap;
 
   /// Copied from a nearby device (offline handoff) rather than downloaded.
   final bool receivedNearby;
@@ -113,6 +117,7 @@ class LocalTrip {
     accent: j['accent'] as String?,
     accentDark: j['accent_dark'] as String?,
     receivedNearby: j['received_nearby'] as bool? ?? false,
+    onlineMap: j['online_map'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -130,6 +135,7 @@ class LocalTrip {
     'accent': accent,
     'accent_dark': accentDark,
     'received_nearby': receivedNearby,
+    'online_map': onlineMap,
   };
 }
 

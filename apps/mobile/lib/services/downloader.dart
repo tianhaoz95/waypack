@@ -183,6 +183,7 @@ class TripDownloader {
       bytes: info.bundleBytes + tiles.fold(0, (n, t) => n + t.bytes),
       downloadedAt: DateTime.now(),
       tilesIncluded: info.tilesStatus != 'not_included',
+      onlineMap: info.onlineTilesUrl,
       owner: owner,
       accent:
           ((info.raw['manifest'] as Map?)?['theme'] as Map?)?['accent']

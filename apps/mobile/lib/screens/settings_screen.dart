@@ -192,6 +192,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Text(_storage == null ? '…' : formatBytes(_storage!)),
               ),
 
+              section('Maps'),
+              SwitchListTile(
+                secondary: const Icon(Icons.public),
+                title: const Text('Use online map'),
+                subtitle: const Text(
+                  'When connected, show the full map, including outside your '
+                  'downloaded areas. Turn off to use only downloaded maps, e.g. '
+                  'to save data abroad.',
+                ),
+                value: s.useOnlineMap,
+                onChanged: s.setUseOnlineMap,
+              ),
+
               Container(
                 key: _connectKey,
                 child: section('Connect your AI agent'),

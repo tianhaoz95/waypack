@@ -2,7 +2,7 @@
 // Both are agent-written HTML, so this origin has no cookies, API, MCP or portal (DECISIONS #40).
 import type { Env } from "../env.js";
 import { Db, eq } from "./db.js";
-import { resolvePlanet } from "./planet.js";
+import { onlineTilesUrl } from "./planet.js";
 import { LIVE_JS } from "./preview-live.js";
 import { contentTypeFor, injectLive, PREVIEW_CSP, previewKeys, type PreviewFileRef, type PreviewRow } from "./previews.js";
 import { SHARE_JS } from "./share-banner.js";
@@ -157,16 +157,6 @@ export async function handlePreviewHost(req: Request, env: Env, db = new Db(env.
 const script = (js: string) => new Response(js, { headers: { ...BASE_HEADERS, "Content-Type": "text/javascript; charset=utf-8", "Cache-Control": "public, max-age=300" } });
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const escapeAttr = escapeHtml;
-
-/** Online basemap for previews and shares: ONLINE_TILES_URL if it's a .pmtiles, else the planet the tiler uses. */
-async function onlineTilesUrl(env: Env): Promise<string | null> {
-  if (env.ONLINE_TILES_URL && /\.pmtiles(\?|$)/.test(env.ONLINE_TILES_URL)) return env.ONLINE_TILES_URL;
-  try {
-    return (await resolvePlanet(env)).url;
-  } catch {
-    return null;
-  }
-}
 
 /** Same-origin proxy (the page's CSP only allows connect-src 'self'): forwards Range only. */
 async function proxyTiles(req: Request, upstream: string): Promise<Response> {

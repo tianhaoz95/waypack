@@ -41,6 +41,19 @@ export async function devicePlanet(env: Env): Promise<Planet> {
   return p; // transient failure: keep the pinned build; the app retries
 }
 
+/**
+ * Online basemap (a .pmtiles URL) for previews, shares and the app's online map:
+ * ONLINE_TILES_URL if it's a .pmtiles, else the planet maps are cut from.
+ */
+export async function onlineTilesUrl(env: Env): Promise<string | null> {
+  if (env.ONLINE_TILES_URL && /\.pmtiles(\?|$)/.test(env.ONLINE_TILES_URL)) return env.ONLINE_TILES_URL;
+  try {
+    return (env.MAP_EXTRACTS === "device" ? await devicePlanet(env) : await resolvePlanet(env)).url;
+  } catch {
+    return null;
+  }
+}
+
 /** Newest daily Protomaps build (cached 30 days so area hashes stay stable). */
 export async function latestBuild(env: Env, fresh = false): Promise<Planet> {
   if (!fresh) {

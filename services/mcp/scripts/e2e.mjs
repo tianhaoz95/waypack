@@ -219,6 +219,7 @@ ok(me.plan?.tier === "annual", `/api/me → ${me.plan?.tier}`);
 const dl = await (await fetch(`${BASE}/api/trips/${tripId}/download`, { headers: H })).json();
 const bz = Buffer.from(await (await fetch(dl.bundle.url)).arrayBuffer());
 ok(createHash("sha256").update(bz).digest("hex") === dl.bundle.sha256, "bundle download matches sha256");
+ok(/\.pmtiles(\?|$)/.test(dl.online_tiles_url ?? ""), `/download names the online map (${dl.online_tiles_url})`);
 if (DEVICE) {
   const areas = dl.device_tiles?.areas ?? [];
   ok(dl.version === 3 && dl.tiles.length === 0 && dl.tiles_status === "device" && areas.length === 2, `/download → v${dl.version}, device_tiles with ${areas.length} areas from ${dl.device_tiles?.source}`);
