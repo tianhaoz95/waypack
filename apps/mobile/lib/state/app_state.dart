@@ -71,6 +71,18 @@ class AppState extends ChangeNotifier {
     return asc ? l : l.reversed.toList();
   }
 
+  /// Rebinds the loopback server if iOS tore it down while the app was suspended.
+  /// Bumps [serverGeneration] so open trip pages reload against the live server.
+  Future<void> ensureServer() async {
+    if (await server.ensureRunning()) {
+      serverGeneration++;
+      notifyListeners();
+    }
+  }
+
+  /// Changes whenever the local server was rebound (part of trip page keys).
+  int serverGeneration = 0;
+
   /// Show the online map when connected (Settings). Off = downloaded maps only.
   bool get useOnlineMap => server.useOnlineMap;
 
@@ -196,6 +208,7 @@ class AppState extends ChangeNotifier {
       );
       (_trips[id] ??= TripEntry()).local = local;
       _register(local);
+      await ensureServer();
       await Reminders.sync(
         tripId: id,
         title: local.title,

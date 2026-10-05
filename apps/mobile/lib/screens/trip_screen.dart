@@ -29,9 +29,13 @@ class TripScreen extends StatelessWidget {
         children: [
           Positioned.fill(
             child: BundleWebView(
-              key: ValueKey('${tripId}_${e.local!.version}'),
+              // Reload on a new version or after the local server was rebound.
+              key: ValueKey(
+                '${tripId}_${e.local!.version}_${s.serverGeneration}',
+              ),
               url: s.server.tripUrl(tripId),
               origin: s.server.origin,
+              onRecover: s.ensureServer,
             ),
           ),
           SafeArea(
@@ -229,12 +233,14 @@ class _MapScreen extends StatelessWidget {
   final String tripId;
   @override
   Widget build(BuildContext context) {
-    final s = context.read<AppState>();
+    final s = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(title: Text(s.trip(tripId)?.title ?? 'Map')),
       body: BundleWebView(
+        key: ValueKey('map_${tripId}_${s.serverGeneration}'),
         url: s.server.tripUrl(tripId, page: '__waypack_map.html'),
         origin: s.server.origin,
+        onRecover: s.ensureServer,
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'trip_store.dart';
@@ -76,7 +77,9 @@ class LocalServer {
     ..connectionTimeout = const Duration(seconds: 8)
     ..autoUncompress = false;
 
-  int get port => _server?.port ?? 0;
+  // Kept separately: HttpServer.port can throw once iOS has torn the socket down.
+  int _port = 0;
+  int get port => _port;
   String get origin => 'http://127.0.0.1:$port';
 
   /// URL that opens a trip's bundle (first navigation carries the token).
@@ -92,13 +95,80 @@ class LocalServer {
 
   Future<void> start() async {
     _sdkDir = await store.ensureSdk();
-    _server = await HttpServer.bind(
+    await _bind(0);
+  }
+
+  bool _listening = false;
+
+  Future<void> _bind(int port) async {
+    final server = await HttpServer.bind(
       InternetAddress.loopbackIPv4,
-      0,
+      port,
       shared: false,
     );
-    _server!.autoCompress = false;
-    _server!.listen(_handle, onError: (_) {});
+    server.autoCompress = false;
+    _server = server;
+    _port = server.port;
+    _listening = true;
+    server.listen(
+      _handle,
+      onError: (_) {},
+      // iOS reclaims listening sockets while the app is suspended; the stream ends.
+      onDone: () {
+        if (identical(_server, server)) _listening = false;
+      },
+    );
+  }
+
+  /// Makes sure the server still accepts connections, rebinding if not.
+  ///
+  /// iOS tears down a suspended app's listening socket, so after the app comes
+  /// back (e.g. from publishing a new trip version in another app) WebViews get
+  /// "Could not connect to the server" (-1004) until it is rebound. Rebinds on
+  /// the same port when possible so open pages keep their origin and cookie.
+  /// Returns true if it had to rebind (callers should reload their pages).
+  Future<bool> ensureRunning() async {
+    if (_listening && await _answers(port)) return false;
+    final old = _server;
+    final oldPort = port;
+    _listening = false;
+    try {
+      await old?.close(force: true);
+    } catch (_) {}
+    try {
+      await _bind(oldPort);
+    } on SocketException {
+      await _bind(
+        0,
+      ); // the old port is taken; pages get the new origin on reload
+    }
+    return true;
+  }
+
+  /// Tests: close the listening socket behind the server's back, as iOS does
+  /// to a suspended app.
+  @visibleForTesting
+  Future<void> debugDropSocket() async => _server?.close(force: true);
+
+  /// Our server identifies itself with [_instance]; another process that took
+  /// the port after iOS freed it must not be mistaken for it.
+  final String _instance = _randomToken();
+
+  Future<bool> _answers(int port) async {
+    if (port == 0) return false;
+    final c = HttpClient()..connectionTimeout = const Duration(seconds: 1);
+    try {
+      final req = await c.getUrl(
+        Uri.parse('http://127.0.0.1:$port/__waypack/health'),
+      );
+      final res = await req.close().timeout(const Duration(seconds: 2));
+      final body = await res.transform(utf8.decoder).join();
+      return res.statusCode == 200 && body == _instance;
+    } catch (_) {
+      return false;
+    } finally {
+      c.close(force: true);
+    }
   }
 
   Future<void> stop() async {
@@ -123,6 +193,11 @@ class LocalServer {
       }
       if (req.method != 'GET' && req.method != 'HEAD') {
         return await _status(res, 405);
+      }
+      if (req.uri.path == '/__waypack/health') {
+        res.headers.set('Cache-Control', 'no-store');
+        res.write(_instance);
+        return await res.close();
       }
       if (!_authorized(req)) return await _status(res, 403);
 

@@ -76,13 +76,14 @@ class _AuthGate extends StatefulWidget {
   State<_AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends State<_AuthGate> {
+class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
   StreamSubscription<AuthState>? _sub;
   bool _signedIn = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _signedIn = Supabase.instance.client.auth.currentSession != null;
     _sub = Supabase.instance.client.auth.onAuthStateChange.listen((e) {
       if (!mounted) return;
@@ -98,7 +99,16 @@ class _AuthGateState extends State<_AuthGate> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from the background: iOS may have closed the local server's socket.
+    if (state == AppLifecycleState.resumed) {
+      context.read<AppState>().ensureServer();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     super.dispose();
   }

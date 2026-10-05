@@ -16,11 +16,15 @@ class BundleWebView extends StatefulWidget {
     required this.url,
     required this.origin,
     this.navApp,
+    this.onRecover,
   });
 
   final String url;
   final String origin; // http://127.0.0.1:<port>
   final String? navApp;
+
+  /// Brings the local server back (AppState.ensureServer) before a retry.
+  final Future<void> Function()? onRecover;
 
   @override
   State<BundleWebView> createState() => _BundleWebViewState();
@@ -28,6 +32,17 @@ class BundleWebView extends StatefulWidget {
 
 class _BundleWebViewState extends State<BundleWebView> {
   String? _error;
+  int _attempt = 0; // new WebView per retry
+  bool _autoRetried = false;
+
+  Future<void> _retry() async {
+    await widget.onRecover?.call();
+    if (!mounted) return;
+    setState(() {
+      _error = null;
+      _attempt++;
+    });
+  }
 
   @override
   void initState() {
@@ -73,11 +88,19 @@ class _BundleWebViewState extends State<BundleWebView> {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text(_error!, textAlign: TextAlign.center),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _retry, child: const Text('Try again')),
+            ],
+          ),
         ),
       );
     }
     return InAppWebView(
+      key: ValueKey(_attempt),
       initialUrlRequest: URLRequest(url: WebUri(widget.url)),
       initialSettings: InAppWebViewSettings(
         javaScriptEnabled: true,
@@ -187,12 +210,18 @@ class _BundleWebViewState extends State<BundleWebView> {
         );
       },
       onReceivedError: (c, req, err) {
-        if (req.isForMainFrame == true) {
-          setState(
-            () => _error =
-                'This trip could not be opened (${err.description}). Try re-downloading it.',
-          );
+        if (req.isForMainFrame != true || !mounted) return;
+        // Usually the local server was torn down while the app was in the
+        // background: bring it back and reload once before showing an error.
+        if (!_autoRetried) {
+          _autoRetried = true;
+          _retry();
+          return;
         }
+        setState(
+          () => _error =
+              'This trip could not be opened (${err.description}). Try again, or re-download it from the menu.',
+        );
       },
     );
   }
