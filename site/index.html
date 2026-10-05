@@ -47,7 +47,7 @@ h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -
 .lead { font-size: 1.2rem; color: var(--muted); max-width: 36em; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 .phone { width: min(320px, 80vw); margin: 0 auto; border-radius: 36px; padding: 10px; background: #0b0f19; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .45); }
-.phone img { display: block; width: 100%; border-radius: 28px; }
+.phone img { display: block; width: 100%; height: auto; border-radius: 28px; }
 section { padding: 56px 0; }
 section h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; margin: 0 0 12px; }
 section .sub { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
@@ -61,7 +61,7 @@ section .sub { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
 .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
 .gallery figure { margin: 0; }
-.gallery img { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; }
+.gallery img { width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); display: block; }
 .gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 8px; text-align: center; }
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 860px) { .features { grid-template-columns: 1fr; } }
