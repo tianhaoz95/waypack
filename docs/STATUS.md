@@ -1,4 +1,4 @@
-# Build status — 2026-10-04 (updated: assistant searches the whole plan)
+# Build status — 2026-10-04 (updated: downloadable assistant model on Android)
 
 Milestones from design §14, all built and verified **locally**. No cloud resources exist yet; see DEPLOY.md.
 
@@ -16,6 +16,10 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - **Destination and season themes:** `manifest.theme` (9 presets + a composable `scene`) drives the template's palette and illustrated banner; the app tints its native screens with the accent. New example `examples/tahoe-winter` (alpine-winter); Sequoia moved to `winter-forest`.
 - **Responsive plans:** phone; iPad two-column (≥ 760px); desktop side rail with the map pinned beside the plan (≥ 1100px). App trips list and Settings adapt to iPad. Validator warns on missing theme, calendar buttons or wide-screen CSS.
 - Verified: validator 26 · CLI 7 · SDK 4 + Playwright 6 · MCP 16 · Dart unit 17 · `flutter analyze` clean · all three bundles valid with 0 warnings · screenshot walkthrough on iPhone 16 Plus and iPad (A16) simulators.
+
+## Assistant: downloadable model for Android phones without Gemini Nano (2026-10-04)
+- Qwen3-1.7B (977 MB, int4) on LiteRT-LM: "Download model" (shows the size) on phones without Gemini Nano with ≥ 5.5 GB RAM, e.g. OnePlus Open. Resumable, SHA-256-verified, GPU with CPU fallback (DECISIONS #53).
+- Verified: same 14 eval prompts through LiteRT-LM on the Mac's CPU, 10/14 correct, ~14 s per answer; arm64 debug APK builds with the runtime packaged; app unit tests 54 (engine preference + reasons, size via channel). **Not yet run on a phone.**
 
 ## Assistant: whole-plan search (2026-10-04)
 - The offline assistant now searches the entire plan (every manifest key, known or not, plus the page text); on Apple it calls a `searchPlan` tool itself, on Android the search results are pre-filled.

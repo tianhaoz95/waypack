@@ -458,7 +458,7 @@ class _NeedsModel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Your phone can answer questions about your trip with no signal, using ${status.label.split(',').first}. '
-            'It needs a one-time model download (do it on Wi-Fi, before you go).',
+            'It needs a one-time model download${status.bytes == null ? '' : ' of about ${_size(status.bytes!)}'} (do it on Wi-Fi, before you go).',
             textAlign: TextAlign.center,
             style: t.textTheme.bodyLarge,
           ),
@@ -484,3 +484,7 @@ class _NeedsModel extends StatelessWidget {
     );
   }
 }
+
+String _size(int bytes) => bytes >= 1e9
+    ? '${(bytes / 1e9).toStringAsFixed(1)} GB'
+    : '${(bytes / 1e6).round()} MB';

@@ -54,5 +54,8 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     // Offline trip assistant: Gemini Nano through AICore (MainActivity.kt, DECISIONS #49).
     implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    // Phones without Gemini Nano: Qwen3-1.7B on LiteRT-LM (WaypackLocalModel.kt, DECISIONS #53).
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.17.1")
+    // 1.11: litertlm-android is built against it (its POM has claimed older versions before).
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }

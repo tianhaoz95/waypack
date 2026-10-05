@@ -5,14 +5,17 @@ import io.flutter.embedding.engine.FlutterEngine
 
 class MainActivity : FlutterActivity() {
     private var assistant: WaypackAssistant? = null
+    private var localModel: WaypackLocalModel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         assistant = WaypackAssistant(flutterEngine.dartExecutor.binaryMessenger)
+        localModel = WaypackLocalModel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
     }
 
     override fun onDestroy() {
         assistant?.close()
+        localModel?.close()
         super.onDestroy()
     }
 }

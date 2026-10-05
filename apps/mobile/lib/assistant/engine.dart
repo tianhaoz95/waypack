@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 
 /// On-device language models behind one interface (DECISIONS #49).
 ///
-/// Today: Apple Foundation Models (iOS/iPadOS/macOS 26+ with Apple Intelligence) and Gemini Nano
-/// (Android, via ML Kit's Prompt API / AICore) through [NativeAssistantEngine]. Devices with
-/// neither get [UnsupportedEngine]. A downloadable open model (e.g. Qwen on LiteRT-LM) can be
-/// added later as another [AssistantEngine] in [AssistantEngines.candidates]; nothing else changes:
-/// the trip context, prompts and UI are engine-independent.
+/// Apple Foundation Models (iOS/iPadOS/macOS 26+ with Apple Intelligence) and Gemini Nano
+/// (Android, via ML Kit's Prompt API / AICore) through [NativeAssistantEngine]; Android phones
+/// without Gemini Nano fall back to a downloadable Qwen3-1.7B on LiteRT-LM (DECISIONS #53), the
+/// same bridge on its own channel. Devices with none get [UnsupportedEngine]. The trip context,
+/// prompts and UI are engine-independent.
 
 enum EngineState { available, downloadable, downloading, unavailable }
 
@@ -19,12 +19,15 @@ class EngineStatus {
     required this.state,
     this.reason,
     this.tools = false,
+    this.bytes,
   });
+
+  /// Size of the one-time model download, when the app fetches it itself.
+  final int? bytes;
 
   /// The model can call tools (Apple Foundation Models): it searches the plan itself.
   final bool tools;
-  final String
-  engine; // apple-foundation | gemini-nano | none | (later) litert-qwen
+  final String engine; // apple-foundation | gemini-nano | litert-qwen | none
   final EngineState state;
   final String? reason;
 
@@ -38,12 +41,14 @@ class EngineStatus {
     },
     reason: m['reason'] as String?,
     tools: m['tools'] == true,
+    bytes: (m['bytes'] as num?)?.toInt(),
   );
 
   /// Who runs the model, for the screen's footer.
   String get label => switch (engine) {
     'apple-foundation' => 'Apple Intelligence, on this device',
     'gemini-nano' => 'Gemini Nano, on this device',
+    'litert-qwen' => 'Qwen3, on this device',
     _ => 'On-device AI',
   };
 
@@ -56,6 +61,8 @@ class EngineStatus {
       engine == 'apple-foundation'
           ? 'The offline assistant needs iOS 26 or macOS 26 or later.'
           : 'The offline assistant needs a newer system version.',
+    'deviceTooSmall' =>
+      'This phone doesn\'t have enough memory to run the offline assistant.',
     'aicoreUnavailable' || 'unsupportedDevice' => 'This phone doesn\'t support Gemini Nano, so the offline assistant isn\'t available here yet.',
     'noEngine' =>
       'This device doesn\'t have an on-device AI model Waypack can use yet.',
@@ -104,12 +111,15 @@ abstract class AssistantEngine {
 }
 
 /// Apple Foundation Models (iOS/macOS) or Gemini Nano (Android), implemented in
-/// ios/Runner/AppDelegate.swift, macos/Runner/MainFlutterWindow.swift and
-/// android/.../MainActivity.kt with the same channel protocol.
+/// WaypackAssistant.swift and WaypackAssistant.kt with the same channel protocol; with
+/// `channel: 'waypack/assistant/litert'`, the downloadable model (WaypackLocalModel.kt).
 class NativeAssistantEngine implements AssistantEngine {
-  NativeAssistantEngine({MethodChannel? methods, EventChannel? events})
-    : _methods = methods ?? const MethodChannel('waypack/assistant'),
-      _events = events ?? const EventChannel('waypack/assistant/events');
+  NativeAssistantEngine({
+    String channel = 'waypack/assistant',
+    MethodChannel? methods,
+    EventChannel? events,
+  }) : _methods = methods ?? MethodChannel(channel),
+       _events = events ?? EventChannel('$channel/events');
 
   final MethodChannel _methods;
   final EventChannel _events;
@@ -263,22 +273,37 @@ class UnsupportedEngine implements AssistantEngine {
 }
 
 class AssistantEngines {
-  /// In order of preference. Add a downloadable model (LiteRT-LM + Qwen) here later.
-  static List<AssistantEngine> candidates() => [NativeAssistantEngine()];
+  static const _actionable = {'appleIntelligenceNotEnabled', 'modelNotReady'};
 
-  /// The first engine that is (or can become) usable; otherwise [UnsupportedEngine] carrying the
-  /// most helpful reason (e.g. "turn on Apple Intelligence" beats "no engine").
+  /// In order of preference: the system's model, then (Android) the downloadable one.
+  static List<AssistantEngine> candidates() => [
+    NativeAssistantEngine(),
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+      NativeAssistantEngine(channel: 'waypack/assistant/litert'),
+  ];
+
+  /// The first engine that is ready, else the first that can become ready (a download), else
+  /// [UnsupportedEngine] carrying the most helpful reason: one the traveler can act on ("turn on
+  /// Apple Intelligence") beats a later engine's, which beats an earlier one's ("this phone lacks
+  /// Gemini Nano" means nothing once the fallback model has said why it can't run either).
   static Future<(AssistantEngine, EngineStatus)> pick([
     List<AssistantEngine>? engines,
   ]) async {
     EngineStatus? best;
+    (AssistantEngine, EngineStatus)? later;
     for (final e in engines ?? candidates()) {
       final s = await e.status();
-      if (s.state != EngineState.unavailable) return (e, s);
-      if (best == null || (best.engine == 'none' && s.engine != 'none')) {
+      if (s.state == EngineState.available) return (e, s);
+      if (s.state != EngineState.unavailable) {
+        later ??= (e, s);
+        continue;
+      }
+      if (best == null ||
+          (s.engine != 'none' && !_actionable.contains(best.reason))) {
         best = s;
       }
     }
+    if (later != null) return later;
     final why =
         best ??
         const EngineStatus(

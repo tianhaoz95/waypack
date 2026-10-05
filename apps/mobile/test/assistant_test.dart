@@ -318,26 +318,66 @@ void main() {
       expect(e, same(g));
       expect(s.state, EngineState.downloadable);
     });
-    test(
-      'falls through to a later engine (e.g. a future LiteRT/Qwen one)',
-      () async {
-        final native = FakeEngine(
+    test('falls through to the downloadable LiteRT/Qwen engine', () async {
+      final native = FakeEngine(
+        const EngineStatus(
+          engine: 'gemini-nano',
+          state: EngineState.unavailable,
+          reason: 'unsupportedDevice',
+        ),
+      );
+      final later = FakeEngine(
+        const EngineStatus(
+          engine: 'litert-qwen',
+          state: EngineState.downloadable,
+        ),
+      );
+      final (e, _) = await AssistantEngines.pick([native, later]);
+      expect(e, same(later));
+    });
+    test('a ready engine beats an earlier one that needs a download', () async {
+      final nano = FakeEngine(
+        const EngineStatus(
+          engine: 'gemini-nano',
+          state: EngineState.downloadable,
+        ),
+      );
+      final qwen = FakeEngine(
+        const EngineStatus(engine: 'litert-qwen', state: EngineState.available),
+      );
+      final (e, s) = await AssistantEngines.pick([nano, qwen]);
+      expect(e, same(qwen));
+      expect(s.label, 'Qwen3, on this device');
+    });
+    test('the fallback model explains why it cannot run', () async {
+      final (e, s) = await AssistantEngines.pick([
+        FakeEngine(
           const EngineStatus(
             engine: 'gemini-nano',
             state: EngineState.unavailable,
-            reason: 'unsupportedDevice',
+            reason: 'aicoreUnavailable',
           ),
-        );
-        final later = FakeEngine(
+        ),
+        FakeEngine(
           const EngineStatus(
             engine: 'litert-qwen',
-            state: EngineState.downloadable,
+            state: EngineState.unavailable,
+            reason: 'deviceTooSmall',
           ),
-        );
-        final (e, _) = await AssistantEngines.pick([native, later]);
-        expect(e, same(later));
-      },
-    );
+        ),
+      ]);
+      expect(e, isA<UnsupportedEngine>());
+      expect(s.explanation, contains('enough memory'));
+    });
+    test('download size comes through the channel map', () {
+      final s = EngineStatus.fromMap({
+        'engine': 'litert-qwen',
+        'state': 'downloadable',
+        'bytes': 977184032,
+      });
+      expect(s.bytes, 977184032);
+      expect(s.state, EngineState.downloadable);
+    });
     test(
       'nothing usable: unsupported, keeping the most helpful reason',
       () async {
