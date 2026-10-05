@@ -43,6 +43,8 @@ export interface Env {
   STRIPE_WEBHOOK_SECRET?: string;
   STRIPE_PRICE_ANNUAL?: string;
   STRIPE_PRICE_LIFETIME?: string;
+  /** Waypack's own Customer Portal configuration (bpc_…); the account is shared with other products. */
+  STRIPE_PORTAL_CONFIG?: string;
   /** Shared with the tiler container for POST /mirror, plus R2 S3 credentials for rclone. */
   MIRROR_TOKEN?: string;
   R2_ACCOUNT_ID?: string;

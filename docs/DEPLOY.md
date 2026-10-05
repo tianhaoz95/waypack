@@ -88,6 +88,14 @@ Until there are paying users, run without the container (DECISIONS #54): set `va
 `site/` is deployed with the Worker (Workers static assets), so `npm run deploy` publishes the landing page and `https://waypack.app/account` too. Replace the beta `mailto:` links with TestFlight / Play links when ready.
 
 ## 4. Stripe
+**Live setup (2026-10-05)** on the HEJI TECHNOLOGY account, which other products share: every Waypack object carries `metadata.app = "waypack"`, and the webhook ignores events without it.
+- Product `prod_VO2LNvFpem4Obw` "Waypack Pro": annual `price_1UNGGjJiNqYDPd3ocrYtlQOR` ($14.99/yr, lookup key `waypack_pro_annual`), lifetime `price_1UNGGkJiNqYDPd3o2uawnedI` ($39.99 once, `waypack_pro_lifetime`).
+- Webhook `we_1UNGGtJiNqYDPd3oEVoepE0D` → `https://waypack.hejitech.workers.dev/stripe/webhook`, API version `2025-09-30.clover` (the version the Worker sends), 5 events below.
+- Customer Portal: Waypack's own configuration `bpc_1UNGGuJiNqYDPd3omLmtc9Tq` (not the account default, which other products use); cancel at period end, payment methods, invoices.
+- Worker: price ids and `STRIPE_PORTAL_CONFIG` are `env.production.vars`; `STRIPE_SECRET_KEY` (live) and `STRIPE_WEBHOOK_SECRET` are Worker secrets. No GitHub Actions secret is needed: no workflow talks to Stripe.
+- Owner coupon `3jJS1A6P`: 100% off forever, Waypack Pro only; single-use promotion code in `~/Credentials/stripe.env` (`WAYPACK_OWNER_PROMO_CODE`). Checkout accepts promotion codes.
+
+Original checklist:
 - Dashboard → Products: **Waypack Pro** with a yearly recurring price ($14.99) → `STRIPE_PRICE_ANNUAL`; optionally a one-time "Lifetime" price ($39.99) → `STRIPE_PRICE_LIFETIME`.
 - Webhook endpoint `https://waypack.app/stripe/webhook`, events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded` → signing secret → `STRIPE_WEBHOOK_SECRET`.
 - Customer Portal: enable cancel, update payment method and invoice history; set the return URL to `https://waypack.app/account`.

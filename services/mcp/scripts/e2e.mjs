@@ -182,7 +182,7 @@ async function stripeEvent(type, object) {
 }
 const forged = await fetch(`${BASE}/stripe/webhook`, { method: "POST", headers: { "Stripe-Signature": "t=1,v1=00" }, body: "{}" });
 ok(forged.status === 400, "Stripe webhook rejects bad signatures");
-const subObj = { id: "sub_e2e", status: "active", customer: `cus_e2e_${Date.now()}`, metadata: { user_id: uid }, items: { data: [{ current_period_end: Math.floor(Date.now() / 1000) + 365 * 86400 }] } };
+const subObj = { id: "sub_e2e", status: "active", customer: `cus_e2e_${Date.now()}`, metadata: { user_id: uid, app: "waypack" }, items: { data: [{ current_period_end: Math.floor(Date.now() / 1000) + 365 * 86400 }] } };
 const wh = await (await stripeEvent("customer.subscription.created", subObj)).json();
 ok(wh.tier === "annual", `Stripe subscription.created → ${wh.tier}`);
 const afterUpgrade = await call("get_trip_status", { trip_id: tripId });
@@ -269,7 +269,7 @@ const co = await fetch(`${BASE}/api/billing/checkout`, { method: "POST", headers
 ok(co.status === 503 || co.ok, `checkout without Stripe keys → ${co.status} (billing not configured)`);
 const cancel = await (await stripeEvent("customer.subscription.deleted", { ...subObj, status: "canceled" })).json();
 ok(cancel.tier === "free", "Stripe subscription.deleted → free");
-const life = await (await stripeEvent("checkout.session.completed", { mode: "payment", payment_status: "paid", customer: subObj.customer, client_reference_id: uid, metadata: { user_id: uid, plan: "lifetime" } })).json();
+const life = await (await stripeEvent("checkout.session.completed", { mode: "payment", payment_status: "paid", customer: subObj.customer, client_reference_id: uid, metadata: { app: "waypack", user_id: uid, plan: "lifetime" } })).json();
 ok(life.tier === "lifetime", "Stripe lifetime payment → lifetime");
 
 // --- 8. delete ---

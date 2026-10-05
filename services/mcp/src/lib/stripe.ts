@@ -58,6 +58,13 @@ export async function stripe<T = Record<string, unknown>>(env: Env, method: "GET
   return j;
 }
 
+/**
+ * The Stripe account is shared with other HEJI products, and webhooks receive every event on it.
+ * Everything Waypack creates carries this tag; the webhook ignores objects without it.
+ */
+export const APP_TAG = { app: "waypack" } as const;
+const isWaypack = (o: Record<string, unknown>) => (o.metadata as Record<string, string> | undefined)?.app === APP_TAG.app;
+
 export const priceFor = (env: Env, plan: Plan): string | undefined => (plan === "annual" ? env.STRIPE_PRICE_ANNUAL : env.STRIPE_PRICE_LIFETIME) || undefined;
 
 export function availablePlans(env: Env): Plan[] {
@@ -70,7 +77,7 @@ interface EntRow { tier: string; stripe_customer_id: string | null }
 export async function ensureCustomer(env: Env, db: Db, userId: string, email: string | undefined, fetcher?: typeof fetch): Promise<string> {
   const row = await db.one<EntRow>("entitlements", `select=tier,stripe_customer_id&user_id=${eq(userId)}`);
   if (row?.stripe_customer_id) return row.stripe_customer_id;
-  const c = await stripe<{ id: string }>(env, "POST", "customers", { email, metadata: { user_id: userId } }, fetcher);
+  const c = await stripe<{ id: string }>(env, "POST", "customers", { email, metadata: { user_id: userId, ...APP_TAG } }, fetcher);
   await db.insert("entitlements", { user_id: userId, stripe_customer_id: c.id }, { upsert: true, onConflict: "user_id" });
   return c.id;
 }
@@ -91,15 +98,23 @@ export async function createCheckout(env: Env, db: Db, user: { userId: string; e
     success_url: `${base}?checkout=success`,
     cancel_url: `${base}?checkout=cancelled`,
     allow_promotion_codes: true,
-    metadata: { user_id: user.userId, plan },
-    ...(plan === "annual" ? { subscription_data: { metadata: { user_id: user.userId } } } : { payment_intent_data: { metadata: { user_id: user.userId, plan } } }),
+    metadata: { user_id: user.userId, plan, ...APP_TAG },
+    ...(plan === "annual"
+      ? { subscription_data: { metadata: { user_id: user.userId, ...APP_TAG } } }
+      : { payment_intent_data: { metadata: { user_id: user.userId, plan, ...APP_TAG } } }),
   }, fetcher);
   return session.url;
 }
 
 export async function createPortal(env: Env, db: Db, user: { userId: string; email?: string }, fetcher?: typeof fetch): Promise<string> {
   const customer = await ensureCustomer(env, db, user.userId, user.email, fetcher);
-  const s = await stripe<{ url: string }>(env, "POST", "billing_portal/sessions", { customer, return_url: `${env.PUBLIC_URL}/account` }, fetcher);
+  const s = await stripe<{ url: string }>(
+    env,
+    "POST",
+    "billing_portal/sessions",
+    { customer, return_url: `${env.PUBLIC_URL}/account`, ...(env.STRIPE_PORTAL_CONFIG ? { configuration: env.STRIPE_PORTAL_CONFIG } : {}) },
+    fetcher,
+  );
   return s.url;
 }
 
@@ -141,11 +156,13 @@ export function entitlementFromSubscription(sub: Record<string, unknown>): Entit
 /** Decides what an event means for the user's entitlement. Returns null to ignore. Lifetime always wins. */
 export function planEvent(e: StripeEvent, currentTier: string): { userId?: string; customer?: string; patch: EntitlementPatch } | null {
   const o = e.data.object;
+  if (!isWaypack(o)) return null; // another product on the shared account
   const userId = ((o.metadata as Record<string, string> | undefined)?.user_id ?? (o.client_reference_id as string | undefined)) || undefined;
   const customer = typeof o.customer === "string" ? o.customer : undefined;
   switch (e.type) {
     case "checkout.session.completed": {
-      if (o.mode === "payment" && o.payment_status === "paid") return { userId, customer, patch: { tier: "lifetime", active: true, expires_at: null } };
+      // no_payment_required: a 100%-off promotion code (e.g. the owner's free-Pro code).
+      if (o.mode === "payment" && (o.payment_status === "paid" || o.payment_status === "no_payment_required")) return { userId, customer, patch: { tier: "lifetime", active: true, expires_at: null } };
       return null; // subscriptions are handled by customer.subscription.* events
     }
     case "customer.subscription.created":
@@ -172,6 +189,12 @@ export async function handleStripeWebhook(env: Env, req: Request): Promise<Respo
     return new Response("invalid signature", { status: 400 });
   }
   const e = JSON.parse(payload) as StripeEvent;
+  // A charge may not carry its PaymentIntent's metadata; refunds need it to know the plan.
+  if (e.type === "charge.refunded" && !isWaypack(e.data.object) && typeof e.data.object.payment_intent === "string") {
+    const pi = await stripe<{ metadata?: Record<string, string> }>(env, "GET", `payment_intents/${e.data.object.payment_intent}`, {}).catch(() => null);
+    if (pi?.metadata) e.data.object = { ...e.data.object, metadata: { ...pi.metadata, ...((e.data.object.metadata as Record<string, string>) ?? {}) } };
+  }
+  if (!isWaypack(e.data.object)) return Response.json({ ok: true, ignored: "not waypack" }); // shared account
   const db = new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
   // Idempotency: Stripe retries; process each event id once.
   const inserted = await db.insert("billing_events", { id: e.id, type: e.type, payload: e }, { upsert: false }).catch((err: { status?: number }) => {

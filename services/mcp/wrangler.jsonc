@@ -64,7 +64,8 @@
   // Production (`wrangler deploy --env production`, run by Cloudflare Workers Builds on push to main).
   // Free plan: device maps, no tiler container or queue, files in Supabase Storage, previews off.
   // KV namespaces have no ids: wrangler creates them on the first deploy and reuses them after.
-  // Secrets (wrangler secret put … --env production): SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SIGNING_SECRET.
+  // Secrets (wrangler secret put … --env production): SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SIGNING_SECRET,
+  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET.
   "env": {
     "production": {
       "name": "waypack",
@@ -78,7 +79,11 @@
         "TILER_URL": "",
         "MAP_EXTRACTS": "device",
         "ONLINE_TILES_URL": "",
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
+        // Stripe (live, account shared with other HEJI products; see DEPLOY.md §4). Not secret.
+        "STRIPE_PRICE_ANNUAL": "price_1UNGGjJiNqYDPd3ocrYtlQOR",
+        "STRIPE_PRICE_LIFETIME": "price_1UNGGkJiNqYDPd3o2uawnedI",
+        "STRIPE_PORTAL_CONFIG": "bpc_1UNGGuJiNqYDPd3omLmtc9Tq"
       },
       "kv_namespaces": [{ "binding": "OAUTH_KV" }, { "binding": "CACHE_KV" }],
       "containers": [],
