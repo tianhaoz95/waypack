@@ -6,7 +6,9 @@
 <meta name="color-scheme" content="light dark">
 <title>Join a trip · Waypack</title>
 <meta name="robots" content="noindex">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d6fe0'/%3E%3Cpath d='M8 22l5-12 4 8 3-5 4 9z' fill='white'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root {
   --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
@@ -28,7 +30,7 @@ a { color: var(--accent); }
 nav.top { border-bottom: 1px solid var(--line); background: var(--surface); }
 nav.top .wrap { display: flex; align-items: center; height: 60px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
-.brand i { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-style: normal; }
+.brand img { display: block; width: 30px; height: 30px; }
 nav.top .who { margin-left: auto; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw; }
 .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
 main { padding: 28px 0 64px; }
@@ -77,7 +79,7 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
 </head>
 <body>
 <nav class="top"><div class="wrap">
-  <a class="brand" href="/"><i aria-hidden="true">◈</i>Waypack</a>
+  <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
   <span class="who" id="who"></span>
 </div></nav>
 <main><div class="wrap" style="max-width:560px">

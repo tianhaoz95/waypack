@@ -9,7 +9,9 @@
 <meta property="og:title" content="Waypack — offline trip plans from your AI agent">
 <meta property="og:description" content="Itinerary, lodging and routes on an offline map with GPS — planned by Claude, Cursor or any MCP agent.">
 <meta property="og:image" content="img/today.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d6fe0'/%3E%3Cpath d='M8 22l5-12 4 8 3-5 4 9z' fill='white'/%3E%3C/svg%3E">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root {
   --bg: #f7f8fa; --surface: #fff; --text: #0f172a; --muted: #586174; --line: #e1e5ec;
@@ -32,7 +34,7 @@ a { color: var(--accent); }
 nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
 nav.top .wrap { display: flex; align-items: center; gap: 20px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; color: var(--text); text-decoration: none; }
-.brand i { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-style: normal; }
+.brand img { display: block; width: 30px; height: 30px; }
 nav.top .links { margin-left: auto; display: flex; gap: 18px; font-size: .95rem; }
 nav.top .links a { color: var(--muted); text-decoration: none; }
 nav.top .links a:hover { color: var(--text); }
@@ -88,7 +90,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
 <body>
 <nav class="top" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="#"><i aria-hidden="true">◈</i>Waypack</a>
+    <a class="brand" href="#"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
     <div class="links">
       <a href="#how">How it works</a>
       <a href="#connect">Connect your agent</a>

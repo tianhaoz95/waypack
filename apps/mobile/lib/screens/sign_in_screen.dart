@@ -142,10 +142,14 @@ class _SignInScreenState extends State<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.backpack_outlined,
-                    size: 56,
-                    color: t.colorScheme.primary,
+                  // Generated from brand/logo.mjs (node brand/build.mjs).
+                  Center(
+                    child: Image.asset(
+                      'assets/brand/logo.png',
+                      width: 64,
+                      height: 64,
+                      semanticLabel: 'Waypack',
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(

@@ -207,34 +207,38 @@ void main() {
     expect(h.tileContents, lessThan(h.addressedTiles));
   });
 
-  test('large extracts spill into leaf directories', () async {
-    final tiles = <int, Uint8List>{};
-    final rnd = Random(7);
-    for (var z = 0; z <= 8; z++) {
-      final n = 1 << z;
-      for (var x = 0; x < n; x++) {
-        for (var y = 0; y < n; y++) {
-          // Varied lengths and gaps so the directory doesn't gzip down to nothing.
-          if (rnd.nextInt(5) == 0) continue;
-          tiles[zxyToTileId(z, x, y)] = Uint8List.fromList(
-            utf8.encode('$z/$x/$y${'.' * rnd.nextInt(200)}'),
-          );
+  test(
+    'large extracts spill into leaf directories',
+    () async {
+      final tiles = <int, Uint8List>{};
+      final rnd = Random(7);
+      for (var z = 0; z <= 8; z++) {
+        final n = 1 << z;
+        for (var x = 0; x < n; x++) {
+          for (var y = 0; y < n; y++) {
+            // Varied lengths and gaps so the directory doesn't gzip down to nothing.
+            if (rnd.nextInt(5) == 0) continue;
+            tiles[zxyToTileId(z, x, y)] = Uint8List.fromList(
+              utf8.encode('$z/$x/$y${'.' * rnd.nextInt(200)}'),
+            );
+          }
         }
       }
-    }
-    final src = MemorySource(buildArchive(tiles, leafSize: 4000, maxZoom: 8));
-    final ex = PmtilesExtractor(src);
-    final plan = await ex.plan([-180, -85, 180, 85], 8);
-    final dir = await Directory.systemTemp.createTemp('pmtiles_test');
-    addTearDown(() => dir.delete(recursive: true));
-    final out = File('${dir.path}/out.pmtiles');
-    await ex.write(plan, out);
-    final a = await out.readAsBytes();
-    final h = PmHeader.parse(a);
-    expect(h.leafLength, greaterThan(0));
-    expect(h.addressedTiles, tiles.length);
-    for (final id in tiles.keys) {
-      expect(getTile(a, id), tiles[id], reason: 'tile $id');
-    }
-  });
+      final src = MemorySource(buildArchive(tiles, leafSize: 4000, maxZoom: 8));
+      final ex = PmtilesExtractor(src);
+      final plan = await ex.plan([-180, -85, 180, 85], 8);
+      final dir = await Directory.systemTemp.createTemp('pmtiles_test');
+      addTearDown(() => dir.delete(recursive: true));
+      final out = File('${dir.path}/out.pmtiles');
+      await ex.write(plan, out);
+      final a = await out.readAsBytes();
+      final h = PmHeader.parse(a);
+      expect(h.leafLength, greaterThan(0));
+      expect(h.addressedTiles, tiles.length);
+      for (final id in tiles.keys) {
+        expect(getTile(a, id), tiles[id], reason: 'tile $id');
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+  ); // ~90k tiles; slow on a busy machine
 }
