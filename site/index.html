@@ -164,20 +164,20 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
     </div>
     <div class="panel" id="p-cc" role="tabpanel">
       <p>Add the server, then install the skill:</p>
-      <pre><code>claude mcp add --transport http waypack https://waypack.app/mcp
+      <pre><code>claude mcp add --transport http waypack <span data-origin>https://waypack.hejitech.workers.dev</span>/mcp
 npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
       <p>Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>. Sign in with Google or Apple when Claude opens the browser. Claude Code writes the bundle to <code class="inline">./waypack/&lt;trip&gt;/</code>, validates it, and uploads it.</p>
     </div>
     <div class="panel" id="p-claude" role="tabpanel" hidden>
       <p>Settings → Connectors → Add custom connector, and paste:</p>
-      <pre><code>https://waypack.app/mcp</code><button type="button">Copy</button></pre>
+      <pre><code><span data-origin>https://waypack.hejitech.workers.dev</span>/mcp</code><button type="button">Copy</button></pre>
       <p>No skill needed: the agent calls <code class="inline">get_authoring_guide</code> and uploads with <code class="inline">upload_bundle_inline</code>.</p>
     </div>
     <div class="panel" id="p-cursor" role="tabpanel" hidden>
       <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
       <pre><code>{
   "mcpServers": {
-    "waypack": { "url": "https://waypack.app/mcp" }
+    "waypack": { "url": "<span data-origin>https://waypack.hejitech.workers.dev</span>/mcp" }
   }
 }</code><button type="button">Copy</button></pre>
       <p>Headless or no OAuth? Create a personal API token in the app (Settings → API tokens) and send it as <code class="inline">Authorization: Bearer wpk_…</code>.</p>
@@ -237,6 +237,10 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
 </footer>
 
 <script>
+  // Show the address this site is served from (the fallback in the markup is the production one).
+  if (/^https?:$/.test(location.protocol)) {
+    document.querySelectorAll("[data-origin]").forEach(function (el) { el.textContent = location.origin; });
+  }
   document.querySelectorAll('[role="tab"]').forEach(function (tab) {
     tab.addEventListener("click", function () {
       document.querySelectorAll('[role="tab"]').forEach(function (t) { t.setAttribute("aria-selected", String(t === tab)); });

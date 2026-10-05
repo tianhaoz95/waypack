@@ -13,7 +13,7 @@ export interface RouteResult {
 export type Mode = "driving" | "walking" | "hiking" | "cycling" | "transit" | "ferry" | "flight";
 export interface LatLon { lat: number; lon: number }
 
-const UA = "Waypack/1.0 (+https://waypack.app)";
+const UA = "Waypack/1.0 (+https://github.com/tianhaoz95/waypack)";
 const round5 = (n: number) => Math.round(n * 1e5) / 1e5;
 
 async function cached<T>(env: Env, key: string, ttl: number, fn: () => Promise<T>): Promise<T> {

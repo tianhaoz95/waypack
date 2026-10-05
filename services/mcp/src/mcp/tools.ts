@@ -92,7 +92,7 @@ export const tools: ToolDef<ToolCtx>[] = [
       properties: { section: { type: "string", enum: ["guide", "template", "schema", "all"], default: "guide" } },
     },
     annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-    async run(args) {
+    async run(args, ctx) {
       const section = (args.section as string) ?? "guide";
       const versions = `Schema version ${SCHEMA_VERSION} · SDK v${SDK_MAJOR} (\`<script src="/__waypack/sdk/v1/waypack.js"></script>\`)`;
       const guide = [GUIDE.skill, ...Object.entries(GUIDE.references).map(([n, t]) => `\n---\n<!-- reference/${n} -->\n${t}`)].join("\n");
@@ -103,7 +103,9 @@ export const tools: ToolDef<ToolCtx>[] = [
         template: `${versions}\n\nStarter bundle (copy these files, then replace the SAMPLE content):\n${template}`,
         schema: `${versions}\n\n${schema}`,
       };
-      const text = section === "all" ? [parts.guide, parts.template, parts.schema].join("\n\n") : parts[section] ?? parts.guide;
+      const raw = section === "all" ? [parts.guide, parts.template, parts.schema].join("\n\n") : parts[section] ?? parts.guide;
+      // The skill files say https://waypack.app; serve this deployment's address instead.
+      const text = raw.replaceAll("https://waypack.app", ctx.env.PUBLIC_URL);
       return { text, structured: { schema_version: SCHEMA_VERSION, sdk_version: SDK_MAJOR } };
     },
   },

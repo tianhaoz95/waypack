@@ -17,8 +17,9 @@ class Config {
   );
   static const authScheme = 'com.hejitech.waypack';
   static const authRedirect = '$authScheme://login-callback';
-  static const privacyUrl = 'https://waypack.app/privacy';
-  static const skillUrl = 'https://waypack.app/#connect';
+  // The Worker serves the site too, so its pages share the API's origin.
+  static const privacyUrl = '$_apiUrl/privacy';
+  static const skillUrl = '$_apiUrl/#connect';
 
   /// The Android emulator reaches the host's loopback via 10.0.2.2.
   static String _host(String url) => Platform.isAndroid
