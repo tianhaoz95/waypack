@@ -97,7 +97,7 @@ Until there are paying users, run without the container (DECISIONS #54): set `va
 
 ## 4b. Releases (GitHub Actions)
 - **CI** (`.github/workflows/ci.yml`): every push/PR runs package builds, typechecks and tests (incl. the SDK's Playwright tests), plus `flutter analyze` and `flutter test`.
-- **Ship a version:** publish a GitHub Release tagged `v<major>.<minor>.<patch>` (e.g. `gh release create v1.1.0 --generate-notes`). That starts:
+- **Ship a version:** `scripts/cut_release.sh` (try `--dry-run` first). It checks main is clean, pushed and green in CI, bumps `pubspec.yaml`, and publishes GitHub Release `v<major>.<minor>.<patch>`, which starts:
   - `testflight.yml`: iOS build `<version> (1000 + run number)` → App Store Connect → TestFlight (`apps/mobile/tool/release_ios.sh`).
   - `mac-release.yml`: Mac build → Developer ID signing → notarization → `Waypack.dmg` attached to the release (`release_mac.sh --attach`). `/download/mac` serves it once attached (~20–30 min).
   Both can also be started from the Actions tab.
