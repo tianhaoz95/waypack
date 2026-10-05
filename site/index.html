@@ -53,10 +53,28 @@ header.hero { padding: 64px 0 40px; }
 .eyebrow { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--soft); padding: 4px 12px; border-radius: 999px; }
 h1 { font-size: clamp(2.1rem, 4.5vw, 3.2rem); line-height: 1.15; letter-spacing: -.025em; margin: 16px 0; }
 .lead { font-size: 1.2rem; color: var(--muted); max-width: 36em; margin: 0; }
-.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-.phone { width: min(320px, 80vw); margin: 0 auto; border-radius: 36px; padding: 10px; background: #0b0f19; box-shadow: 0 30px 60px -20px rgba(15, 23, 42, .45); }
-.phone img { display: block; width: 100%; height: auto; border-radius: 28px; }
-section { padding: 56px 0; }
+.phone { position: relative; width: min(320px, 82vw); margin: 0 auto; }
+.phone-chassis { position: relative; padding: 3.5px; border-radius: 54px; background: linear-gradient(145deg, #484f5d 0%, #2a2f3a 20%, #15181f 45%, #181c24 75%, #363d4b 100%); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 0 1.5px rgba(10, 14, 22, 0.75), 0 28px 56px -12px rgba(15, 23, 42, 0.42), 0 12px 24px -8px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 1.5px rgba(0, 0, 0, 0.6); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .phone-chassis { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 0 1.5px rgba(10, 14, 22, 0.85), 0 32px 64px -14px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 -1px 1.5px rgba(0, 0, 0, 0.7); }
+}
+.phone-btn { position: absolute; background: linear-gradient(180deg, #444c5c, #20242e); box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.25); pointer-events: none; }
+.phone-btn-action { left: -2.5px; top: 92px; width: 3px; height: 25px; border-radius: 2px 0 0 2px; }
+.phone-btn-vol-up { left: -2.5px; top: 132px; width: 3px; height: 48px; border-radius: 2px 0 0 2px; }
+.phone-btn-vol-down { left: -2.5px; top: 190px; width: 3px; height: 48px; border-radius: 2px 0 0 2px; }
+.phone-btn-power { right: -2.5px; top: 140px; width: 3px; height: 72px; border-radius: 0 2px 2px 0; }
+.phone-btn-camera-control { right: -2.5px; top: 305px; width: 2.5px; height: 52px; border-radius: 0 2px 2px 0; background: linear-gradient(180deg, #2e3542, #181c24); box-shadow: inset 0 0 0.5px rgba(255, 255, 255, 0.25); }
+.phone-screen { position: relative; border-radius: 50.5px; overflow: hidden; background: #f6f7f9; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; }
+.phone-speaker { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 44px; height: 2.5px; border-radius: 2px; background: #090c12; z-index: 25; }
+.phone-status-bar { position: relative; height: 44px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; background: #f6f7f9; z-index: 20; flex-shrink: 0; user-select: none; }
+.phone-status-time { font-size: 13px; font-weight: 600; letter-spacing: -0.2px; color: #0f172a; padding-top: 1px; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+.phone-status-icons { display: flex; align-items: center; gap: 5.5px; color: #0f172a; padding-top: 1px; }
+.phone-dynamic-island { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 90px; height: 26px; background: #000; border-radius: 20px; display: flex; align-items: center; justify-content: flex-end; padding-right: 9px; gap: 7px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); z-index: 22; }
+.island-sensor { width: 7.5px; height: 7.5px; border-radius: 50%; background: #06080d; }
+.island-camera { width: 8.5px; height: 8.5px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #1a2740 0%, #0d121e 55%, #05060a 100%); box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.3); }
+.phone-content { position: relative; background: #fff; flex: 1; padding-bottom: 14px; }
+.phone-content img { display: block; width: 100%; height: auto; }
+.phone-home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 126px; height: 4.5px; background: #0f172a; border-radius: 3px; opacity: 0.85; z-index: 20; pointer-events: none; }
 section h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; margin: 0 0 12px; }
 section .sub { color: var(--muted); max-width: 42em; margin: 0 0 28px; line-height: 1.6; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; counter-reset: s; }
@@ -138,7 +156,49 @@ footer a:hover { color: var(--text); }
         <a class="btn ghost" href="#connect">Connect your agent</a>
       </div>
     </div>
-    <div class="phone"><img src="img/today.jpg" alt="Waypack Today view: Sledding & snow play now, day 2 of a Sequoia winter trip" width="600" height="1298"></div>
+    <div class="phone iphone-18-pro-max" aria-label="iPhone 18 Pro Max showing Waypack Today view">
+      <div class="phone-btn phone-btn-action" aria-hidden="true"></div>
+      <div class="phone-btn phone-btn-vol-up" aria-hidden="true"></div>
+      <div class="phone-btn phone-btn-vol-down" aria-hidden="true"></div>
+      <div class="phone-btn phone-btn-power" aria-hidden="true"></div>
+      <div class="phone-btn phone-btn-camera-control" aria-hidden="true"></div>
+
+      <div class="phone-chassis">
+        <div class="phone-screen">
+          <div class="phone-speaker" aria-hidden="true"></div>
+
+          <div class="phone-status-bar" aria-hidden="true">
+            <span class="phone-status-time">9:41</span>
+            <div class="phone-dynamic-island">
+              <div class="island-sensor"></div>
+              <div class="island-camera"></div>
+            </div>
+            <div class="phone-status-icons">
+              <svg viewBox="0 0 17 12" width="16" height="11" fill="currentColor">
+                <rect x="0" y="8.5" width="2.8" height="3.5" rx="0.6"/>
+                <rect x="4.4" y="6" width="2.8" height="6" rx="0.6"/>
+                <rect x="8.8" y="3" width="2.8" height="9" rx="0.6"/>
+                <rect x="13.2" y="0" width="2.8" height="12" rx="0.6"/>
+              </svg>
+              <svg viewBox="0 0 16 12" width="15" height="11" fill="currentColor">
+                <path d="M8 9.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm0-4.6c2.3 0 4.5.9 6 2.5l-1.3 1.3a6.5 6.5 0 0 0-9.4 0L2 7.7c1.5-1.6 3.7-2.5 6-2.5zm0-4c3.5 0 6.8 1.4 9.1 3.7l-1.3 1.3C13.8 4.2 11 3 8 3s-5.8 1.2-7.8 3.2L-1.1 4.9C1.2 2.6 4.5 1.2 8 1.2z"/>
+              </svg>
+              <svg viewBox="0 0 25 12" width="23" height="11" fill="currentColor">
+                <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="2.5" y="2.5" width="15" height="7" rx="2" fill="currentColor"/>
+                <path d="M23 4.2c.8.3 1.3 1 1.3 1.8s-.5 1.5-1.3 1.8v-3.6z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="phone-content">
+            <img src="img/today.jpg" alt="Waypack Today view: Sledding & snow play now, day 2 of a Sequoia winter trip" width="600" height="1298">
+          </div>
+
+          <div class="phone-home-indicator" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </header>
 
