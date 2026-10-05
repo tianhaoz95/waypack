@@ -6,6 +6,7 @@
   "scripts": {
     "predev": "node scripts/gen-guide.mjs && node scripts/gen-sdk-assets.mjs", "dev": "wrangler dev",
     "deploy": "node scripts/gen-guide.mjs && node scripts/gen-sdk-assets.mjs && wrangler deploy",
+    "upload-version": "node scripts/gen-guide.mjs && node scripts/gen-sdk-assets.mjs && wrangler versions upload",
     "pretest": "node scripts/gen-guide.mjs", "test": "vitest run",
     "typecheck": "node scripts/gen-guide.mjs && tsc --noEmit",
     "cf-typegen": "wrangler types"
