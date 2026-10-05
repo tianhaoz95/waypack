@@ -93,8 +93,13 @@ fi
 TAG="v$NEXT"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "tag $TAG already exists"
 gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1 && die "release $TAG already exists"
-if [ -n "$LAST_TAG" ] && [ "$(printf '%s\n%s\n' "$BASE" "$NEXT" | sort -V | tail -1)" != "$NEXT" ]; then
+newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ]; }
+if [ -n "$LAST_TAG" ] && ! newer "$NEXT" "$BASE"; then
   die "$NEXT is not newer than the last release $LAST_TAG"
+fi
+# Never go below what pubspec (and so TestFlight) already has.
+if [ "$NEXT" != "$PUB_VERSION" ] && ! newer "$NEXT" "$PUB_VERSION"; then
+  die "$NEXT is older than pubspec's $PUB_VERSION"
 fi
 
 echo "==> releasing $TAG (last: ${LAST_TAG:-none}; pubspec $PUB_LINE)"
