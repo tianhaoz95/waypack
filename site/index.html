@@ -163,6 +163,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space
       <button role="tab" aria-selected="true" data-panel="p-cc">Claude Code</button>
       <button role="tab" aria-selected="false" data-panel="p-claude">Claude (web &amp; desktop)</button>
       <button role="tab" aria-selected="false" data-panel="p-gemini">Gemini (web)</button>
+      <button role="tab" aria-selected="false" data-panel="p-muse">Meta Muse</button>
       <button role="tab" aria-selected="false" data-panel="p-cursor">Cursor &amp; others</button>
     </div>
     <div class="panel" id="p-cc" role="tabpanel">
@@ -180,6 +181,11 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
       <p>On <a href="https://gemini.google.com">gemini.google.com</a>: Settings → Connected Apps → Custom apps → Add a custom app, paste the URL, click Next and sign in with Google or Apple:</p>
       <pre><code><span data-origin>https://waypack.hejitech.workers.dev</span>/mcp</code><button type="button">Copy</button></pre>
       <p>Then type <code class="inline">@</code>, pick Waypack, and ask: <code class="inline">Plan a weekend in Lake Tahoe in January</code>. Google offers custom apps to personal accounts in the US (18+) with Keep Activity on.</p>
+    </div>
+    <div class="panel" id="p-muse" role="tabpanel" hidden>
+      <p>Sign in to <a href="/account">your account</a> and click <strong>Create token</strong> under API tokens to generate a <code class="inline">wpk_…</code> token. Then in your Muse chat (iOS, Android, web, or WhatsApp), ask:</p>
+      <pre><code>Create a custom connector for Waypack with the MCP server at <span data-origin>https://waypack.hejitech.workers.dev</span>/mcp using an API key</code><button type="button">Copy</button></pre>
+      <p>When Muse prompts for your credential, paste your <code class="inline">wpk_…</code> token into the secure prompt. Then ask: <code class="inline">Plan a weekend in Lake Tahoe in January with Waypack</code>.</p>
     </div>
     <div class="panel" id="p-cursor" role="tabpanel" hidden>
       <p>Any client that supports remote MCP over Streamable HTTP with OAuth:</p>
@@ -227,7 +233,7 @@ npx @waypack/cli skill install</code><button type="button">Copy</button></pre>
 <section id="faq">
   <div class="wrap">
     <h2>FAQ</h2>
-    <details><summary>Which AI agents work with Waypack?</summary><p>Any MCP client that supports remote servers: Claude Code, Claude (web, desktop, mobile) custom connectors, Cursor, and others. The skill improves results in agents that support Agent Skills.</p></details>
+    <details><summary>Which AI agents work with Waypack?</summary><p>Any MCP client that supports remote servers: Claude Code, Claude (web, desktop, mobile) custom connectors, Gemini, Meta Muse, Cursor, and others. The skill improves results in agents that support Agent Skills.</p></details>
     <details><summary>Does the map really work without signal?</summary><p>Yes, on Pro. When you tap Download, Waypack saves a vector map of your trip area (trails, roads, labels) to your phone. Your location comes from GPS, which doesn't need cell service.</p></details>
     <details><summary>Does Waypack do turn-by-turn navigation?</summary><p>No. Tap Navigate to hand off to Google Maps or Apple Maps. For offline turn-by-turn, also download their offline area (your trip's checklist reminds you).</p></details>
     <details><summary>Can I edit a trip in the app?</summary><p>Edits happen in your agent: “move the Sherman Tree visit to the morning”. It re-publishes and the app shows <em>Update available</em>.</p></details>
