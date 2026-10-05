@@ -30,7 +30,10 @@ class TripsScreen extends StatelessWidget {
             icon: const Icon(Icons.qr_code_scanner),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ReceiveNearbyScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(name: 'ReceiveNearby'),
+                builder: (_) => const ReceiveNearbyScreen(),
+              ),
             ),
           ),
           IconButton(
@@ -38,7 +41,10 @@ class TripsScreen extends StatelessWidget {
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(name: 'Settings'),
+                builder: (_) => const SettingsScreen(),
+              ),
             ),
           ),
         ],
@@ -202,7 +208,10 @@ class _TripCard extends StatelessWidget {
           onTap: e.isOffline
               ? () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => TripScreen(tripId: e.id)),
+                  MaterialPageRoute(
+                    settings: const RouteSettings(name: 'Trip'),
+                    builder: (_) => TripScreen(tripId: e.id),
+                  ),
                 )
               : null,
           child: Padding(
@@ -281,6 +290,7 @@ class _TripCard extends StatelessWidget {
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings: const RouteSettings(name: 'Trip'),
                             builder: (_) => TripScreen(tripId: e.id),
                           ),
                         ),
@@ -357,6 +367,7 @@ class _EmptyState extends StatelessWidget {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
+                settings: const RouteSettings(name: 'Settings'),
                 builder: (_) => const SettingsScreen(scrollToConnect: true),
               ),
             ),
@@ -365,7 +376,10 @@ class _EmptyState extends StatelessWidget {
           TextButton.icon(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ReceiveNearbyScreen()),
+              MaterialPageRoute(
+                settings: const RouteSettings(name: 'ReceiveNearby'),
+                builder: (_) => const ReceiveNearbyScreen(),
+              ),
             ),
             icon: const Icon(Icons.qr_code_scanner),
             label: const Text('Receive a trip from a nearby phone'),

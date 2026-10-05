@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:feedbackkit_flutter/feedbackkit_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,6 +17,15 @@ import 'state/app_state.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FeedbackKit.configure(const FeedbackKitConfiguration(
+    endpointUrl: 'https://gpucoladcyvijefdjudf.supabase.co/functions/v1/ingest-feedback',
+    projectKey: 'pk_88dcc559540fd5cea57354c41dc455fcfd13',
+  ));
+  await FeedbackKit.setTheme(const FeedbackTheme(
+    primaryColorHex: '#1D6FE0',
+    secondaryColorHex: '#64748B',
+  ));
+  await FeedbackKit.enableFixVerification();
   final state = await bootstrap();
   runApp(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
 }
@@ -66,6 +76,7 @@ class WaypackApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: _theme(Brightness.light),
     darkTheme: _theme(Brightness.dark),
+    navigatorObservers: [FeedbackKitNavigatorObserver()],
     home: const _AuthGate(),
   );
 }
@@ -85,6 +96,7 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _signedIn = Supabase.instance.client.auth.currentSession != null;
+    FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
     _sub = Supabase.instance.client.auth.onAuthStateChange.listen((e) {
       if (!mounted) return;
       // Any transition to a session counts (OAuth, Apple ID token, or a restored session).
@@ -94,6 +106,7 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
         if (!DevFlags.noPermissionPrompts) Reminders.requestPermission();
       }
       _signedIn = now;
+      FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
       setState(() {});
     });
   }

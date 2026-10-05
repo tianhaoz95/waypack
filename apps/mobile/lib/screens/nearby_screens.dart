@@ -467,6 +467,7 @@ class _ReceiveNearbyScreenState extends State<ReceiveNearbyScreen> {
                   onPressed: () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
+                      settings: const RouteSettings(name: 'Trip'),
                       builder: (_) =>
                           TripScreen(tripId: offer.trip['id'] as String),
                     ),

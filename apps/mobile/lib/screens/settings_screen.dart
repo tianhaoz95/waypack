@@ -270,6 +270,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: _newToken,
               ),
 
+              section('Feedback'),
+              SwitchListTile(
+                secondary: const Icon(Icons.vibration),
+                title: const Text('Shake to report feedback'),
+                subtitle: const Text(
+                  'Shake your device to capture a screenshot and report an issue.',
+                ),
+                value: s.shakeToReport,
+                onChanged: s.setShakeToReport,
+              ),
+
               section('About'),
               ListTile(
                 leading: const Icon(Icons.privacy_tip_outlined),

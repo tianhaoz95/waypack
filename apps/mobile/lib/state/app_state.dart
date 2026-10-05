@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:feedbackkit_flutter/feedbackkit_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -93,11 +94,45 @@ class AppState extends ChangeNotifier {
     await prefs.setBool('use_online_map', on);
   }
 
+  bool _shakeToReport = true;
+  bool get shakeToReport => _shakeToReport;
+
+  Future<void> setShakeToReport(bool enabled) async {
+    _shakeToReport = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('shake_to_report', enabled);
+    if (enabled) {
+      await FeedbackKit.enableShakeToReport();
+    } else {
+      await FeedbackKit.disableShakeToReport();
+    }
+  }
+
+  void _syncFeedbackUser() {
+    final u = user;
+    if (u != null) {
+      FeedbackKit.setUser(FeedbackUser(
+        id: u.id,
+        email: u.email,
+      ));
+    } else {
+      FeedbackKit.setUser(null);
+    }
+  }
+
   /// Loads what's on the device first (works offline), then refreshes from the server.
   Future<void> init() async {
     _trips.clear();
     final prefs = await SharedPreferences.getInstance();
     server.useOnlineMap = prefs.getBool('use_online_map') ?? true;
+    _shakeToReport = prefs.getBool('shake_to_report') ?? true;
+    if (_shakeToReport) {
+      await FeedbackKit.enableShakeToReport();
+    } else {
+      await FeedbackKit.disableShakeToReport();
+    }
+    _syncFeedbackUser();
     final locals = await store.loadAll();
     for (final l in locals.values) {
       if (l.owner != null && l.owner != user?.id) continue;
@@ -174,6 +209,7 @@ class AppState extends ChangeNotifier {
         );
       }
       me = await api.me().catchError((_) => <String, dynamic>{});
+      _syncFeedbackUser();
     } on SocketException {
       listError = 'Offline — showing trips saved on this device.';
     } catch (e) {
@@ -258,6 +294,7 @@ class AppState extends ChangeNotifier {
     _trips.clear();
     server.versions.clear();
     server.tiles.clear();
+    FeedbackKit.setUser(null);
     notifyListeners();
   }
 

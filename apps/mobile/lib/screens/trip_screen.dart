@@ -83,6 +83,7 @@ class TripScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
+                        settings: const RouteSettings(name: 'Today'),
                         builder: (_) => TodayScreen(manifest: m),
                       ),
                     );
@@ -102,6 +103,7 @@ class TripScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      settings: const RouteSettings(name: 'Map'),
                       builder: (_) => _MapScreen(tripId: tripId),
                     ),
                   );
@@ -116,6 +118,7 @@ class TripScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      settings: const RouteSettings(name: 'Assistant'),
                       builder: (_) => AssistantScreen(tripId: tripId),
                     ),
                   );
@@ -132,6 +135,7 @@ class TripScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      settings: const RouteSettings(name: 'HandoffSend'),
                       builder: (_) => HandoffSendScreen(tripId: tripId),
                     ),
                   );

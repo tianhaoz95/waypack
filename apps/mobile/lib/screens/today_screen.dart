@@ -270,6 +270,7 @@ class _TodayScreenState extends State<TodayScreen> {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
+                  settings: const RouteSettings(name: 'Assistant'),
                   builder: (_) => AssistantScreen(
                     tripId: widget.manifest.raw['trip_id'] as String,
                   ),

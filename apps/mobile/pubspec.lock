@@ -201,6 +201,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
+  feedbackkit_flutter:
+    dependency: "direct main"
+    description:
+      path: "flutter/feedbackkit_flutter"
+      ref: HEAD
+      resolved-ref: e9068358c71f75ac84adcfe4c489a68c624c9c14
+      url: "https://github.com/tianhaoz95/feedback-kit"
+    source: git
+    version: "1.0.62"
   ffi:
     dependency: transitive
     description:
