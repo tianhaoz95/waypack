@@ -59,5 +59,31 @@
     // 03:17 UTC daily: expire map extracts 30 days after end_date, clean stale uploads.
     // 04:00 UTC on the 2nd: refresh the basemap planet mirror.
     "crons": ["17 3 * * *", "0 4 2 * *"]
+  },
+
+  // Production (`wrangler deploy --env production`, run by Cloudflare Workers Builds on push to main).
+  // Free plan: device maps, no tiler container or queue, files in Supabase Storage, previews off.
+  // KV namespaces have no ids: wrangler creates them on the first deploy and reuses them after.
+  // Secrets (wrangler secret put … --env production): SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SIGNING_SECRET.
+  "env": {
+    "production": {
+      "name": "waypack",
+      "workers_dev": true,
+      "vars": {
+        "PUBLIC_URL": "https://waypack.hejitech.workers.dev",
+        "PREVIEW_URL": "",
+        "SUPABASE_URL": "https://jitdzllkxfhlrxxvljhp.supabase.co",
+        "PLANET_URL": "latest",
+        "BASEMAP_MAX_ZOOM": "15",
+        "TILER_URL": "",
+        "MAP_EXTRACTS": "device",
+        "ONLINE_TILES_URL": "",
+        "ENVIRONMENT": "production"
+      },
+      "kv_namespaces": [{ "binding": "OAUTH_KV" }, { "binding": "CACHE_KV" }],
+      "containers": [],
+      "durable_objects": { "bindings": [] },
+      "triggers": { "crons": ["17 3 * * *"] }
+    }
   }
 }
