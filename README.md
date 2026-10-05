@@ -66,3 +66,10 @@ node packages/cli/dist/cli.js validate ./waypack/my-trip
 | **App integration on iOS simulator**: sign-in screen (Apple/Google only), dev sign-in, download, local server security, WebView, Today, offline Map | `flutter test integration_test/app_test.dart -d <sim> --dart-define=DEV_SIGN_IN=true --dart-define=NO_PERMISSION_PROMPTS=true` | ✅ |
 
 Map data © OpenStreetMap contributors (ODbL) · Basemap © Protomaps · MapLibre GL JS (BSD-3-Clause).
+
+## License
+
+Source available under the [PolyForm Perimeter License 1.0.1](LICENSE).
+
+- **Permitted**: self-hosting, personal and internal use, contributing back, making changes, and building larger works on top of the software.
+- **Prohibited**: using the software to offer a product or service that competes with Waypack as a substitute for it.
