@@ -20,6 +20,9 @@ jobs:
     name: Build & upload iOS
     runs-on: macos-26
     timeout-minutes: 60
+    environment:
+      name: TestFlight
+      url: https://testflight.apple.com
     steps:
       - uses: actions/checkout@v4
       - name: Select the newest Xcode (local releases build with the newest too)

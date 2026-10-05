@@ -1,5 +1,9 @@
 # Waypack
 
+[![CI](https://github.com/tianhaoz95/waypack/actions/workflows/ci.yml/badge.svg)](https://github.com/tianhaoz95/waypack/actions/workflows/ci.yml)
+[![Release to TestFlight](https://github.com/tianhaoz95/waypack/actions/workflows/testflight.yml/badge.svg)](https://github.com/tianhaoz95/waypack/actions/workflows/testflight.yml)
+[![Release Mac app](https://github.com/tianhaoz95/waypack/actions/workflows/mac-release.yml/badge.svg)](https://github.com/tianhaoz95/waypack/actions/workflows/mac-release.yml)
+
 Turn any AI agent into a travel planner whose output works **fully offline on your phone**.
 
 An agent (Claude Code, claude.ai, Cursor, …) with the Waypack skill and MCP server interviews you, researches, and publishes a **trip bundle**: a self-contained mobile web app plus `manifest.json`. The backend cuts an **offline vector map** of the trip area. The Waypack app downloads both, so the itinerary, a real map with trails, your GPS dot, and Navigate hand-offs all work in airplane mode.

@@ -24,6 +24,9 @@ jobs:
     name: Build, notarize & attach DMG
     runs-on: macos-26
     timeout-minutes: 75
+    environment:
+      name: GitHub Releases
+      url: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.release.tag_name || inputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - name: Select the newest Xcode (local releases build with the newest too)
