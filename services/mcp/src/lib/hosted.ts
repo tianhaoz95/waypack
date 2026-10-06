@@ -83,8 +83,15 @@ export async function handlePreviewHost(req: Request, env: Env, db = new Db(env.
   if (req.method !== "GET" && req.method !== "HEAD") return new Response("method not allowed", { status: 405, headers: BASE_HEADERS });
   const url = new URL(req.url);
   const path = url.pathname;
-
-  if (path === "/" || path === "/favicon.ico") return page(200, "Waypack trips", "Open the link you were given to see a trip plan.");
+  if (path === "/favicon.ico" || path === "/favicon.svg" || path === "/favicon.png" || path === "/apple-touch-icon.png") {
+    if (env.ASSETS) {
+      const res = await env.ASSETS.fetch(req);
+      const h = new Headers(res.headers);
+      for (const [k, v] of Object.entries(BASE_HEADERS)) h.set(k, v);
+      return new Response(res.body, { status: res.status, headers: h });
+    }
+  }
+  if (path === "/") return page(200, "Waypack trips", "Open the link you were given to see a trip plan.");
   if (path === "/__waypack/preview/live.js") return script(LIVE_JS);
   if (path === "/__waypack/share.js") return script(SHARE_JS);
   if (path.startsWith("/__waypack/sdk/v1/")) {

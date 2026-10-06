@@ -125,14 +125,39 @@
   // ---------- layout (phone / tablet / desktop) ----------
   var TABS = ["today", "plan", "map", "places", "guide"];
   var currentTab = "today";
+  var sidebar = $("#sidebar");
+  var navScrim = $("#nav-scrim");
+  var navToggle = $("#nav-toggle");
+  var navClose = $("#nav-close");
+
+  function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.add("open");
+    if (navScrim) navScrim.hidden = false;
+    if (navToggle) navToggle.setAttribute("aria-expanded", "true");
+  }
+  function closeSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove("open");
+    if (navScrim) navScrim.hidden = true;
+    if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+  }
+  if (navToggle) navToggle.addEventListener("click", function () {
+    if (sidebar && sidebar.classList.contains("open")) closeSidebar(); else openSidebar();
+  });
+  if (navClose) navClose.addEventListener("click", closeSidebar);
+  if (navScrim) navScrim.addEventListener("click", closeSidebar);
+  window.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSidebar(); });
+
   function showTab(name) {
     if (TABS.indexOf(name) < 0) name = "today";
     if (name === "map" && isWide()) name = "today"; // the map is always visible on desktop
     currentTab = name;
     $all(".tab").forEach(function (el) { el.hidden = el.getAttribute("data-tab") !== name; });
-    $all(".tabbar a").forEach(function (a) {
+    $all(".tabbar a, .sidebar a").forEach(function (a) {
       if (a.getAttribute("data-go") === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
+    closeSidebar();
     if (name === "map") ensureMap();
     window.scrollTo(0, 0);
     if (name !== "plan" && tripMap && isWide()) tripMap.setDay(null);
@@ -152,6 +177,7 @@
   function applyLayout() {
     var wide = isWide();
     document.body.classList.toggle("wide", wide);
+    if (wide) closeSidebar();
     var block = $("#map-block");
     var dest = wide ? $("#map-pane") : $("#tab-map");
     if (block.parentNode !== dest) dest.appendChild(block);

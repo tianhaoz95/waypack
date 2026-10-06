@@ -12,6 +12,10 @@
   <script src="/__waypack/sdk/v1/waypack.js"></script>
 </head>
 <body>
+  <!-- Collapsible navigation toggle & backdrop for mobile screens -->
+  <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span aria-hidden="true">☰</span></button>
+  <div class="nav-scrim" id="nav-scrim" hidden></div>
+
   <!-- Illustrated header drawn by assets/scene.js from manifest.theme (or replace with your own inline SVG). -->
   <header class="hero-banner" id="hero-banner">
     <div class="scene" id="scene"></div>
@@ -126,13 +130,18 @@
 
   <aside id="map-pane" aria-label="Map"></aside>
 
-  <nav class="tabbar" aria-label="Sections">
-    <div class="rail-head"><b id="rail-title">Trip</b><small id="rail-dates"></small></div>
-    <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
-    <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
-    <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
-    <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
-    <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+  <nav class="sidebar tabbar" id="sidebar" aria-label="Sections">
+    <div class="rail-head">
+      <div class="rail-brand"><b id="rail-title">Trip</b><small id="rail-dates"></small></div>
+      <button type="button" class="nav-close" id="nav-close" aria-label="Close menu">✕</button>
+    </div>
+    <div class="rail-links">
+      <a href="#today" data-go="today"><span aria-hidden="true">◎</span>Today</a>
+      <a href="#plan" data-go="plan"><span aria-hidden="true">☰</span>Plan</a>
+      <a href="#map" data-go="map"><span aria-hidden="true">⌖</span>Map</a>
+      <a href="#places" data-go="places"><span aria-hidden="true">◉</span>Places</a>
+      <a href="#guide" data-go="guide"><span aria-hidden="true">✦</span>Guide</a>
+    </div>
     <div class="rail-foot"><button class="btn secondary small" id="cal-all" hidden>Add whole trip to calendar</button></div>
   </nav>
 

@@ -32,10 +32,10 @@ worker-src 'self' blob:; frame-src 'none'; object-src 'none'
 
 ## Design
 - **Look like the trip.** Use `manifest.theme` (preset + scene) so a winter Tahoe plan has snow, a blue lake and pines, and a summer desert plan has mesas and warm light. You can restyle further: override CSS variables from `assets/theme.css` in your own stylesheet. Keep contrast high in both light and dark mode.
-- **Responsive.** Design for phone first, then make it good on iPad (≥ 760px: two columns for Today/Places/Guide) and desktop (≥ 1100px: side navigation rail, map pinned beside the plan). Keep line length readable (max ~75 characters). Never stretch a phone layout to full width.
+- **Responsive & screen space.** Design for phone first: use a **collapsible sidebar on the left** (slide-out drawer) toggled by a top-left menu button (☰) instead of a persistent bottom navigator/tab bar. A fixed bottom bar consumes 60–80px of vertical screen real estate; collapsing navigation into a left sidebar gives the actual travel plan (itinerary, routes, map, and guide notes) maximum screen height without scrolling obstructions. Selecting a section or tapping the backdrop collapses the sidebar back. On iPad (≥ 760px), use two columns for Today/Places/Guide; on desktop (≥ 1100px), keep the sidebar pinned as a persistent left navigation rail with the map pinned beside the plan. Keep line length readable (max ~75 characters). Never stretch a phone layout to full width.
 - Readable at arm's length: body ≥ 16px, high contrast, generous spacing.
-- One-handed: primary actions at the bottom, tap targets ≥ 44px, no hover-only UI.
-- "What's next" is one tap away (Today tab). Times in local 12h/24h per locale.
+- Tap targets ≥ 44px, no hover-only UI. Mobile navigation tucked into a collapsible left sidebar so the full vertical screen height is devoted to the travel plan content.
+- "What's next" is immediately accessible (Today view). Times in local 12h/24h per locale.
 - Use system fonts (no font downloads); inline SVG icons or emoji.
 - Long content in `<details>`; tables only for budgets.
 - Checklists can persist ticks with `localStorage` (per device).

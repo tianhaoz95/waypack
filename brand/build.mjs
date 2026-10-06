@@ -16,6 +16,9 @@ const add = (svg, px, out, opaque = false) => jobs.push([svg, px, join(root, out
 writeFileSync(join(root, "site/favicon.svg"), logo.tile());
 writeFileSync(join(root, "site/img/logo.svg"), logo.tile());
 add(logo.square(), 180, "site/apple-touch-icon.png", true);
+add(logo.tile(), 32, "site/favicon.png");
+add(logo.tile(), 32, "site/favicon-32.png");
+add(logo.tile(), 16, "site/favicon-16.png");
 for (const px of [16, 32, 48]) add(logo.tile(), px, `brand/out/favicon-${px}.png`);
 add(logo.tile(), 512, "site/img/logo-512.png");
 
