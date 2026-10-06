@@ -24,3 +24,8 @@ site/__waypack/
 # Android build output
 apps/mobile/android/build/
 brand/out/
+
+# VitePress cache and build output
+/.vitepress/
+docs/.vitepress/dist/
+docs/.vitepress/cache/

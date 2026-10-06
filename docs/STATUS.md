@@ -27,7 +27,7 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 
 ## Revising a published trip (2026-10-04)
 - Tell the agent what changed ("I booked hotel X for the Tahoe trip"); the skill's generic update procedure + `get_trip` (latest files) + `push_preview { trip_id, changed files, note }` + `publish_preview`.
-- Verified: `scripts/e2e-revise.mjs` 18/18 (base files, one-file revision → full valid preview, note shown, v2 publish keeps unchanged files, re-base onto a newer version published elsewhere); browser test checks the "Updated: <note>" toast.
+- Verified: `scripts/e2e-revise.mjs` 18/18 (base files, one-file revision → full valid preview, note shown, v2 publish keeps unchanged files, re-base onto a newer version published elsewhere); browser test checks the "Updated: `<note>`" toast.
 
 ## Offline trip assistant (2026-10-04)
 - "Ask about this trip" (trip menu, Today): an on-device model answers from the downloaded plan with no signal. Apple Foundation Models (iOS/iPadOS/macOS 26+), Gemini Nano (Android, ML Kit Prompt API); otherwise "not available on this device yet". Engine layer ready for a LiteRT-LM/Qwen engine later.
