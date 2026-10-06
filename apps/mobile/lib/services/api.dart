@@ -76,6 +76,7 @@ class Api {
   Future<Map<String, dynamic>> createToken(String label) =>
       _json('POST', '/api/tokens', body: {'label': label});
   Future<void> revokeToken(String id) => _json('DELETE', '/api/tokens/$id');
+  Future<void> deleteTrip(String id) => _json('DELETE', '/api/trips/$id');
   Future<void> deleteAccount() => _json('DELETE', '/api/account');
 }
 

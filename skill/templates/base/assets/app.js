@@ -433,13 +433,6 @@
   window.addEventListener("online", updateNet);
   window.addEventListener("offline", updateNet);
 
-  // Compact top bar once the illustrated banner scrolls away (phones/tablets).
-  if ("IntersectionObserver" in window) {
-    new IntersectionObserver(function (entries) {
-      $("#topbar").classList.toggle("show", !entries[0].isIntersecting);
-    }).observe($("#hero-banner"));
-  }
-
   // ---------- boot ----------
   var load = W ? W.manifest() : fetch("manifest.json").then(function (r) { return r.json(); });
   load.then(function (m) {

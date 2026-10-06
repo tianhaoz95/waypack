@@ -3,11 +3,14 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:waypack/models/manifest.dart';
+import 'package:waypack/services/api.dart';
 import 'package:waypack/services/calendar.dart';
 import 'package:waypack/services/local_server.dart';
 import 'package:waypack/services/trip_store.dart';
+import 'package:waypack/state/app_state.dart';
 import 'package:waypack/util/format.dart';
 import 'package:waypack/util/today.dart';
 
@@ -185,6 +188,25 @@ void main() {
       final ics = eventIcs(e, now: DateTime.utc(2026, 10, 4));
       expect(ics, contains('DTSTART;VALUE=DATE:20270118'));
       expect(ics, contains('DTEND;VALUE=DATE:20270119'));
+    });
+  });
+
+  group('bookmarks', () {
+    test('toggle and query bookmarks', () async {
+      SharedPreferences.setMockInitialValues({});
+      final temp = await Directory.systemTemp.createTemp('bookmarks_test');
+      try {
+        final store = TripStore(temp);
+        final server = LocalServer(store);
+        final state = AppState(store: store, server: server, api: Api());
+        expect(state.isBookmarked('trip-1'), isFalse);
+        await state.toggleBookmark('trip-1');
+        expect(state.isBookmarked('trip-1'), isTrue);
+        await state.toggleBookmark('trip-1');
+        expect(state.isBookmarked('trip-1'), isFalse);
+      } finally {
+        await temp.delete(recursive: true);
+      }
     });
   });
 }

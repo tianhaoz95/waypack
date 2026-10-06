@@ -47,6 +47,7 @@ class AppState extends ChangeNotifier {
   final TripDownloader downloader;
 
   final Map<String, TripEntry> _trips = {};
+  final Set<String> _bookmarked = {};
   final Map<String, double> progress = {};
   final Map<String, String> progressStage = {};
   final Map<String, String> errors = {};
@@ -57,6 +58,19 @@ class AppState extends ChangeNotifier {
 
   Session? get session => Supabase.instance.client.auth.currentSession;
   User? get user => Supabase.instance.client.auth.currentUser;
+
+  bool isBookmarked(String id) => _bookmarked.contains(id);
+
+  Future<void> toggleBookmark(String id) async {
+    if (_bookmarked.contains(id)) {
+      _bookmarked.remove(id);
+    } else {
+      _bookmarked.add(id);
+    }
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('bookmarked_trips', _bookmarked.toList());
+  }
 
   List<TripEntry> get upcoming =>
       _sorted(_trips.values.where((t) => !t.isPast), asc: true);
@@ -125,6 +139,8 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     _trips.clear();
     final prefs = await SharedPreferences.getInstance();
+    _bookmarked.clear();
+    _bookmarked.addAll(prefs.getStringList('bookmarked_trips') ?? const []);
     server.useOnlineMap = prefs.getBool('use_online_map') ?? true;
     _shakeToReport = prefs.getBool('shake_to_report') ?? true;
     if (_shakeToReport) {
@@ -278,6 +294,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteTrip(String id) async {
+    await deleteLocal(id);
+    final e = _trips[id];
+    if (e?.remote != null && e?.remote?.isCompanion != true) {
+      try {
+        await api.deleteTrip(id);
+      } catch (_) {}
+    }
+    _trips.remove(id);
+    _bookmarked.remove(id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('bookmarked_trips', _bookmarked.toList());
+    notifyListeners();
+  }
+
   Future<Manifest?> manifestFor(String id) async {
     final l = _trips[id]?.local;
     if (l == null) return null;
@@ -290,8 +321,10 @@ class AppState extends ChangeNotifier {
     await Supabase.instance.client.auth.signOut();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('remote_trips');
+    await prefs.remove('bookmarked_trips');
     // Downloaded trips stay on the device but are hidden until the same account signs in.
     _trips.clear();
+    _bookmarked.clear();
     server.versions.clear();
     server.tiles.clear();
     FeedbackKit.setUser(null);

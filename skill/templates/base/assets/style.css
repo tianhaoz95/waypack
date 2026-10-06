@@ -12,8 +12,8 @@
 }
 
 * { box-sizing: border-box; }
-/* Keep anchored/focused content clear of the fixed top bar and safe area. */
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; scroll-padding-bottom: 24px; }
+/* Keep anchored/focused content clear of the sticky top bar and safe area. */
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(env(safe-area-inset-top) + 64px); scroll-padding-bottom: 24px; }
 body {
   margin: 0;
   font: 17px/1.5 var(--font);
@@ -35,7 +35,7 @@ small { font-size: .85rem; }
 .hero-banner .scene, .hero-banner .scene svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .hero-banner .hero-text {
   position: absolute; left: 0; right: 0; top: 0;
-  padding: calc(env(safe-area-inset-top) + 18px) 18px 0 64px;
+  padding: 16px 18px 0;
   max-width: 1100px; margin: 0 auto;
 }
 .hero-banner h1 { font-size: 1.65rem; letter-spacing: -.01em; margin: 0; color: var(--title-ink); text-shadow: 0 1px 12px var(--sky-2); }
@@ -55,19 +55,18 @@ small { font-size: .85rem; }
 @keyframes wp-rain { from { transform: translate(0, 0); } to { transform: translate(-60px, 360px); } }
 @media (prefers-reduced-motion: reduce) { .p-fall, .p-drift, .p-rain { animation: none; } }
 
-/* ---------- Compact sticky top bar (appears once the banner scrolls away) ---------- */
+/* ---------- Sticky top navigation bar with sidebar toggle ---------- */
 .topbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 15;
-  display: flex; align-items: center; gap: 8px;
-  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px 64px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  position: sticky; top: 0; left: 0; right: 0; z-index: 25;
+  display: flex; align-items: center; gap: 10px;
+  min-height: 52px;
+  padding: calc(env(safe-area-inset-top) + 6px) 16px 8px 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--line);
-  transform: translateY(-110%); transition: transform .2s ease;
 }
-.topbar.show { transform: none; }
 .topbar-inner { flex: 1; min-width: 0; }
-.topbar h1 { font-size: 1.05rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar h1 { font-size: 1.05rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
 .net { font-size: .75rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
 
 main { padding: 14px 12px 0; max-width: 760px; margin: 0 auto; }
@@ -173,15 +172,16 @@ details summary { min-height: 40px; display: flex; align-items: center; font-wei
 
 /* ---------- Navigation toggle & backdrop (collapsible sidebar on mobile) ---------- */
 .nav-toggle {
-  position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 12px; z-index: 25;
-  width: 42px; height: 42px; border-radius: 12px;
+  position: relative; z-index: 1;
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(12px); -webkit-backdrop-filter: saturate(1.4) blur(12px);
-  color: var(--text); font-size: 1.3rem; line-height: 1;
+  background: var(--surface-2);
+  color: var(--text); font-size: 1.25rem; line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: background .15s ease;
 }
+.nav-toggle:active { background: color-mix(in srgb, var(--surface-2) 80%, var(--text)); }
 .nav-scrim {
   position: fixed; inset: 0; z-index: 28;
   background: rgba(0, 0, 0, 0.45);
@@ -229,7 +229,7 @@ details summary { min-height: 40px; display: flex; align-items: center; font-wei
   body { font-size: 17px; }
   main { max-width: 980px; padding: 20px 24px 0; }
   .hero-banner { height: 240px; }
-  .hero-banner .hero-text { padding-left: 64px; padding-right: 24px; }
+  .hero-banner .hero-text { padding-left: 24px; padding-right: 24px; }
   .hero-banner h1 { font-size: 2.1rem; }
   .places-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .guide-grid { columns: 2; column-gap: 16px; }

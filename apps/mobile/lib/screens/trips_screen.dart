@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
@@ -108,7 +109,7 @@ class _TripGrid extends StatelessWidget {
           for (final e in entries)
             SizedBox(
               width: w,
-              child: _TripCard(entry: e),
+              child: _SwipeableTripCard(entry: e),
             ),
         ],
       );
@@ -128,6 +129,163 @@ class _Header extends StatelessWidget {
           ?.copyWith(fontWeight: FontWeight.w700),
     ),
   );
+}
+
+class _SwipeableTripCard extends StatelessWidget {
+  const _SwipeableTripCard({required this.entry});
+  final TripEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final e = entry;
+    final isBookmarked = s.isBookmarked(e.id);
+
+    return Dismissible(
+      key: ValueKey('trip_dismiss_${e.id}_$isBookmarked'),
+      direction: DismissDirection.horizontal,
+      background: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: isBookmarked ? Colors.blueGrey.shade600 : const Color(0xFF1D6FE0),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            Icon(
+              isBookmarked ? Icons.bookmark_remove_outlined : Icons.bookmark_add_outlined,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isBookmarked ? 'Remove bookmark' : 'Bookmark',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.error,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(width: 8),
+            Icon(Icons.delete_outline, color: Colors.white),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          await s.toggleBookmark(e.id);
+          HapticFeedback.lightImpact();
+          if (context.mounted) {
+            final nowBookmarked = s.isBookmarked(e.id);
+            ScaffoldMessenger.of(context).removeCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  nowBookmarked
+                      ? 'Bookmarked "${e.title}"'
+                      : 'Removed bookmark for "${e.title}"',
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          return false;
+        } else if (direction == DismissDirection.endToStart) {
+          HapticFeedback.mediumImpact();
+          if (e.isOffline) {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (d) => AlertDialog(
+                title: const Text('Delete offline copy?'),
+                content: Text(
+                  'Delete the offline copy of "${e.title}"? The trip stays in your account.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(d, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(d, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (ok == true && context.mounted) {
+              await s.deleteLocal(e.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deleted offline copy of "${e.title}"'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+              return e.remote == null;
+            }
+            return false;
+          } else {
+            final ok = await showDialog<bool>(
+              context: context,
+              builder: (d) => AlertDialog(
+                title: const Text('Delete trip?'),
+                content: Text('Delete "${e.title}"?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(d, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(d, true),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (ok == true && context.mounted) {
+              await s.deleteTrip(e.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Deleted "${e.title}"'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+              return true;
+            }
+            return false;
+          }
+        }
+        return false;
+      },
+      child: _TripCard(entry: e),
+    );
+  }
 }
 
 class _TripCard extends StatelessWidget {
@@ -219,11 +377,27 @@ class _TripCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  e.title,
-                  style: t.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        e.title,
+                        style: t.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (s.isBookmarked(e.id))
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Icon(
+                          Icons.bookmark,
+                          color: accent ?? t.colorScheme.primary,
+                          size: 22,
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(

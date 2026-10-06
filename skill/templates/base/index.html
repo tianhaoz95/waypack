@@ -12,23 +12,24 @@
   <script src="/__waypack/sdk/v1/waypack.js"></script>
 </head>
 <body>
-  <!-- Collapsible navigation toggle & backdrop for mobile screens -->
-  <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span aria-hidden="true">☰</span></button>
+  <!-- Collapsible navigation backdrop for mobile screens -->
   <div class="nav-scrim" id="nav-scrim" hidden></div>
 
+  <!-- Sticky top bar with sidebar menu toggle for mobile/tablet screens -->
+  <header class="topbar" id="topbar">
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span aria-hidden="true">☰</span></button>
+    <div class="topbar-inner"><h1 id="bar-title">Trip</h1></div>
+    <span id="net" class="net" hidden>Offline</span>
+  </header>
+
   <!-- Illustrated header drawn by assets/scene.js from manifest.theme (or replace with your own inline SVG). -->
-  <header class="hero-banner" id="hero-banner">
+  <div class="hero-banner" id="hero-banner">
     <div class="scene" id="scene"></div>
     <div class="hero-text">
       <h1 id="trip-title">Trip</h1>
       <p class="hero-dates" id="trip-dates"></p>
       <span class="hero-chip" id="hero-chip" hidden></span>
     </div>
-  </header>
-
-  <div class="topbar" id="topbar">
-    <div class="topbar-inner"><h1 id="bar-title">Trip</h1></div>
-    <span id="net" class="net" hidden>Offline</span>
   </div>
 
   <main id="app">

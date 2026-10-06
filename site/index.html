@@ -86,14 +86,42 @@ section .sub { color: var(--muted); max-width: 42em; margin: 0 0 28px; line-heig
 .steps .card::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 800; margin-bottom: 12px; font-size: .95rem; }
 .card h3 { margin: 0 0 8px; font-size: 1.15rem; }
 .card p { margin: 0; color: var(--muted); line-height: 1.55; }
+.screenshots { margin-top: 60px; margin-bottom: 24px; }
 .gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
 .gallery figure { margin: 0; }
-.gallery img { width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); display: block; box-shadow: 0 8px 24px -8px rgba(15, 23, 42, .12); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .gallery img { box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5); }
+.gallery-phone { position: relative; width: 100%; max-width: 250px; margin: 0 auto; }
+.gallery-phone .phone-chassis {
+  padding: 3px; border-radius: 42px;
+  background: linear-gradient(145deg, #484f5d 0%, #2a2f3a 20%, #15181f 45%, #181c24 75%, #363d4b 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 0 1.5px rgba(10, 14, 22, 0.75), 0 20px 42px -10px rgba(15, 23, 42, 0.38), 0 8px 16px -6px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.3), inset 0 -1px 1.5px rgba(0, 0, 0, 0.6);
 }
-.gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 10px; text-align: center; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .gallery-phone .phone-chassis {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), 0 0 0 1.5px rgba(10, 14, 22, 0.85), 0 24px 50px -12px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 -1px 1.5px rgba(0, 0, 0, 0.7);
+  }
+}
+.gallery-phone .phone-screen {
+  position: relative; border-radius: 39px; overflow: hidden; background: #000;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.85); display: flex; flex-direction: column;
+}
+.gallery-phone .phone-speaker {
+  position: absolute; top: 3.5px; left: 50%; transform: translateX(-50%);
+  width: 34px; height: 2px; border-radius: 2px; background: #090c12; z-index: 25;
+}
+.gallery-phone .phone-dynamic-island {
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 68px; height: 20px; background: #000; border-radius: 14px;
+  z-index: 22; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.gallery-phone .phone-home-indicator {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  width: 96px; height: 3.5px; background: #0f172a; border-radius: 2px; opacity: 0.85; z-index: 20; pointer-events: none;
+}
+.gallery-phone img {
+  display: block; width: 100%; height: auto; border-radius: 0; border: 0; box-shadow: none;
+}
+.gallery figcaption { font-size: .9rem; color: var(--muted); margin-top: 14px; text-align: center; }
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 860px) { .features { grid-template-columns: 1fr; } }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -216,13 +244,61 @@ footer a:hover { color: var(--text); }
   </div>
 </section>
 
-<section aria-label="Screenshots">
+<section class="screenshots" aria-label="Screenshots">
   <div class="wrap">
     <div class="gallery">
-      <figure><img src="img/today.jpg" alt="Today view" loading="lazy"><figcaption>What's next, one tap away</figcaption></figure>
-      <figure><img src="img/plan.jpg" alt="Day-by-day plan" loading="lazy"><figcaption>Day-by-day, with the why</figcaption></figure>
-      <figure><img src="img/map.jpg" alt="Offline map with routes and places" loading="lazy"><figcaption>Offline map + GPS</figcaption></figure>
-      <figure><img src="img/guide.jpg" alt="Guide with packing list" loading="lazy"><figcaption>Packing, budget, safety</figcaption></figure>
+      <figure>
+        <div class="gallery-phone" aria-label="iPhone showing Waypack Today view">
+          <div class="phone-chassis">
+            <div class="phone-screen">
+              <div class="phone-speaker" aria-hidden="true"></div>
+              <div class="phone-dynamic-island" aria-hidden="true"></div>
+              <img src="img/today.jpg" alt="Today view" loading="lazy" width="600" height="1298">
+              <div class="phone-home-indicator" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>What's next, one tap away</figcaption>
+      </figure>
+      <figure>
+        <div class="gallery-phone" aria-label="iPhone showing Day-by-day plan">
+          <div class="phone-chassis">
+            <div class="phone-screen">
+              <div class="phone-speaker" aria-hidden="true"></div>
+              <div class="phone-dynamic-island" aria-hidden="true"></div>
+              <img src="img/plan.jpg" alt="Day-by-day plan" loading="lazy" width="600" height="1298">
+              <div class="phone-home-indicator" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Day-by-day, with the why</figcaption>
+      </figure>
+      <figure>
+        <div class="gallery-phone" aria-label="iPhone showing Offline map with routes and places">
+          <div class="phone-chassis">
+            <div class="phone-screen">
+              <div class="phone-speaker" aria-hidden="true"></div>
+              <div class="phone-dynamic-island" aria-hidden="true"></div>
+              <img src="img/map.jpg" alt="Offline map with routes and places" loading="lazy" width="600" height="1298">
+              <div class="phone-home-indicator" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Offline map + GPS</figcaption>
+      </figure>
+      <figure>
+        <div class="gallery-phone" aria-label="iPhone showing Guide with packing list">
+          <div class="phone-chassis">
+            <div class="phone-screen">
+              <div class="phone-speaker" aria-hidden="true"></div>
+              <div class="phone-dynamic-island" aria-hidden="true"></div>
+              <img src="img/guide.jpg" alt="Guide with packing list" loading="lazy" width="600" height="1298">
+              <div class="phone-home-indicator" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+        <figcaption>Packing, budget, safety</figcaption>
+      </figure>
     </div>
   </div>
 </section>

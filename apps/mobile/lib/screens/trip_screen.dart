@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
+import '../util/colors.dart';
 import '../util/format.dart';
 import '../widgets/bundle_webview.dart';
 import '../services/handoff.dart';
@@ -24,6 +25,10 @@ class TripScreen extends StatelessWidget {
         body: const Center(child: Text('This trip is not on this device.')),
       );
     }
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = hexColor(
+      dark ? (e.local?.accentDark ?? e.local?.accent) : e.local?.accent,
+    );
     return Scaffold(
       body: Stack(
         children: [
@@ -47,6 +52,12 @@ class TripScreen extends StatelessWidget {
                 child: FloatingActionButton.small(
                   heroTag: 'trip-menu',
                   tooltip: 'Waypack menu',
+                  backgroundColor: accent ?? Theme.of(context).colorScheme.surfaceContainerHigh,
+                  foregroundColor: accent != null
+                      ? (ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
+                          ? Colors.white
+                          : Colors.black)
+                      : Theme.of(context).colorScheme.onSurface,
                   onPressed: () => _menu(context),
                   child: const Icon(Icons.more_horiz),
                 ),
