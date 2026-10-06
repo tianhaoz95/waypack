@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "feedbackkit": {
+      "command": "feedbackkit",
+      "args": [
+        "mcp",
+        "--project",
+        "b979182a-3e9d-45f5-b200-0cd1c08dfa03"
+      ]
+    }
+  }
+}
