@@ -1,6 +1,10 @@
+---
+aside: false
+---
+
 # Decisions & deviations from the design doc
 
-The design (`docs/design.md`) was written with the working name *Tripfold*. Deviations are recorded here, newest last.
+The design (`docs/design.md`) was originally written with the working name *Tripfold* (now updated to *Waypack*). Deviations are recorded here, newest last.
 
 | # | Decision | Why |
 |---|---|---|

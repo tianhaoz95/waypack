@@ -1,6 +1,6 @@
-# Tripfold — Product & Technical Design
+# Waypack — Product & Technical Design
 
-> Working name: **Tripfold**. Rename freely; search-and-replace `tripfold` / `Tripfold`.
+> Formerly working name: **Tripfold**, renamed to **Waypack** (see ADR #1).
 > Audience: a coding agent (e.g. Claude Code) building this from scratch, plus the human owner.
 > Status: v1 design, October 2026. Target: dogfood-ready for winter trips (Sequoia NP, Lake Tahoe) by mid-December 2026.
 
@@ -8,12 +8,12 @@
 
 ## 1. Summary
 
-Tripfold turns any AI agent into a travel planner whose output works **fully offline on your phone**.
+Waypack turns any AI agent into a travel planner whose output works **fully offline on your phone**.
 
-1. The user installs the **Tripfold Skill** and connects the **Tripfold MCP server** in their agent of choice (Claude Code, Claude Desktop/claude.ai, Cursor, etc.).
+1. The user installs the **Waypack Skill** and connects the **Waypack MCP server** in their agent of choice (Claude Code, Claude Desktop/claude.ai, Cursor, etc.).
 2. The agent interviews the user, researches, and generates a **trip bundle**: a self-contained mobile web app (HTML/CSS/JS + `manifest.json`) tailored to the trip.
 3. The agent uploads the bundle through the MCP server. The backend validates it and cuts an **offline vector map extract** (PMTiles) covering the trip area.
-4. The user signs into the **Tripfold mobile app** (iOS + Android) with the same account, downloads the trip, and uses it with no connectivity: itinerary, lodging, routes drawn on an offline map, GPS blue dot, and hand-off to Google/Apple Maps for navigation.
+4. The user signs into the **Waypack mobile app** (iOS + Android) with the same account, downloads the trip, and uses it with no connectivity: itinerary, lodging, routes drawn on an offline map, GPS blue dot, and hand-off to Google/Apple Maps for navigation.
 
 ### Goals
 - Plans as detailed and personalized as the agent can make them, not constrained to a fixed schema.
@@ -35,12 +35,12 @@ Tripfold turns any AI agent into a travel planner whose output works **fully off
 **Primary user:** technical-ish traveler who already uses an AI agent and travels to places with poor connectivity (national parks, mountains, abroad).
 
 ### Flow A — Create a trip (in the agent)
-1. User: "Plan a 3-day Sequoia trip over Christmas with a toddler, using Tripfold."
+1. User: "Plan a 3-day Sequoia trip over Christmas with a toddler, using Waypack."
 2. Skill instructs the agent to run the **intake interview** (§5.2), then research.
 3. Agent calls MCP `geocode` / `compute_route` as needed for coordinates and route geometry.
 4. Agent writes the bundle to a local folder (CLI agents) or assembles it in memory (chat agents).
 5. Agent calls MCP `validate_bundle`, fixes issues, then uploads (§6.4).
-6. MCP returns a trip ID, a status, and a short message: "Open Tripfold on your phone and tap Download."
+6. MCP returns a trip ID, a status, and a short message: "Open Waypack on your phone and tap Download."
 
 ### Flow B — Download before travel (in the app)
 1. Sign in (same account). Trips list shows the new trip with size estimate.
@@ -63,7 +63,7 @@ Agent re-uploads with the same `trip_id` → new version. App shows "Update avai
 ```
 ┌──────────────────────────┐        ┌───────────────────────────────────────────┐
 │  User's AI agent         │  MCP   │  MCP Server (Cloudflare Worker)            │
-│  + Tripfold Skill        │◄──────►│  - Streamable HTTP transport               │
+│  + Waypack Skill         │◄──────►│  - Streamable HTTP transport               │
 │  (Claude Code, etc.)     │ OAuth  │  - OAuth 2.1 (workers-oauth-provider),     │
 └──────────┬───────────────┘        │    Supabase Auth as upstream identity      │
            │ presigned PUT          │  - tools: trips, upload, validate, route…  │
@@ -195,7 +195,7 @@ Authoritative JSON Schema lives in `packages/bundle-schema/manifest.v1.schema.js
 The manifest is the **source of truth for native features** (Today view, notifications, trip list, map extract). The HTML is the source of truth for the rich experience. The skill must keep them consistent.
 
 ### 4.3 HTML/JS constraints (enforced by validator + CSP)
-- No network: all `src`/`href` must be relative paths inside the bundle, `data:` URIs, or the SDK path `/__tripfold/sdk/v1/...`. External links (`<a href="https://...">`) are allowed and open in the system browser.
+- No network: all `src`/`href` must be relative paths inside the bundle, `data:` URIs, or the SDK path `/__waypack/sdk/v1/...`. External links (`<a href="https://...">`) are allowed and open in the system browser.
 - No `fetch`/XHR to external origins (blocked by CSP at runtime).
 - Max bundle size: **25 MB** zipped, **2,000 files**. Images should be compressed (WebP/JPEG, ≤ 1600px).
 - Must load and be usable within 2s on a mid-range phone; mobile-first; support dark mode via `prefers-color-scheme`.
@@ -210,7 +210,7 @@ worker-src 'self' blob:; frame-src 'none'; object-src 'none'
 
 ---
 
-## 5. Tripfold Skill
+## 5. Waypack Skill
 
 Lives in `skill/` as an Agent Skill: `skill/SKILL.md` plus `skill/templates/` and `skill/reference/`.
 
@@ -242,11 +242,11 @@ Destination(s) and dates; who's traveling (ages, mobility, kids, pets); pace (re
 ### 5.4 Authoring guidance
 - Start from `skill/templates/base/` (a polished, accessible starter bundle using the SDK). Customize freely; keep the manifest accurate.
 - Large tap targets (≥ 44px), readable at arm's length, works one-handed.
-- Each place/item gets a "Navigate" button using `Tripfold.openInMaps(placeId)`.
+- Each place/item gets a "Navigate" button using `Waypack.openInMaps(placeId)`.
 - Tell the agent to compute coordinates with `geocode` (don't guess coordinates) and routes with `compute_route`.
 
 ### 5.5 Upload procedure
-- **CLI agents (filesystem + shell):** write bundle to `./tripfold/<slug>/` → `npx @tripfold/cli validate ./tripfold/<slug>` (or MCP `validate_bundle`) → MCP `create_upload` → `curl -T bundle.zip "<presigned_url>"` → MCP `finalize_upload`.
+- **CLI agents (filesystem + shell):** write bundle to `./waypack/<slug>/` → `npx @waypack/cli validate ./waypack/<slug>` (or MCP `validate_bundle`) → MCP `create_upload` → `curl -T bundle.zip "<presigned_url>"` → MCP `finalize_upload`.
 - **Chat agents (no shell):** MCP `upload_bundle_inline` with files as `{path, content, encoding}` entries (text as utf-8, binary as base64); limit 4 MB total. Prefer inline SVG and few images.
 
 ---
@@ -254,7 +254,7 @@ Destination(s) and dates; who's traveling (ages, mobility, kids, pets); pace (re
 ## 6. MCP server
 
 ### 6.1 Transport & auth
-- Remote MCP over **Streamable HTTP** at `https://mcp.tripfold.app/mcp`.
+- Remote MCP over **Streamable HTTP** at `https://mcp.waypack.app/mcp`.
 - OAuth 2.1 per the MCP authorization spec: Protected Resource Metadata (RFC 9728), Authorization Server Metadata, PKCE, Dynamic Client Registration (RFC 7591). Use `@cloudflare/workers-oauth-provider`; its authorize step redirects to a Supabase-hosted sign-in page, then maps the Supabase user ID into the MCP token's props.
 - **Test against real clients early** (Claude Code, claude.ai custom connector, MCP Inspector). This is the most likely integration snag.
 - Fallback for headless use: personal API tokens generated in the app's Settings, sent as `Authorization: Bearer`.
@@ -300,16 +300,16 @@ Enforced in `finalize_upload` / `upload_bundle_inline` (§11): free tier limits 
 
 ## 7. Trip SDK (JavaScript)
 
-Package `packages/trip-sdk` (TypeScript → single UMD/ESM file). Shipped **inside the app** and served at `/__tripfold/sdk/v1/tripfold.js`; also served from a CDN for browser preview.
+Package `packages/trip-sdk` (TypeScript → single UMD/ESM file). Shipped **inside the app** and served at `/__waypack/sdk/v1/waypack.js`; also served from a CDN for browser preview.
 
 Bundles include:
 ```html
-<script src="/__tripfold/sdk/v1/tripfold.js"></script>
+<script src="/__waypack/sdk/v1/waypack.js"></script>
 ```
 
 ### 7.1 API (v1 — never make breaking changes within a major version)
 ```ts
-interface TripfoldSDK {
+interface WaypackSDK {
   version: string;
   manifest(): Promise<Manifest>;            // parsed manifest.json
   isOnline(): boolean;
@@ -340,12 +340,12 @@ interface TripMap {
   raw: unknown;                              // underlying maplibregl.Map (escape hatch)
 }
 ```
-Exposed as `window.Tripfold`.
+Exposed as `window.Waypack`.
 
 ### 7.2 Implementation notes
 - Bundles MapLibre GL JS + `pmtiles` + Protomaps basemap layer definitions.
-- Registers the `pmtiles://` protocol. Tile URL comes from the host: in-app, the local server exposes `/__tripfold/tiles/index.json` listing available extracts; in browser preview, the SDK uses an online Protomaps endpoint or the user's uploaded extract via signed URL.
-- **Glyphs (fonts) and sprites ship with the SDK** under `/__tripfold/sdk/v1/assets/` so labels render offline.
+- Registers the `pmtiles://` protocol. Tile URL comes from the host: in-app, the local server exposes `/__waypack/tiles/index.json` listing available extracts; in browser preview, the SDK uses an online Protomaps endpoint or the user's uploaded extract via signed URL.
+- **Glyphs (fonts) and sprites ship with the SDK** under `/__waypack/sdk/v1/assets/` so labels render offline.
 - Category → icon/color mapping built in; routes styled by mode (hiking dashed, driving solid).
 - User location: MapLibre `GeolocateControl` (GPS works offline). App must grant WebView geolocation permission.
 - Attribution control always visible: "© OpenStreetMap contributors, Protomaps" (ODbL requirement).
@@ -366,8 +366,8 @@ Exposed as `window.Tripfold`.
 - Storage: `<app_docs>/trips/{trip_id}/v{n}/` (unzipped bundle) and `<app_docs>/tiles/{trip_id}/*.pmtiles`.
 - On app start, launch a **`shelf` HTTP server bound to 127.0.0.1 on a random port**, requiring a per-launch random token (path prefix or cookie) so other apps can't read data.
   - `/t/{trip_id}/...` → bundle files
-  - `/__tripfold/sdk/v1/...` → SDK from app assets
-  - `/__tripfold/tiles/...` → PMTiles files with **HTTP Range support** (required by pmtiles JS)
+  - `/__waypack/sdk/v1/...` → SDK from app assets
+  - `/__waypack/tiles/...` → PMTiles files with **HTTP Range support** (required by pmtiles JS)
   - Adds CSP header (§4.4) to HTML responses.
 - iOS: allow loopback HTTP via ATS `NSAllowsLocalNetworking`. Android: `usesCleartextTraffic` scoped to localhost via network security config.
 - WebView: intercept navigations — non-loopback URLs open in the system browser; block `window.open` popups to external origins.
@@ -385,8 +385,8 @@ Offline download manager, native Today view, GPS map, trip reminders, share shee
 ---
 
 ## 9. Optional: web viewer & local preview
-- `@tripfold/cli preview ./bundle` — serves the bundle locally with the SDK in web mode and online tiles, so agents/users can iterate before uploading. Also runs `validate`.
-- `https://tripfold.app/t/{trip_id}` (v2) — authenticated read-only viewer. Serve each trip from a **separate sandboxed origin** (e.g. `{trip_hash}.view.tripfold.app`) because bundles contain arbitrary JS.
+- `@waypack/cli preview ./bundle` — serves the bundle locally with the SDK in web mode and online tiles, so agents/users can iterate before uploading. Also runs `validate`.
+- `https://waypack.app/t/{trip_id}` (v2) — authenticated read-only viewer. Serve each trip from a **separate sandboxed origin** (e.g. `{trip_hash}.view.waypack.app`) because bundles contain arbitrary JS.
 
 ---
 
@@ -465,7 +465,7 @@ RLS: users can `select` their own rows in `trips`, `trip_versions`, `map_extract
 | Past trips kept | ✓ (bundle) | ✓ | ✓ |
 
 - Map extracts **expire 30 days after `end_date`** (deleted from R2); bundle kept. Re-downloading an old trip re-cuts tiles on demand (entitled users).
-- RevenueCat entitlement `pro`; products: `tripfold_annual` (auto-renew subscription), `tripfold_lifetime` (non-consumable). Webhook → Supabase Edge Function `revenuecat-webhook` → upsert `entitlements`.
+- RevenueCat entitlement `pro`; products: `waypack_annual` (auto-renew subscription), `waypack_lifetime` (non-consumable). Webhook → Supabase Edge Function `revenuecat-webhook` → upsert `entitlements`.
 - Prices are starting points; configure in stores/RevenueCat, not hard-coded.
 
 ---
@@ -482,14 +482,14 @@ RLS: users can `select` their own rows in `trips`, `trip_versions`, `map_extract
 
 ## 13. Repository layout (monorepo)
 ```
-tripfold/
+waypack/
   apps/mobile/                 # Flutter app
   services/mcp/                # Cloudflare Worker: MCP + OAuth + upload pipeline
   services/tiler/              # Dockerfile + small HTTP handler wrapping `pmtiles extract`
   supabase/                    # migrations, edge functions (download-urls, revenuecat-webhook)
   packages/bundle-schema/      # JSON Schema + TS validator (used by CLI + Worker)
-  packages/trip-sdk/           # window.Tripfold SDK (MapLibre + pmtiles + assets)
-  packages/cli/                # @tripfold/cli: validate, preview, zip
+  packages/trip-sdk/           # window.Waypack SDK (MapLibre + pmtiles + assets)
+  packages/cli/                # @waypack/cli: validate, preview, zip
   skill/                       # SKILL.md, templates/base/, reference/
   examples/sequoia-winter/     # real dogfood bundle
   docs/DECISIONS.md

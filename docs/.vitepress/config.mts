@@ -1,6 +1,8 @@
 import { defineConfig } from "vitepress";
+import { withMermaid } from "vitepress-plugin-mermaid";
 
-export default defineConfig({
+export default withMermaid(
+  defineConfig({
   title: "Waypack Developer Docs",
   description: "Architectural designs, data formats, offline vector maps, and backend pipelines for Waypack",
   base: "/waypack/",
@@ -45,4 +47,4 @@ export default defineConfig({
       copyright: "Copyright © 2026 Tianhao Zhou & Waypack Contributors",
     },
   },
-});
+}));

@@ -1,0 +1,25 @@
+/* Make markdown tables utilize the full width when possible */
+.vp-doc table {
+  width: 100%;
+  display: table;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .vp-doc table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* Allow doc content to utilize full width on pages without an aside / outline column */
+.VPDoc:not(.has-aside) .content-container {
+  max-width: 100%;
+}
+
+/* Center Mermaid diagrams */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
