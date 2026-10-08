@@ -12,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
 import '../dev_flags.dart';
+import '../widgets/scrapbook.dart';
 
 /// One tap: Sign in with Apple (native sheet on iPhone) or Google (system sign-in pop-up).
 /// No email or codes.
@@ -130,80 +131,82 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    final dark = t.brightness == Brightness.dark;
+    final p = Paper.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Generated from brand/logo.mjs (node brand/build.mjs).
-                  Center(
-                    child: Image.asset(
-                      'assets/brand/logo.png',
-                      width: 64,
-                      height: 64,
-                      semanticLabel: 'Waypack',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Waypack',
-                    textAlign: TextAlign.center,
-                    style: t.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Trips planned by your AI agent, ready when the signal isn\'t.',
-                    textAlign: TextAlign.center,
-                    style: t.textTheme.bodyLarge?.copyWith(
-                      color: t.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  SignInWithAppleButton(
-                    onPressed: _busy ? () {} : _apple,
-                    text: 'Continue with Apple',
-                    // The Apple button sizes its label from the height (≈0.43×); the Google label matches it.
-                    height: 50,
-                    style: dark
-                        ? SignInWithAppleButtonStyle.white
-                        : SignInWithAppleButtonStyle.black,
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-                  const SizedBox(height: 12),
-                  _GoogleButton(onPressed: _busy ? null : _google),
-                  if (_busy)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16),
+      backgroundColor: p.bg,
+      body: Kraft(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 12, 28, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _PhotoPile(),
+                    const SizedBox(height: 8),
+                    Semantics(
+                      header: true,
                       child: Text(
-                        _error!,
-                        style: TextStyle(color: t.colorScheme.error),
+                        'Waypack',
+                        textAlign: TextAlign.center,
+                        style: hand(54, p.ink),
                       ),
                     ),
-                  const SizedBox(height: 28),
-                  Text(
-                    'Use the same account as your AI agent\'s Waypack connection.',
-                    textAlign: TextAlign.center,
-                    style: t.textTheme.bodySmall?.copyWith(
-                      color: t.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 10),
+                    Text(
+                      'Trips planned by your AI agent,\nready when the signal isn\'t.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15.5,
+                        height: 1.45,
+                        color: p.muted,
+                      ),
                     ),
-                  ),
-                  if (DevFlags.devSignIn)
-                    _DevSignIn(onSubmit: _dev, busy: _busy),
-                ],
+                    const SizedBox(height: 30),
+                    SignInWithAppleButton(
+                      onPressed: _busy ? () {} : _apple,
+                      text: 'Continue with Apple',
+                      // The Apple button sizes its label from the height (≈0.43×); the Google label matches it.
+                      height: 52,
+                      style: dark
+                          ? SignInWithAppleButtonStyle.white
+                          : SignInWithAppleButtonStyle.black,
+                      borderRadius: const BorderRadius.all(Radius.circular(26)),
+                    ),
+                    const SizedBox(height: 12),
+                    _GoogleButton(onPressed: _busy ? null : _google),
+                    if (_busy)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: StickyNote(
+                          color: Paper.stickyPink,
+                          child: Text(_error!),
+                        ),
+                      ),
+                    const SizedBox(height: 26),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: StickyNote(
+                        tilt: 1,
+                        child: Text(
+                          'Use the same account as your AI agent\'s Waypack connection.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12.5, height: 1.4),
+                        ),
+                      ),
+                    ),
+                    if (DevFlags.devSignIn)
+                      _DevSignIn(onSubmit: _dev, busy: _busy),
+                  ],
+                ),
               ),
             ),
           ),
@@ -211,6 +214,104 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     );
   }
+}
+
+/// Three taped polaroids with drawn scenes: the scrapbook before there are any trips.
+class _PhotoPile extends StatelessWidget {
+  const _PhotoPile();
+
+  Widget _photo(Color accent, int seed, String caption, double width) =>
+      SizedBox(
+        width: width,
+        child: PaperObject(
+          padding: const EdgeInsets.fromLTRB(7, 7, 7, 9),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 1 / .8,
+                child: CustomPaint(painter: ScenePainter(accent, seed)),
+              ),
+              const SizedBox(height: 6),
+              Text(caption, style: hand(20, Paper.captionInk)),
+            ],
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      height: 270,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            top: 34,
+            child: Transform.rotate(
+              angle: -8 * pi / 180,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _photo(const Color(0xFFE0703A), 3, 'Beach week', 140),
+                  const Positioned(
+                    top: -6,
+                    left: 4,
+                    child: TapeStrip(width: 44, angle: -32),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 16,
+            child: Transform.rotate(
+              angle: 6 * pi / 180,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _photo(const Color(0xFF3F6EA8), 11, 'Ski trip', 140),
+                  const Positioned(
+                    top: -6,
+                    right: 4,
+                    child: TapeStrip(
+                      width: 44,
+                      angle: 28,
+                      color: Color(0xFFA9D3C0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 96,
+            child: Center(
+              child: Transform.rotate(
+                angle: -1.5 * pi / 180,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    _photo(const Color(0xFFC2562D), 7, 'Fall break', 160),
+                    const Positioned(
+                      top: -8,
+                      left: 0,
+                      right: 0,
+                      child: Center(child: TapeStrip(color: Color(0xFFF3D27A))),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _Cancelled implements Exception {}
@@ -222,14 +323,14 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 50,
+    height: 52,
     child: OutlinedButton(
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1F1F1F),
         side: const BorderSide(color: Color(0xFF747775)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const StadiumBorder(),
         textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
       ),
       child: const Row(
@@ -237,7 +338,12 @@ class _GoogleButton extends StatelessWidget {
         children: [
           _GoogleG(),
           SizedBox(width: 8),
-          Text('Continue with Google'),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text('Continue with Google'),
+            ),
+          ),
         ],
       ),
     ),

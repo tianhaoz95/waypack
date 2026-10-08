@@ -14,17 +14,22 @@ import 'services/local_server.dart';
 import 'services/notifications.dart';
 import 'services/trip_store.dart';
 import 'state/app_state.dart';
+import 'widgets/scrapbook.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FeedbackKit.configure(const FeedbackKitConfiguration(
-    endpointUrl: 'https://gpucoladcyvijefdjudf.supabase.co/functions/v1/ingest-feedback',
-    projectKey: 'pk_88dcc559540fd5cea57354c41dc455fcfd13',
-  ));
-  await FeedbackKit.setTheme(const FeedbackTheme(
-    primaryColorHex: '#1D6FE0',
-    secondaryColorHex: '#64748B',
-  ));
+  await FeedbackKit.configure(
+    const FeedbackKitConfiguration(
+      endpointUrl: 'https://gpucoladcyvijefdjudf.supabase.co/functions/v1/ingest-feedback',
+      projectKey: 'pk_88dcc559540fd5cea57354c41dc455fcfd13',
+    ),
+  );
+  await FeedbackKit.setTheme(
+    const FeedbackTheme(
+      primaryColorHex: '#D9694F',
+      secondaryColorHex: '#8C7D6E',
+    ),
+  );
   await FeedbackKit.enableFixVerification();
   final state = await bootstrap();
   runApp(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
@@ -54,28 +59,12 @@ Future<AppState> bootstrap() async {
 class WaypackApp extends StatelessWidget {
   const WaypackApp({super.key});
 
-  ThemeData _theme(Brightness b) => ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF1D6FE0),
-      brightness: b,
-    ),
-    visualDensity: VisualDensity.standard,
-    cardTheme: const CardThemeData(margin: EdgeInsets.symmetric(vertical: 6)),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-    ),
-  );
-
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Waypack',
     debugShowCheckedModeBanner: false,
-    theme: _theme(Brightness.light),
-    darkTheme: _theme(Brightness.dark),
+    theme: scrapbookTheme(Brightness.light),
+    darkTheme: scrapbookTheme(Brightness.dark),
     navigatorObservers: [FeedbackKitNavigatorObserver()],
     home: const _AuthGate(),
   );

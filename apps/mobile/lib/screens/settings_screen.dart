@@ -6,6 +6,7 @@ import '../config.dart';
 import '../services/handoff.dart';
 import '../state/app_state.dart';
 import '../util/format.dart';
+import '../widgets/scrapbook.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.scrollToConnect = false});
@@ -103,29 +104,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _deleteAccount() async {
     final s = context.read<AppState>();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: const Text(
-          'This permanently deletes your account, all trips and offline maps on our servers, and cancels any subscription.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(d, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(d).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await showPaperConfirm(
+      context,
+      title: 'Delete account?',
+      message: 'This permanently deletes your account, all trips and offline maps on our servers, and cancels any subscription.',
     );
-    if (ok != true) return;
+    if (!ok) return;
     try {
       await s.api.deleteAccount();
       for (final e in [...s.upcoming, ...s.past]) {
@@ -144,165 +128,227 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final t = Theme.of(context);
+    final p = Paper.of(context);
     final plan = (s.me?['plan'] as Map?)?['tier'] as String? ?? 'free';
     final mcp = Config.mcpUrl;
-    Widget section(String title) => Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+    final cmd = 'claude mcp add --transport http waypack $mcp';
+    final step = TextStyle(fontSize: 13.5, height: 1.5, color: p.ink);
+    Widget num(String n) => Container(
+      width: 20,
+      height: 20,
+      margin: const EdgeInsets.only(right: 8, top: 1),
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: ChipColor.yellow,
+        shape: BoxShape.circle,
+      ),
       child: Text(
-        title,
-        style: t.textTheme.titleSmall?.copyWith(
-          color: t.colorScheme.primary,
-          fontWeight: FontWeight.w700,
+        n,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w800,
+          color: Paper.captionInk,
         ),
       ),
     );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
+    return KraftScaffold(
+      title: 'Settings',
+      body: ListView(
+        padding: const EdgeInsets.only(top: 4, bottom: 40),
+        children: [
+          PaperCard(
             children: [
-              section('Account'),
-              ListTile(
-                leading: const Icon(Icons.person_outline),
-                title: Text(s.user?.email ?? 'Signed in'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.workspace_premium_outlined),
-                title: Text(
-                  plan == 'free'
-                      ? 'Free plan'
-                      : plan == 'lifetime'
-                      ? 'Waypack Pro · Lifetime'
-                      : 'Waypack Pro · Annual',
-                ),
+              PaperRow(
+                icon: Icons.person_outline,
+                chip: ChipColor.pink,
+                title: s.user?.email ?? 'Signed in',
+                subtitle: plan == 'free'
+                    ? 'Free plan · 1 active trip · maps need a connection'
+                    : '${plan == 'lifetime' ? 'Waypack Pro · Lifetime' : 'Waypack Pro · Annual'} · offline maps · up to 10 active trips',
                 // The app is a free viewer: plans live on the user's account (no purchasing in the app).
-                subtitle: Text(
-                  plan == 'free'
-                      ? '1 active trip · maps need a connection'
-                      : 'Offline maps · up to 10 active trips',
+                trailing: Stamp(
+                  label: plan == 'free' ? 'Free' : 'Pro',
+                  color: plan == 'free' ? p.muted : p.accent,
                 ),
               ),
-              ListTile(
-                leading: const Icon(Icons.sd_storage_outlined),
-                title: const Text('Storage used'),
-                trailing: Text(_storage == null ? '…' : formatBytes(_storage!)),
-              ),
-
-              section('Maps'),
-              SwitchListTile(
-                secondary: const Icon(Icons.public),
-                title: const Text('Use online map'),
-                subtitle: const Text(
-                  'When connected, show the full map, including outside your '
-                  'downloaded areas. Turn off to use only downloaded maps, e.g. '
-                  'to save data abroad.',
+            ],
+          ),
+          const SizedBox(height: 12),
+          PaperCard(
+            children: [
+              PaperRow(
+                icon: Icons.sd_storage_outlined,
+                chip: ChipColor.blue,
+                title: 'Storage used',
+                trailing: Text(
+                  _storage == null ? '…' : formatBytes(_storage!),
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: p.muted,
+                  ),
                 ),
-                value: s.useOnlineMap,
-                onChanged: s.setUseOnlineMap,
               ),
-
-              Container(
-                key: _connectKey,
-                child: section('Connect your AI agent'),
+              PaperRow(
+                icon: Icons.public,
+                chip: ChipColor.mint,
+                title: 'Use online map',
+                subtitle: 'When connected, show the full map, including outside your downloaded areas. Turn off to use only downloaded maps, e.g. to save data abroad.',
+                trailing: Switch.adaptive(
+                  value: s.useOnlineMap,
+                  onChanged: s.setUseOnlineMap,
+                ),
+                onTap: () => s.setUseOnlineMap(!s.useOnlineMap),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('1. Add the Waypack MCP server to your agent:'),
-                    const SizedBox(height: 8),
-                    _CodeBox(text: mcp, onCopy: () => _copy(mcp, 'MCP URL')),
-                    const SizedBox(height: 8),
-                    _CodeBox(
-                      text: 'claude mcp add --transport http waypack $mcp',
-                      onCopy: () => _copy(
-                        'claude mcp add --transport http waypack $mcp',
-                        'Command',
+            ],
+          ),
+          Container(
+            key: _connectKey,
+            child: const SectionTitle('Connect your AI agent'),
+          ),
+          PaperCard(
+            padding: const EdgeInsets.all(14),
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      num('1'),
+                      Expanded(
+                        child: Text(
+                          'Add the Waypack MCP server to your agent:',
+                          style: step,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '2. Optional: install the Waypack skill for best results (Claude Code / Claude apps).',
-                    ),
-                    TextButton(
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  _CodeBox(text: mcp, onCopy: () => _copy(mcp, 'MCP URL')),
+                  const SizedBox(height: 6),
+                  _CodeBox(text: cmd, onCopy: () => _copy(cmd, 'Command')),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      num('2'),
+                      Expanded(
+                        child: Text(
+                          'Optional: install the Waypack skill for best results (Claude Code / Claude apps).',
+                          style: step,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: TextButton(
+                      style: TextButton.styleFrom(foregroundColor: p.accent),
                       onPressed: () => Handoff.openExternal(Config.skillUrl),
-                      child: const Text('Skill install instructions'),
+                      child: const Text('Skill install instructions →'),
                     ),
-                    const Text(
-                      '3. Ask: "Plan a 3-day trip to … with Waypack." Sign in with this same email when the agent asks.',
-                    ),
-                  ],
-                ),
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      num('3'),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            style: step,
+                            children: [
+                              const TextSpan(text: 'Ask: '),
+                              TextSpan(
+                                text: '“Plan a 3-day trip to … with Waypack.”',
+                                style: hand(20, p.ink),
+                              ),
+                              const TextSpan(
+                                text: ' Sign in with this same email when the agent asks.',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              section('API tokens'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'For headless MCP clients that can\'t do OAuth.',
-                  style: t.textTheme.bodySmall,
-                ),
-              ),
+            ],
+          ),
+          const SectionTitle('API tokens', note: 'for headless MCP clients'),
+          PaperCard(
+            children: [
               if (_tokens != null)
                 for (final tok in _tokens!)
-                  ListTile(
-                    leading: const Icon(Icons.key_outlined),
-                    title: Text('${tok['token_prefix']}…'),
-                    subtitle: Text(
-                      '${tok['label'] ?? ''} · last used ${tok['last_used_at'] == null ? 'never' : relativeTime(DateTime.parse(tok['last_used_at'] as String))}',
-                    ),
+                  PaperRow(
+                    icon: Icons.key_outlined,
+                    chip: ChipColor.yellow,
+                    title: '${tok['token_prefix']}…',
+                    subtitle:
+                        '${tok['label'] ?? ''} · last used ${tok['last_used_at'] == null ? 'never' : relativeTime(DateTime.parse(tok['last_used_at'] as String))}',
                     trailing: IconButton(
                       tooltip: 'Revoke',
-                      icon: const Icon(Icons.delete_outline),
+                      icon: Icon(Icons.delete_outline, color: p.muted),
                       onPressed: () async {
                         await s.api.revokeToken(tok['id'] as String);
                         _loadTokens();
                       },
                     ),
                   ),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('Create token'),
+              PaperRow(
+                icon: Icons.add,
+                chip: ChipColor.mint,
+                title: 'Create token',
+                subtitle: 'For MCP clients that can\'t do OAuth',
+                chevron: true,
                 onTap: _newToken,
               ),
-
-              section('Feedback'),
-              SwitchListTile(
-                secondary: const Icon(Icons.vibration),
-                title: const Text('Shake to report feedback'),
-                subtitle: const Text(
-                  'Shake your device to capture a screenshot and report an issue.',
+            ],
+          ),
+          const SectionTitle('More'),
+          PaperCard(
+            children: [
+              PaperRow(
+                icon: Icons.vibration,
+                chip: ChipColor.yellow,
+                title: 'Shake to report feedback',
+                subtitle: 'Shake your device to capture a screenshot and report an issue.',
+                trailing: Switch.adaptive(
+                  value: s.shakeToReport,
+                  onChanged: s.setShakeToReport,
                 ),
-                value: s.shakeToReport,
-                onChanged: s.setShakeToReport,
+                onTap: () => s.setShakeToReport(!s.shakeToReport),
               ),
-
-              section('About'),
-              ListTile(
-                leading: const Icon(Icons.privacy_tip_outlined),
-                title: const Text('Privacy policy'),
+              PaperRow(
+                icon: Icons.privacy_tip_outlined,
+                chip: ChipColor.lilac,
+                title: 'Privacy policy',
+                chevron: true,
                 onTap: () => Handoff.openExternal(Config.privacyUrl),
               ),
-              ListTile(
-                leading: const Icon(Icons.copyright_outlined),
-                title: const Text('Map data & licenses'),
-                subtitle: const Text(
-                  '© OpenStreetMap contributors (ODbL), Protomaps, MapLibre',
-                ),
+              PaperRow(
+                icon: Icons.copyright_outlined,
+                chip: ChipColor.blue,
+                title: 'Map data & licenses',
+                subtitle:
+                    '© OpenStreetMap contributors (ODbL), Protomaps, MapLibre',
+                chevron: true,
                 onTap: () => showLicensePage(
                   context: context,
                   applicationName: 'Waypack',
-                  applicationLegalese: 'Map data © OpenStreetMap contributors, available under the Open Database License (ODbL). Basemap by Protomaps. Rendering by MapLibre GL JS (BSD-3-Clause). Fonts: Noto Sans (SIL OFL 1.1).',
+                  applicationLegalese: 'Map data © OpenStreetMap contributors, available under the Open Database License (ODbL). Basemap by Protomaps. Rendering by MapLibre GL JS (BSD-3-Clause). Fonts: Noto Sans (SIL OFL 1.1), Caveat (SIL OFL 1.1).',
                 ),
               ),
-              const Divider(height: 32),
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: const Text('Sign out'),
+            ],
+          ),
+          const SizedBox(height: 18),
+          PaperCard(
+            children: [
+              PaperRow(
+                icon: Icons.logout,
+                chip: ChipColor.blue,
+                title: 'Sign out',
                 onTap: () async {
                   await s.signOut();
                   if (context.mounted) {
@@ -310,21 +356,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   }
                 },
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_forever_outlined,
-                  color: t.colorScheme.error,
-                ),
-                title: Text(
-                  'Delete account',
-                  style: TextStyle(color: t.colorScheme.error),
-                ),
+              PaperRow(
+                icon: Icons.delete_forever_outlined,
+                destructive: true,
+                title: 'Delete account',
                 onTap: _deleteAccount,
               ),
-              const SizedBox(height: 32),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -335,26 +375,34 @@ class _CodeBox extends StatelessWidget {
   final String text;
   final VoidCallback onCopy;
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    padding: const EdgeInsets.only(left: 12),
-    child: Row(
-      children: [
-        Expanded(
-          child: SelectableText(
-            text,
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+  Widget build(BuildContext context) {
+    final p = Paper.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: p.ink.withValues(alpha: .06),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.only(left: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: SelectableText(
+              text,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontFamilyFallback: const ['Menlo', 'Courier'],
+                fontSize: 12.5,
+                color: p.ink,
+              ),
+            ),
           ),
-        ),
-        IconButton(
-          tooltip: 'Copy',
-          icon: const Icon(Icons.copy, size: 20),
-          onPressed: onCopy,
-        ),
-      ],
-    ),
-  );
+          IconButton(
+            tooltip: 'Copy',
+            icon: Icon(Icons.copy, size: 18, color: p.muted),
+            onPressed: onCopy,
+          ),
+        ],
+      ),
+    );
+  }
 }

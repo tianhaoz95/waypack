@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/manifest.dart';
+import '../widgets/scrapbook.dart';
 import 'handoff.dart';
 
 /// An event ready for a calendar: instants in UTC (or an all-day date).
@@ -262,36 +263,41 @@ class CalendarHandoff {
   /// iPhone/iPad/Mac: let the user pick Apple or Google. Android: the device calendar (Google Calendar) directly.
   static Future<void> choose(BuildContext context, TripEvent e) async {
     if (!Platform.isIOS && !Platform.isMacOS) return add(e);
-    final app = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(
-                'Add "${e.title}"',
-                style: Theme.of(ctx).textTheme.titleMedium,
+    final app = await showPaperSheet<String>(
+      context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+            child: Text(
+              'Add "${e.title}"',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: hand(30, Paper.of(ctx).ink),
+            ),
+          ),
+          PaperCard(
+            children: [
+              PaperRow(
+                icon: Icons.event,
+                chip: ChipColor.pink,
+                title: 'Apple Calendar',
+                subtitle: 'Works offline',
+                onTap: () => Navigator.pop(ctx, 'apple'),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.event),
-              title: const Text('Apple Calendar'),
-              subtitle: const Text('Works offline'),
-              onTap: () => Navigator.pop(ctx, 'apple'),
-            ),
-            if (e.googleUrl != null)
-              ListTile(
-                leading: const Icon(Icons.public),
-                title: const Text('Google Calendar'),
-                subtitle: const Text(
-                  'Opens in the browser · needs a connection',
+              if (e.googleUrl != null)
+                PaperRow(
+                  icon: Icons.public,
+                  chip: ChipColor.blue,
+                  title: 'Google Calendar',
+                  subtitle: 'Opens in the browser · needs a connection',
+                  onTap: () => Navigator.pop(ctx, 'google'),
                 ),
-                onTap: () => Navigator.pop(ctx, 'google'),
-              ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
     if (app != null) await add(e, app: app);

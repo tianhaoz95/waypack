@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../state/app_state.dart';
-import '../util/colors.dart';
 import '../util/format.dart';
 import '../services/handoff.dart';
 import '../widgets/bundle_webview.dart';
+import '../widgets/scrapbook.dart';
 import '../widgets/share_trip_sheet.dart';
 import 'assistant_screen.dart';
 import 'nearby_screens.dart';
@@ -21,15 +21,17 @@ class TripScreen extends StatelessWidget {
     final s = context.watch<AppState>();
     final e = s.trip(tripId);
     if (e == null || e.local == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const Center(child: Text('This trip is not on this device.')),
+      return const KraftScaffold(
+        title: 'Trip',
+        body: Padding(
+          padding: EdgeInsets.all(24),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: StickyNote(child: Text('This trip is not on this device.')),
+          ),
+        ),
       );
     }
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final accent = hexColor(
-      dark ? (e.local?.accentDark ?? e.local?.accent) : e.local?.accent,
-    );
     return Scaffold(
       body: Stack(
         children: [
@@ -50,18 +52,7 @@ class TripScreen extends StatelessWidget {
               child: Padding(
                 // Sit above typical bottom tab bars (64px) without covering them.
                 padding: const EdgeInsets.only(right: 12, bottom: 76),
-                child: FloatingActionButton.small(
-                  heroTag: 'trip-menu',
-                  tooltip: 'Waypack menu',
-                  backgroundColor: accent ?? Theme.of(context).colorScheme.surfaceContainerHigh,
-                  foregroundColor: accent != null
-                      ? (ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
-                          ? Colors.white
-                          : Colors.black)
-                      : Theme.of(context).colorScheme.onSurface,
-                  onPressed: () => _menu(context),
-                  child: const Icon(Icons.more_horiz),
-                ),
+                child: _MenuButton(onPressed: () => _menu(context)),
               ),
             ),
           ),
@@ -70,204 +61,355 @@ class TripScreen extends StatelessWidget {
     );
   }
 
+  void _push(BuildContext context, String name, WidgetBuilder builder) =>
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: RouteSettings(name: name),
+          builder: builder,
+        ),
+      );
+
+  /// "Sticker tiles": the four everyday tools up top, the rest in a short list.
   void _menu(BuildContext context) {
     final s = context.read<AppState>();
     final e = s.trip(tripId)!;
     final l = e.local!;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      // Five rows don't fit the default 9/16-height cap in a short window (Mac, phone landscape).
-      isScrollControlled: true,
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.today_outlined),
-                title: const Text('Today'),
-                subtitle: const Text('What\'s next, from the trip data'),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final m = await s.manifestFor(tripId);
-                  if (m != null && context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        settings: const RouteSettings(name: 'Today'),
-                        builder: (_) => TodayScreen(manifest: m),
-                      ),
-                    );
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.map_outlined),
-                title: const Text('Map'),
-                subtitle: Text(
-                  l.tiles.isEmpty
-                      ? 'Needs a connection (no offline map)'
-                      : 'Offline map with your location',
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      settings: const RouteSettings(name: 'Map'),
-                      builder: (_) => _MapScreen(tripId: tripId),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.auto_awesome_outlined),
-                title: const Text('Ask about this trip'),
-                subtitle: const Text('On-device AI, works without signal'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      settings: const RouteSettings(name: 'Assistant'),
-                      builder: (_) => AssistantScreen(tripId: tripId),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.share_outlined),
-                title: const Text('Share travel plan'),
-                subtitle: const Text(
-                  'Send as PDF or public web link (no app needed)',
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  showShareTripSheet(context, e);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.mobile_screen_share_outlined),
-                title: const Text('Hand off to a nearby phone'),
-                subtitle: const Text(
-                  'Copy this trip to a companion, no signal needed',
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      settings: const RouteSettings(name: 'HandoffSend'),
-                      builder: (_) => HandoffSendScreen(tripId: tripId),
-                    ),
-                  );
-                },
-              ),
-              if (e.remote != null && !e.remote!.isCompanion)
-                ListTile(
-                  leading: const Icon(Icons.group_add_outlined),
-                  title: const Text('Invite travel companions'),
-                  subtitle: const Text(
-                    'They get this trip in their own app (needs a connection)',
+    showPaperSheet<void>(
+      context,
+      builder: (ctx) {
+        final p = Paper.of(ctx);
+        void go(VoidCallback f) {
+          Navigator.pop(ctx);
+          f();
+        }
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    e.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: hand(32, p.ink),
                   ),
-                  onTap: () async {
-                    Navigator.pop(ctx);
-                    try {
-                      final link = await s.api.inviteLink(tripId);
-                      await Handoff.share(
-                        'Join "${e.title}" in Waypack, our trip plan that works offline: $link',
-                      );
-                    } catch (err) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Couldn\'t create an invite link: $err',
-                            ),
-                          ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Version ${l.version} · ${formatBytes(l.bytes)} · saved ${relativeTime(l.downloadedAt)}'
+                    '${s.lastSynced != null ? ' · synced ${relativeTime(s.lastSynced!)}' : ''}',
+                    style: TextStyle(fontSize: 12, color: p.muted),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.55,
+                children: [
+                  _Tile(
+                    icon: Icons.today_outlined,
+                    color: ChipColor.yellow,
+                    title: 'Today',
+                    subtitle: 'What\'s next',
+                    tilt: -1.2,
+                    onTap: () => go(() async {
+                      final m = await s.manifestFor(tripId);
+                      if (m != null && context.mounted) {
+                        _push(
+                          context,
+                          'Today',
+                          (_) => TodayScreen(manifest: m),
                         );
                       }
-                    }
-                  },
-                ),
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('Info'),
-                subtitle: Text(
-                  'Version ${l.version} · ${formatBytes(l.bytes)} · saved ${relativeTime(l.downloadedAt)}'
-                  '${s.lastSynced != null ? ' · synced ${relativeTime(s.lastSynced!)}' : ''}',
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: Text(
-                  e.updateAvailable ? 'Download update' : 'Re-download',
-                ),
-                enabled: e.remote != null,
-                onTap: () {
-                  Navigator.pop(ctx);
-                  s.download(tripId);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  color: Theme.of(ctx).colorScheme.error,
-                ),
-                title: Text(
-                  'Delete from this device',
-                  style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (d) => AlertDialog(
-                      title: const Text('Delete offline copy?'),
-                      content: const Text(
-                        'The trip stays in your account; you can download it again while online.',
+                    }),
+                  ),
+                  _Tile(
+                    icon: Icons.map_outlined,
+                    color: ChipColor.mint,
+                    title: 'Map',
+                    subtitle: l.tiles.isEmpty
+                        ? 'Needs a connection'
+                        : 'Offline, with you on it',
+                    tilt: 1,
+                    onTap: () => go(
+                      () => _push(
+                        context,
+                        'Map',
+                        (_) => _MapScreen(tripId: tripId),
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(d, false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(d, true),
-                          child: const Text('Delete'),
-                        ),
-                      ],
                     ),
-                  );
-                  if (ok == true && context.mounted) {
-                    Navigator.pop(context);
-                    await s.deleteLocal(tripId);
-                  }
-                },
+                  ),
+                  _Tile(
+                    icon: Icons.auto_awesome_outlined,
+                    color: ChipColor.lilac,
+                    title: 'Ask',
+                    subtitle: 'On-device, no signal',
+                    tilt: 1,
+                    onTap: () => go(
+                      () => _push(
+                        context,
+                        'Assistant',
+                        (_) => AssistantScreen(tripId: tripId),
+                      ),
+                    ),
+                  ),
+                  _Tile(
+                    icon: Icons.ios_share,
+                    color: ChipColor.pink,
+                    title: 'Share',
+                    subtitle: 'PDF or web link',
+                    tilt: -1.2,
+                    onTap: () => go(() => showShareTripSheet(context, e)),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
+            const SizedBox(height: 16),
+            PaperCard(
+              children: [
+                PaperRow(
+                  icon: Icons.mobile_screen_share_outlined,
+                  chip: ChipColor.blue,
+                  title: 'Hand off to a nearby phone',
+                  subtitle: 'No signal needed',
+                  chevron: true,
+                  onTap: () => go(
+                    () => _push(
+                      context,
+                      'HandoffSend',
+                      (_) => HandoffSendScreen(tripId: tripId),
+                    ),
+                  ),
+                ),
+                if (e.remote != null && !e.remote!.isCompanion)
+                  PaperRow(
+                    icon: Icons.group_add_outlined,
+                    chip: ChipColor.mint,
+                    title: 'Invite travel companions',
+                    subtitle: 'Needs a connection',
+                    chevron: true,
+                    onTap: () => go(() async {
+                      try {
+                        final link = await s.api.inviteLink(tripId);
+                        await Handoff.share(
+                          'Join "${e.title}" in Waypack, our trip plan that works offline: $link',
+                        );
+                      } catch (err) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Couldn\'t create an invite link: $err',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    }),
+                  ),
+                PaperRow(
+                  icon: Icons.refresh,
+                  chip: ChipColor.yellow,
+                  title: e.updateAvailable ? 'Download update' : 'Re-download',
+                  enabled: e.remote != null,
+                  onTap: () => go(() {
+                    s.download(tripId);
+                    Navigator.pop(context);
+                  }),
+                ),
+                PaperRow(
+                  icon: Icons.delete_outline,
+                  destructive: true,
+                  title: 'Delete from this device',
+                  onTap: () => go(() async {
+                    final ok = await showPaperConfirm(
+                      context,
+                      title: 'Delete offline copy?',
+                      message: 'The trip stays in your account; you can download it again while online.',
+                    );
+                    if (ok && context.mounted) {
+                      Navigator.pop(context);
+                      await s.deleteLocal(tripId);
+                    }
+                  }),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
+/// The only native control over the trip's own page: a round light-paper button with tape.
+class _MenuButton extends StatelessWidget {
+  const _MenuButton({required this.onPressed});
+  final VoidCallback onPressed;
+  @override
+  Widget build(BuildContext context) => Stack(
+    clipBehavior: Clip.none,
+    children: [
+      Material(
+        color: Paper.lightPaper,
+        shape: const CircleBorder(),
+        elevation: 4,
+        shadowColor: const Color(0x993C2814),
+        child: IconButton(
+          tooltip: 'Waypack menu',
+          onPressed: onPressed,
+          icon: const Icon(Icons.more_horiz, color: Paper.captionInk),
+          style: IconButton.styleFrom(fixedSize: const Size(50, 50)),
+        ),
+      ),
+      const Positioned(
+        top: -6,
+        left: 0,
+        right: 0,
+        child: IgnorePointer(
+          child: Center(child: TapeStrip(width: 30, height: 11, angle: -8)),
+        ),
+      ),
+    ],
+  );
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.tilt,
+    required this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final String title, subtitle;
+  final double tilt;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    child: GestureDetector(
+      onTap: onTap,
+      child: PaperObject(
+        tilt: tilt,
+        radius: 6,
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            IconChip(icon: icon, color: color),
+            const Spacer(),
+            Text(title, style: hand(25, Paper.captionInk)),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11.5, color: Paper.captionMuted),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Full-bleed map with the trip name on a floating paper pill (map controls stay top-right).
 class _MapScreen extends StatelessWidget {
   const _MapScreen({required this.tripId});
   final String tripId;
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final p = Paper.of(context);
+    final e = s.trip(tripId);
+    final offline = e?.local?.tiles.isNotEmpty ?? false;
     return Scaffold(
-      appBar: AppBar(title: Text(s.trip(tripId)?.title ?? 'Map')),
-      body: BundleWebView(
-        key: ValueKey('map_${tripId}_${s.serverGeneration}'),
-        url: s.server.tripUrl(tripId, page: '__waypack_map.html'),
-        origin: s.server.origin,
-        onRecover: s.ensureServer,
+      backgroundColor: p.bg,
+      body: Kraft(
+        child: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: BundleWebView(
+                  key: ValueKey('map_${tripId}_${s.serverGeneration}'),
+                  url: s.server.tripUrl(tripId, page: '__waypack_map.html'),
+                  origin: s.server.origin,
+                  onRecover: s.ensureServer,
+                ),
+              ),
+              Positioned(
+                left: 12,
+                top: 10,
+                right: 64,
+                child: Row(
+                  children: [
+                    RoundButton(
+                      tooltip: 'Back',
+                      icon: Icons.arrow_back_ios_new,
+                      iconSize: 17,
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Container(
+                        height: 44,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: p.card,
+                          borderRadius: BorderRadius.circular(22),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x333C2814),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              e?.title ?? 'Map',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: hand(22, p.ink).copyWith(height: .9),
+                            ),
+                            Text(
+                              offline ? 'Offline map' : 'Needs a connection',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: p.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

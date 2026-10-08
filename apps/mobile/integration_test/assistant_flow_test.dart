@@ -74,7 +74,7 @@ void main() {
     await settle(t, 3000);
     await t.tap(find.byTooltip('Waypack menu'));
     await settle(t);
-    await t.tap(find.text('Ask about this trip'));
+    await t.tap(find.text('Ask'));
     await settle(t, 2500);
     if (find.text('Not available on this device yet').evaluate().isNotEmpty) {
       // ignore: avoid_print
