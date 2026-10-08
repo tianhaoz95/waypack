@@ -19,8 +19,17 @@ class Api {
   Api({http.Client? client}) : _http = client ?? http.Client();
   final http.Client _http;
 
-  Map<String, String> get _headers {
-    final token = Supabase.instance.client.auth.currentSession?.accessToken;
+  Future<Map<String, String>> _headers() async {
+    var session = Supabase.instance.client.auth.currentSession;
+    if (session != null && session.isExpired) {
+      try {
+        final res = await Supabase.instance.client.auth.refreshSession();
+        session = res.session ?? Supabase.instance.client.auth.currentSession;
+      } catch (_) {
+        // Ignored: if refresh fails, fall back to existing token or 401 retry
+      }
+    }
+    final token = session?.accessToken;
     return {
       if (token != null) 'Authorization': 'Bearer $token',
       'Accept': 'application/json',
@@ -31,9 +40,10 @@ class Api {
     String method,
     String path, {
     Object? body,
+    bool canRetry = true,
   }) async {
     final uri = Uri.parse('${Config.apiUrl}$path');
-    final req = http.Request(method, uri)..headers.addAll(_headers);
+    final req = http.Request(method, uri)..headers.addAll(await _headers());
     if (body != null) {
       req.headers['Content-Type'] = 'application/json';
       req.body = jsonEncode(body);
@@ -41,6 +51,14 @@ class Api {
     final res = await http.Response.fromStream(
       await _http.send(req).timeout(const Duration(seconds: 30)),
     );
+    if (res.statusCode == 401 && canRetry && Supabase.instance.client.auth.currentSession != null) {
+      try {
+        await Supabase.instance.client.auth.refreshSession();
+        return await _json(method, path, body: body, canRetry: false);
+      } catch (_) {
+        // Refresh token failed, proceed to handle 401
+      }
+    }
     final j = res.body.isEmpty
         ? <String, dynamic>{}
         : jsonDecode(res.body) as Map<String, dynamic>;
@@ -68,6 +86,11 @@ class Api {
   /// The trip's companion invite link (created on first use).
   Future<String> inviteLink(String tripId) async =>
       (await _json('POST', '/api/trips/$tripId/invite'))['invite_url']
+          as String;
+
+  /// Public web share link (no app required to view).
+  Future<String> shareTrip(String tripId) async =>
+      (await _json('POST', '/api/trips/$tripId/share'))['share_url']
           as String;
 
   Future<List<Map<String, dynamic>>> tokens() async =>

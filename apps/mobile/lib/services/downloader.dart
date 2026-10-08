@@ -191,6 +191,29 @@ class TripDownloader {
       accentDark:
           ((info.raw['manifest'] as Map?)?['theme'] as Map?)?['accent_dark']
               as String?,
+      coverImage: () {
+        final m = info.raw['manifest'] as Map?;
+        final th = m?['theme'] as Map?;
+        String? c = m?['cover_image'] as String? ?? th?['cover_image'] as String?;
+        if (c == null) {
+          for (final candidate in [
+            'cover.jpg',
+            'cover.jpeg',
+            'cover.png',
+            'cover.webp',
+            'assets/cover.jpg',
+            'assets/cover.jpeg',
+            'assets/cover.png',
+            'assets/cover.webp',
+          ]) {
+            if (File('${target.path}/$candidate').existsSync()) {
+              c = candidate;
+              break;
+            }
+          }
+        }
+        return c;
+      }(),
     );
     await store.saveMeta(local);
 

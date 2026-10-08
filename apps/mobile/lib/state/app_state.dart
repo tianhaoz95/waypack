@@ -35,6 +35,31 @@ class TripEntry {
     if (end == null) return false;
     return end.compareTo(DateTime.now().toIso8601String().substring(0, 10)) < 0;
   }
+  String? get coverImageUrl => remote?.coverImageUrl;
+
+  File? coverFile(TripStore store) {
+    final l = local;
+    if (l == null) return null;
+    final vDir = store.versionDir(l.id, l.version);
+    if (l.coverImage != null) {
+      final f = File('${vDir.path}/${l.coverImage}');
+      if (f.existsSync()) return f;
+    }
+    for (final candidate in [
+      'cover.jpg',
+      'cover.jpeg',
+      'cover.png',
+      'cover.webp',
+      'assets/cover.jpg',
+      'assets/cover.jpeg',
+      'assets/cover.png',
+      'assets/cover.webp',
+    ]) {
+      final f = File('${vDir.path}/$candidate');
+      if (f.existsSync()) return f;
+    }
+    return null;
+  }
 }
 
 class AppState extends ChangeNotifier {

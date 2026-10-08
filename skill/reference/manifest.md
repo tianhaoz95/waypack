@@ -9,6 +9,7 @@ Authoritative JSON Schema: `packages/bundle-schema/manifest.v1.schema.json` (als
   "trip_id": null,                   // null = new trip; existing UUID = publish a new version
   "title": "Sequoia Winter Weekend", // ≤ 120 chars
   "summary": "3 days in Sequoia with a toddler…",
+  "cover_image": "assets/cover.jpg", // optional relative path to trip card cover image in bundle (JPEG/PNG/WebP)
   "timezone": "America/Los_Angeles", // IANA; all times are local to it
   "start_date": "2026-12-24",        // YYYY-MM-DD
   "end_date": "2026-12-26",

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../state/app_state.dart';
 import '../util/colors.dart';
 import '../util/format.dart';
+import '../widgets/share_trip_sheet.dart';
 import 'nearby_screens.dart';
 import 'settings_screen.dart';
 import 'trip_screen.dart';
@@ -62,6 +64,13 @@ class TripsScreen extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.cloud_off_outlined),
                   title: Text(s.listError!),
+                  trailing: s.listError == 'Session expired — sign in again.'
+                      ? TextButton(
+                          onPressed: () =>
+                              Supabase.instance.client.auth.signOut(),
+                          child: const Text('Sign in'),
+                        )
+                      : null,
                 ),
               ),
             if (upcoming.isEmpty && past.isEmpty && s.loading)
@@ -347,9 +356,32 @@ class _TripCard extends StatelessWidget {
     final accent = hexColor(
       dark ? (e.local?.accentDark ?? e.local?.accent) : e.local?.accent,
     );
+    final coverFile = e.coverFile(s.store);
+    final coverUrl = e.coverImageUrl;
+    final hasCover = coverFile != null || (coverUrl != null && coverUrl.isNotEmpty);
+
+    Widget? coverWidget;
+    if (coverFile != null) {
+      coverWidget = Image.file(
+        coverFile,
+        height: 140,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      );
+    } else if (coverUrl != null && coverUrl.isNotEmpty) {
+      coverWidget = Image.network(
+        coverUrl,
+        height: 140,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      );
+    }
+
     return Card(
       clipBehavior: Clip.antiAlias,
-      // The trip's theme colour (from its manifest) as a band along the top once downloaded.
+      // The trip's theme colour (from its manifest) as a border or band once downloaded.
       shape: accent == null
           ? null
           : RoundedRectangleBorder(
@@ -357,11 +389,11 @@ class _TripCard extends StatelessWidget {
               side: BorderSide(color: accent.withValues(alpha: .35)),
             ),
       child: Container(
-        decoration: accent == null
-            ? null
-            : BoxDecoration(
+        decoration: (!hasCover && accent != null)
+            ? BoxDecoration(
                 border: Border(top: BorderSide(color: accent, width: 5)),
-              ),
+              )
+            : null,
         child: InkWell(
           onTap: e.isOffline
               ? () => Navigator.push(
@@ -372,125 +404,137 @@ class _TripCard extends StatelessWidget {
                   ),
                 )
               : null,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ?coverWidget,
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        e.title,
-                        style: t.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (s.isBookmarked(e.id))
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: Icon(
-                          Icons.bookmark,
-                          color: accent ?? t.colorScheme.primary,
-                          size: 22,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  [
-                    dateRange(e.startDate, e.endDate),
-                    if (size > 0) formatBytes(size),
-                  ].where((x) => x.isNotEmpty).join(' · '),
-                  style: t.textTheme.bodyMedium?.copyWith(
-                    color: t.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (r?.isCompanion == true ||
-                    (r == null && e.local?.receivedNearby == true))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          r != null
-                              ? Icons.group_outlined
-                              : Icons.mobile_screen_share_outlined,
-                          size: 16,
-                          color: t.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
+                        Expanded(
                           child: Text(
-                            r != null
-                                ? 'Shared with you${r.ownerEmail != null ? ' by ${r.ownerEmail}' : ''}'
-                                : 'From a nearby phone',
-                            style: t.textTheme.bodySmall?.copyWith(
-                              color: t.colorScheme.onSurfaceVariant,
+                            e.title,
+                            style: t.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
+                        if (s.isBookmarked(e.id))
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Icon(
+                              Icons.bookmark,
+                              color: accent ?? t.colorScheme.primary,
+                              size: 22,
+                            ),
+                          ),
                       ],
                     ),
-                  ),
-                const SizedBox(height: 12),
-                status,
-                if (r?.tilesStatus == 'not_included' && !downloading)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      'No offline map for this trip — the map will need a connection.',
-                      style: t.textTheme.bodySmall?.copyWith(
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        dateRange(e.startDate, e.endDate),
+                        if (size > 0) formatBytes(size),
+                      ].where((x) => x.isNotEmpty).join(' · '),
+                      style: t.textTheme.bodyMedium?.copyWith(
                         color: t.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                if (err != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      err,
-                      style: TextStyle(color: t.colorScheme.error),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (e.isOffline)
-                      FilledButton.icon(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(name: 'Trip'),
-                            builder: (_) => TripScreen(tripId: e.id),
+                    if (r?.isCompanion == true ||
+                        (r == null && e.local?.receivedNearby == true))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              r != null
+                                  ? Icons.group_outlined
+                                  : Icons.mobile_screen_share_outlined,
+                              size: 16,
+                              color: t.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                r != null
+                                    ? 'Shared with you${r.ownerEmail != null ? ' by ${r.ownerEmail}' : ''}'
+                                    : 'From a nearby phone',
+                                style: t.textTheme.bodySmall?.copyWith(
+                                  color: t.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    status,
+                    if (r?.tilesStatus == 'not_included' && !downloading)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          'No offline map for this trip — the map will need a connection.',
+                          style: t.textTheme.bodySmall?.copyWith(
+                            color: t.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        icon: const Icon(Icons.open_in_full),
-                        label: const Text('Open'),
                       ),
-                    if (e.isOffline && e.updateAvailable)
-                      const SizedBox(width: 8),
-                    if (r != null &&
-                        !downloading &&
-                        (!e.isOffline || e.updateAvailable))
-                      (e.isOffline ? OutlinedButton.icon : FilledButton.icon)(
-                        onPressed: processing && !e.isOffline
-                            ? null
-                            : () => s.download(e.id),
-                        icon: Icon(
-                          e.isOffline
-                              ? Icons.system_update_alt
-                              : Icons.download,
+                    if (err != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          err,
+                          style: TextStyle(color: t.colorScheme.error),
                         ),
-                        label: Text(e.isOffline ? 'Update' : 'Download'),
                       ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (e.isOffline)
+                          FilledButton.icon(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                settings: const RouteSettings(name: 'Trip'),
+                                builder: (_) => TripScreen(tripId: e.id),
+                              ),
+                            ),
+                            icon: const Icon(Icons.open_in_full),
+                            label: const Text('Open'),
+                          ),
+                        if (e.isOffline && e.updateAvailable)
+                          const SizedBox(width: 8),
+                        if (r != null &&
+                            !downloading &&
+                            (!e.isOffline || e.updateAvailable))
+                          (e.isOffline ? OutlinedButton.icon : FilledButton.icon)(
+                            onPressed: processing && !e.isOffline
+                                ? null
+                                : () => s.download(e.id),
+                            icon: Icon(
+                              e.isOffline
+                                  ? Icons.system_update_alt
+                                  : Icons.download,
+                            ),
+                            label: Text(e.isOffline ? 'Update' : 'Download'),
+                          ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Share travel plan (PDF or link)',
+                          icon: const Icon(Icons.share_outlined),
+                          onPressed: () => showShareTripSheet(context, e),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

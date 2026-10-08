@@ -5,6 +5,7 @@ export const keys = {
   upload: (userId: string, uploadId: string) => `uploads/${userId}/${uploadId}.zip`,
   bundle: (userId: string, tripId: string, version: number) => `bundles/${userId}/${tripId}/v${version}/bundle.zip`,
   manifest: (userId: string, tripId: string, version: number) => `bundles/${userId}/${tripId}/v${version}/manifest.json`,
+  cover: (userId: string, tripId: string, version: number, ext = "jpg") => `bundles/${userId}/${tripId}/v${version}/cover.${ext}`,
   tiles: (userId: string, tripId: string, hash: string) => `tiles/${userId}/${tripId}/${hash}.pmtiles`,
 };
 
@@ -28,9 +29,15 @@ export async function serveStored(env: Env, key: string, req: Request, extra: Re
       ? "application/zip"
       : key.endsWith(".json")
         ? "application/json"
-        : key.endsWith(".dmg")
-          ? "application/x-apple-diskimage"
-          : "application/octet-stream",
+        : key.endsWith(".png")
+          ? "image/png"
+          : key.endsWith(".webp")
+            ? "image/webp"
+            : key.endsWith(".jpg") || key.endsWith(".jpeg")
+              ? "image/jpeg"
+              : key.endsWith(".dmg")
+                ? "application/x-apple-diskimage"
+                : "application/octet-stream",
     ETag: head.httpEtag,
     "Cache-Control": "private, max-age=3600",
     ...extra,

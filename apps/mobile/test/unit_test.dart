@@ -6,9 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:waypack/models/manifest.dart';
+import 'package:waypack/models/trip.dart';
 import 'package:waypack/services/api.dart';
 import 'package:waypack/services/calendar.dart';
 import 'package:waypack/services/local_server.dart';
+import 'package:waypack/services/pdf_export.dart';
 import 'package:waypack/services/trip_store.dart';
 import 'package:waypack/state/app_state.dart';
 import 'package:waypack/util/format.dart';
@@ -207,6 +209,121 @@ void main() {
       } finally {
         await temp.delete(recursive: true);
       }
+    });
+  });
+
+  group('cover image', () {
+    test('manifest parses cover_image', () {
+      final m1 = Manifest({
+        'title': 'Trip',
+        'start_date': '2026-10-10',
+        'end_date': '2026-10-12',
+        'cover_image': 'assets/cover.jpg',
+      });
+      expect(m1.coverImage, 'assets/cover.jpg');
+
+      final m2 = Manifest({
+        'title': 'Trip',
+        'start_date': '2026-10-10',
+        'end_date': '2026-10-12',
+        'theme': {'cover_image': 'cover.png'},
+      });
+      expect(m2.coverImage, 'cover.png');
+    });
+
+    test('RemoteTrip and LocalTrip serialize cover image fields', () {
+      final r = RemoteTrip(
+        id: 'trip-1',
+        title: 'Sequoia',
+        version: 1,
+        status: 'ready',
+        bundleBytes: 100,
+        tilesBytes: 200,
+        tilesStatus: 'ready',
+        coverImage: 'assets/cover.jpg',
+        coverImageUrl: 'https://example.com/cover.jpg',
+      );
+      final json = r.toJson();
+      expect(json['cover_image'], 'assets/cover.jpg');
+      expect(json['cover_image_url'], 'https://example.com/cover.jpg');
+
+      final r2 = RemoteTrip.fromJson(json);
+      expect(r2.coverImage, 'assets/cover.jpg');
+      expect(r2.coverImageUrl, 'https://example.com/cover.jpg');
+
+      final l = LocalTrip(
+        id: 'trip-1',
+        title: 'Sequoia',
+        version: 1,
+        bundleSha256: 'sha',
+        tiles: [],
+        bytes: 300,
+        downloadedAt: DateTime.parse('2026-10-08T12:00:00Z'),
+        coverImage: 'cover.jpg',
+      );
+      final lJson = l.toJson();
+      expect(lJson['cover_image'], 'cover.jpg');
+      final l2 = LocalTrip.fromJson(lJson);
+      expect(l2.coverImage, 'cover.jpg');
+    });
+
+    test('TripEntry resolves coverFile from trip store directory', () async {
+      final temp = await Directory.systemTemp.createTemp('trip_cover_test');
+      try {
+        final store = TripStore(temp);
+        final vDir = store.versionDir('trip-1', 1);
+        await vDir.create(recursive: true);
+        final testCover = File('${vDir.path}/cover.jpg');
+        await testCover.writeAsString('fake-image');
+
+        final entry = TripEntry(
+          local: LocalTrip(
+            id: 'trip-1',
+            title: 'Sequoia',
+            version: 1,
+            bundleSha256: 'sha',
+            tiles: [],
+            bytes: 100,
+            downloadedAt: DateTime.now(),
+            coverImage: 'cover.jpg',
+          ),
+        );
+
+        final resolved = entry.coverFile(store);
+        expect(resolved, isNotNull);
+        expect(resolved!.existsSync(), isTrue);
+        expect(resolved.path, testCover.path);
+      } finally {
+        await temp.delete(recursive: true);
+      }
+    });
+  });
+
+  group('PDF export', () {
+    test('sanitizes filename correctly', () {
+      expect(PdfExportService.sanitizeFilename('Sequoia Winter Weekend 2026!'), 'Sequoia_Winter_Weekend_2026');
+      expect(PdfExportService.sanitizeFilename('Trip / Plan & Fun @ Yosemite'), 'Trip_Plan_Fun_Yosemite');
+    });
+
+    test('generatePdf creates valid non-empty PDF bytes', () async {
+      final m = sample();
+      final entry = TripEntry(
+        local: LocalTrip(
+          id: 'sample-trip',
+          title: m.title,
+          version: 1,
+          bundleSha256: 'abc',
+          tiles: [],
+          bytes: 1234,
+          downloadedAt: DateTime.now(),
+        ),
+      );
+
+      final pdfBytes = await PdfExportService.generatePdf(entry: entry, manifest: m);
+      expect(pdfBytes, isNotEmpty);
+      // PDF documents start with '%PDF'
+      final header = utf8.decode(pdfBytes.sublist(0, 4), allowMalformed: true);
+      expect(header, '%PDF');
     });
   });
 }

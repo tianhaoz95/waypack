@@ -12,6 +12,8 @@ class Manifest {
   Map<String, dynamic>? get theme => raw['theme'] as Map<String, dynamic>?;
   String? get accent => theme?['accent'] as String?;
   String? get accentDark => theme?['accent_dark'] as String?;
+  String? get coverImage =>
+      (raw['cover_image'] ?? theme?['cover_image']) as String?;
 
   late final List<Place> places = ((raw['places'] as List?) ?? const [])
       .map((p) => Place(p as Map<String, dynamic>))

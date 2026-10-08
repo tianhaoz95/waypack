@@ -12,6 +12,8 @@ class RemoteTrip {
     required this.tilesStatus,
     this.role = 'owner',
     this.ownerEmail,
+    this.coverImage,
+    this.coverImageUrl,
   });
 
   /// owner, or member (a travel companion: can view and download, not change).
@@ -28,6 +30,8 @@ class RemoteTrip {
   final int tilesBytes;
   final String
   tilesStatus; // ready | processing | not_included | failed | expired
+  final String? coverImage;
+  final String? coverImageUrl;
 
   factory RemoteTrip.fromJson(Map<String, dynamic> j) => RemoteTrip(
     id: j['id'] as String,
@@ -41,6 +45,8 @@ class RemoteTrip {
     tilesStatus: j['tiles_status'] as String? ?? 'not_included',
     role: j['role'] as String? ?? 'owner',
     ownerEmail: j['owner_email'] as String?,
+    coverImage: j['cover_image'] as String?,
+    coverImageUrl: j['cover_image_url'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -54,6 +60,8 @@ class RemoteTrip {
     'tiles_status': tilesStatus,
     'role': role,
     'owner_email': ownerEmail,
+    'cover_image': coverImage,
+    'cover_image_url': coverImageUrl,
   };
 }
 
@@ -75,10 +83,14 @@ class LocalTrip {
     this.accentDark,
     this.receivedNearby = false,
     this.onlineMap,
+    this.coverImage,
   });
 
   /// Online basemap (.pmtiles URL) the server named at download time.
   final String? onlineMap;
+
+  /// Relative path to cover image in the local bundle.
+  final String? coverImage;
 
   /// Copied from a nearby device (offline handoff) rather than downloaded.
   final bool receivedNearby;
@@ -118,6 +130,7 @@ class LocalTrip {
     accentDark: j['accent_dark'] as String?,
     receivedNearby: j['received_nearby'] as bool? ?? false,
     onlineMap: j['online_map'] as String?,
+    coverImage: j['cover_image'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -136,6 +149,7 @@ class LocalTrip {
     'accent_dark': accentDark,
     'received_nearby': receivedNearby,
     'online_map': onlineMap,
+    'cover_image': coverImage,
   };
 }
 

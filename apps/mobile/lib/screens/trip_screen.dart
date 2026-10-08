@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../util/colors.dart';
 import '../util/format.dart';
-import '../widgets/bundle_webview.dart';
 import '../services/handoff.dart';
+import '../widgets/bundle_webview.dart';
+import '../widgets/share_trip_sheet.dart';
 import 'assistant_screen.dart';
 import 'nearby_screens.dart';
 import 'today_screen.dart';
@@ -133,6 +134,17 @@ class TripScreen extends StatelessWidget {
                       builder: (_) => AssistantScreen(tripId: tripId),
                     ),
                   );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_outlined),
+                title: const Text('Share travel plan'),
+                subtitle: const Text(
+                  'Send as PDF or public web link (no app needed)',
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showShareTripSheet(context, e);
                 },
               ),
               ListTile(

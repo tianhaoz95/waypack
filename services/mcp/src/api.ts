@@ -197,7 +197,17 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     const joined = await companionTrips(db, user.userId);
     const rows = [...own.map((t) => ({ ...t, role: "owner" as const, owner_email: null })), ...joined.filter((t) => t.current_version > 0).map((t) => ({ ...t, role: "member" as const }))];
     rows.sort((a, b) => String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
-    const out = await Promise.all(rows.map(({ user_id, ...t }) => tripStatus(env, db, user_id, t.id).then((s) => ({ ...t, sizes: s?.sizes, tiles_status: s?.tiles_status }))));
+    const out = await Promise.all(
+      rows.map(({ user_id, ...t }) =>
+        tripStatus(env, db, user_id, t.id).then((s) => ({
+          ...t,
+          sizes: s?.sizes,
+          tiles_status: s?.tiles_status,
+          cover_image: s?.cover_image ?? null,
+          cover_image_url: s?.cover_image_url ?? null,
+        }))
+      )
+    );
     return Response.json({ trips: out });
   }
 

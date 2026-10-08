@@ -40,6 +40,10 @@
       "type": "string",
       "maxLength": 2000
     },
+    "cover_image": {
+      "type": "string",
+      "description": "Cover image for the trip card (path to image file in bundle, e.g. assets/cover.jpg or cover.jpg)"
+    },
     "timezone": {
       "type": "string",
       "minLength": 1,
@@ -395,6 +399,10 @@
         "mood": {
           "type": "string",
           "maxLength": 200
+        },
+        "cover_image": {
+          "type": "string",
+          "description": "Cover image for the trip card (path to image file in bundle, e.g. assets/cover.jpg or cover.jpg)"
         },
         "scene": {
           "type": "object",

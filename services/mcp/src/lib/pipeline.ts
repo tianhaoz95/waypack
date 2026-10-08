@@ -1,9 +1,9 @@
-import { formatResult, mapAreas, validateZip, zipBundle, type BundleFile, type Issue, type Manifest } from "@waypack/bundle-schema";
+import { formatResult, mapAreas, unzipBundle, validateZip, zipBundle, type BundleFile, type Issue, type Manifest } from "@waypack/bundle-schema";
 import type { Env } from "../env.js";
 import { sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
 import { activeTripCount, planFor, upgradeHint, type Plan } from "./entitlements.js";
-import { keys } from "./storage.js";
+import { keys, signedFileUrl } from "./storage.js";
 import { devicePlanet, resolvePlanet, type Planet } from "./planet.js";
 
 export interface TripRow {
@@ -135,6 +135,17 @@ export async function publishBundle(
   const bundleKey = keys.bundle(userId, tripId, version);
   await env.BUCKET.put(bundleKey, zip, { httpMetadata: { contentType: "application/zip" } });
   await env.BUCKET.put(keys.manifest(userId, tripId, version), JSON.stringify(stored), { httpMetadata: { contentType: "application/json" } });
+
+  // Store cover image separately if present, for fast card preview.
+  const coverPath = manifest.cover_image ?? manifest.theme?.cover_image;
+  const filesList = "files" in input ? input.files : unzipBundle(zip).files;
+  const coverFile = filesList.find((f) => f.path === coverPath || (!coverPath && /(^|\/)cover\.(jpg|jpeg|png|webp)$/i.test(f.path)));
+  if (coverFile) {
+    const ext = coverFile.path.split(".").pop()?.toLowerCase() || "jpg";
+    await env.BUCKET.put(keys.cover(userId, tripId, version, ext), coverFile.data, {
+      httpMetadata: { contentType: ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg" },
+    });
+  }
 
   // Map extracts.
   const { tilesStatus, mapHash, warnings: mapWarnings } = await planExtracts(env, db, plan, trip, version, stored);
@@ -300,9 +311,9 @@ export async function refreshTripStatus(db: Db, tripId: string): Promise<void> {
 export async function tripStatus(env: Env, db: Db, userId: string, tripId: string) {
   const trip = await db.one<TripRow>("trips", `select=*&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
   if (!trip) return null;
-  const [ver] = await db.select<{ bundle_bytes: number; created_at: string }>(
+  const [ver] = await db.select<{ bundle_bytes: number; created_at: string; manifest: Manifest }>(
     "trip_versions",
-    `select=bundle_bytes,created_at&trip_id=${eq(tripId)}&version=${eq(trip.current_version)}`,
+    `select=bundle_bytes,created_at,manifest&trip_id=${eq(tripId)}&version=${eq(trip.current_version)}`,
   );
   const ex = await db.select<ExtractRow>("map_extracts", `select=*&trip_id=${eq(tripId)}&status=in.(pending,processing,ready,failed,expired)&order=area_index`);
   const tiles_status =
@@ -312,12 +323,28 @@ export async function tripStatus(env: Env, db: Db, userId: string, tripId: strin
       : ex.some((e) => e.status === "failed") ? "failed"
         : ex.some((e) => e.status === "pending" || e.status === "processing") ? "processing"
           : "ready";
+
+  const coverPath = ver?.manifest?.cover_image ?? ver?.manifest?.theme?.cover_image ?? null;
+  let cover_image_url: string | null = null;
+  if (ver?.manifest) {
+    const exts = [coverPath?.split(".").pop()?.toLowerCase(), "jpg", "jpeg", "png", "webp"].filter(Boolean) as string[];
+    for (const ext of exts) {
+      const coverKey = keys.cover(userId, trip.id, trip.current_version, ext);
+      if (await env.BUCKET.head(coverKey)) {
+        cover_image_url = await signedFileUrl(env, coverKey);
+        break;
+      }
+    }
+  }
+
   return {
     trip_id: trip.id,
     title: trip.title,
     version: trip.current_version,
     status: trip.status,
     tiles_status,
+    cover_image: coverPath,
+    cover_image_url,
     sizes: { bundle_bytes: ver?.bundle_bytes ?? 0, tiles_bytes: ex.reduce((n, e) => n + (e.tiles_bytes ?? 0), 0) },
     extracts: ex.map((e) => ({ area_index: e.area_index, status: e.status, bbox: e.bbox, max_zoom: e.max_zoom, bytes: e.tiles_bytes, error: e.error })),
   };

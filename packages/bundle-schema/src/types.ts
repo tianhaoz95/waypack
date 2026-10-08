@@ -59,6 +59,7 @@ export interface Manifest {
   trip_id?: string | null;
   title: string;
   summary?: string;
+  cover_image?: string;
   timezone: string;
   start_date: string;
   end_date: string;
@@ -80,6 +81,7 @@ export interface ManifestTheme {
   accent?: string;
   accent_dark?: string;
   mood?: string;
+  cover_image?: string;
   scene?: {
     sky?: string;
     sun?: "sun" | "low-sun" | "moon" | "none";
