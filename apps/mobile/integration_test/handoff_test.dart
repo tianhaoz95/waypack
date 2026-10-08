@@ -57,10 +57,10 @@ void main() {
     await t.tap(find.text('Dev sign-in'));
 
     if (role == 'send') {
-      await until(t, find.text('Download'));
-      await t.tap(find.text('Download').first);
-      await until(t, find.text('Open'));
-      await t.tap(find.text('Open').first);
+      await until(t, find.byTooltip('Not downloaded'));
+      await t.tap(find.byTooltip('Not downloaded').first);
+      await until(t, find.byTooltip('Available offline'));
+      await t.tap(find.byTooltip('Available offline').first);
       await settle(t, 3000);
       await t.tap(find.byTooltip('Waypack menu'));
       await settle(t);

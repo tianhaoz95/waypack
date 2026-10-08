@@ -87,6 +87,12 @@ flutter:
     - assets/app/map.html
     - assets/brand/logo.png
 
+  # Handwritten captions on the scrapbook home screen (SIL OFL, see assets/fonts/Caveat-OFL.txt).
+  fonts:
+    - family: Caveat
+      fonts:
+        - asset: assets/fonts/Caveat.ttf
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

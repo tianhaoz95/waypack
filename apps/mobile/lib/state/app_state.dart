@@ -185,6 +185,13 @@ class AppState extends ChangeNotifier {
     if (session != null) unawaited(refresh());
   }
 
+  /// Seeds a trip without a server or store round-trip (widget tests).
+  @visibleForTesting
+  void debugPut(TripEntry e) {
+    _trips[e.id] = e;
+    notifyListeners();
+  }
+
   /// A trip copied from a nearby device (offline handoff) is now on this device.
   void adoptLocal(LocalTrip l) {
     (_trips[l.id] ??= TripEntry()).local = l;

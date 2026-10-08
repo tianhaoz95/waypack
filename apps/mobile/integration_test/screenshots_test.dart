@@ -50,14 +50,14 @@ void main() {
 
     await t.enterText(find.byKey(const Key('dev-email')), email);
     await t.tap(find.text('Dev sign-in'));
-    await until(t, find.text('Not downloaded'));
+    await until(t, find.byTooltip('Not downloaded'));
     await shot(t, '03-trips-not-downloaded');
 
-    await t.tap(find.text('Download'));
-    await until(t, find.text('Available offline'));
+    await t.tap(find.byTooltip('Not downloaded'));
+    await until(t, find.byTooltip('Available offline'));
     await shot(t, '04-trips-offline');
 
-    await t.tap(find.text('Open'));
+    await t.tap(find.byTooltip('Available offline'));
     await shot(t, '05-trip-bundle', waitMs: 6000);
 
     await t.tap(find.byTooltip('Waypack menu'));

@@ -69,11 +69,12 @@ void main() {
     await t.enterText(find.byKey(const Key('dev-email')), email);
     await t.tap(find.text('Dev sign-in'));
     await pumpUntil(t, find.text('Sequoia Winter Weekend'));
-    expect(find.text('Not downloaded'), findsOneWidget);
+    expect(find.byTooltip('Not downloaded'), findsOneWidget);
 
     // Download (bundle + offline map), verified by SHA-256 inside the app.
-    await t.tap(find.text('Download'));
-    await pumpUntil(t, find.text('Available offline'));
+    // The "Get" stamp on the polaroid.
+    await t.tap(find.byTooltip('Not downloaded'));
+    await pumpUntil(t, find.byTooltip('Available offline'));
     final trip = state.upcoming.firstWhere(
       (e) => e.title == 'Sequoia Winter Weekend',
     );
@@ -133,7 +134,7 @@ void main() {
     expect(hostCheck.$1, 421);
 
     // Open the trip (WebView). Give the map time to render for the host-side screenshot.
-    await t.tap(find.text('Open'));
+    await t.tap(find.text('Sequoia Winter Weekend'));
     await t.pump(const Duration(seconds: 2));
     expect(find.byTooltip('Waypack menu'), findsOneWidget);
     final shotDelay =
