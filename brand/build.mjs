@@ -22,6 +22,10 @@ add(logo.tile(), 16, "site/favicon-16.png");
 for (const px of [16, 32, 48]) add(logo.tile(), px, `brand/out/favicon-${px}.png`);
 add(logo.tile(), 512, "site/img/logo-512.png");
 
+// --- developer docs (VitePress: favicon + nav logo)
+writeFileSync(join(root, "docs/public/favicon.svg"), logo.tile());
+add(logo.tile(), 32, "docs/public/favicon.png");
+
 // --- iOS (full bleed, no alpha; iOS rounds the corners)
 const ios = "apps/mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset";
 for (const [pt, scales] of [[20, [1, 2, 3]], [29, [1, 2, 3]], [40, [1, 2, 3]], [60, [2, 3]], [76, [1, 2]], [83.5, [2]], [1024, [1]]]) {
