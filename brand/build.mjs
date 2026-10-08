@@ -72,7 +72,7 @@ execFileSync("python3", ["-c", `
 import sys
 from PIL import Image
 for p in sys.argv[2:]:
-    im = Image.open(p).convert("RGBA"); bg = Image.new("RGB", im.size, (20, 82, 194)); bg.paste(im, mask=im.split()[3]); bg.save(p)
+    im = Image.open(p).convert("RGBA"); bg = Image.new("RGB", im.size, (217, 105, 79)); bg.paste(im, mask=im.split()[3]); bg.save(p)
 src = sys.argv[1]
 Image.open(src + "/favicon-48.png").save("${join(root, "site/favicon.ico")}", sizes=[(16, 16), (32, 32), (48, 48)],
     append_images=[Image.open(src + "/favicon-16.png"), Image.open(src + "/favicon-32.png")])
