@@ -71,7 +71,7 @@ function injectBefore(html: string, tag: string): string {
 
 function page(status: number, title: string, body: string): Response {
   const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
-<style>body{font:16px/1.5 system-ui,sans-serif;max-width:34rem;margin:15vh auto;padding:0 20px;color:#0f172a}@media(prefers-color-scheme:dark){body{background:#0b1120;color:#e8edf6}}</style>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:34rem;margin:15vh auto;padding:0 20px;color:#3d332b;background:#f3eadb}@media(prefers-color-scheme:dark){body{background:#231d18;color:#efe4d6}}</style>
 <h1 style="font-size:1.4rem">${title}</h1><p>${body}</p>`;
   return new Response(html, { status, headers: { ...BASE_HEADERS, "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'" } });
 }

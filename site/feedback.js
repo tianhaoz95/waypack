@@ -9,7 +9,7 @@
     });
 
     FeedbackKit.theme = {
-      primaryColorHex: "#1D6FE0",
+      primaryColorHex: "#B4523A",
     };
 
     var path = window.location.pathname;

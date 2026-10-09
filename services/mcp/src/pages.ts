@@ -16,7 +16,7 @@ export function providerButtons(mode: string, returnTo = "/account"): string {
       <button class="provider apple" name="provider" value="apple">${APPLE}<span>Continue with Apple</span></button>`;
 }
 
-export const PROVIDER_CSS = `.provider{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;margin-top:10px;border-radius:12px;font:600 1rem -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-decoration:none;cursor:pointer}
+export const PROVIDER_CSS = `.provider{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;margin-top:10px;border-radius:999px;box-shadow:none;font:600 1rem -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-decoration:none;cursor:pointer}
 .provider.google{background:#fff;color:#1f1f1f;border:1px solid #747775}
 .provider.apple{background:#000;color:#fff;border:1px solid #000}
 @media (prefers-color-scheme:dark){.provider.apple{background:#fff;color:#000;border-color:#fff}}`;
@@ -26,15 +26,16 @@ export function page(title: string, body: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
 <title>${esc(title)} · Waypack</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.png" type="image/png" sizes="32x32"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--text:#0f172a;--muted:#5b6577;--line:#dde2ea;--accent:#1d6fe0;--ink:#fff;--err:#c81e1e;--warn:#b45309}
-@media (prefers-color-scheme:dark){:root{--bg:#0b1120;--card:#141c2f;--text:#e8edf6;--muted:#9aa6bb;--line:#26314a;--accent:#5b9bff;--ink:#06122a;--err:#f87171;--warn:#fbbf24}}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
-main{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px}
-.brand{display:flex;align-items:center;gap:8px;font-weight:700;margin-bottom:16px}.brand img{display:block;width:28px;height:28px}
-h1{font-size:1.3rem;margin:0 0 12px}label{display:block;font-weight:600;margin:12px 0 6px}
-input{width:100%;min-height:48px;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
-button{display:block;width:100%;min-height:48px;margin-top:10px;border:0;border-radius:10px;background:var(--accent);color:var(--ink);font:600 1rem inherit;cursor:pointer}
-button.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}button.link{background:none;color:var(--accent);min-height:40px}
+@font-face{font-family:"Caveat";src:url("/fonts/caveat.woff2") format("woff2");font-weight:400 700;font-display:swap}
+:root{--bg:#f3eadb;--card:#fffdf8;--text:#3d332b;--muted:#75685c;--line:#e3d6c3;--accent:#b4523a;--ink:#fff;--err:#b8402a;--warn:#a86d0c;--dots:rgba(120,90,60,.16);--hand:"Caveat","Bradley Hand",cursive}
+@media (prefers-color-scheme:dark){:root{--bg:#231d18;--card:#2f2722;--text:#efe4d6;--muted:#ab9b8b;--line:#3f352d;--accent:#e88468;--ink:#2b1408;--err:#f08a70;--warn:#e6b04a;--dots:rgba(255,230,200,.06)}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg) radial-gradient(var(--dots) 1px,transparent 1.4px) 0 0/14px 14px;color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
+main{width:100%;max-width:420px;background:var(--card);border-radius:8px;padding:24px;box-shadow:0 1px 2px rgba(60,40,20,.14),0 14px 28px -18px rgba(60,40,20,.55)}
+.brand{display:flex;align-items:center;gap:10px;font:700 1.7rem/1 var(--hand);margin-bottom:14px}.brand img{display:block;width:30px;height:30px}
+h1{font:700 2.1rem/1.1 var(--hand);margin:0 0 12px}label{display:block;font-weight:600;margin:12px 0 6px}
+input{width:100%;min-height:48px;font:inherit;padding:10px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);color:var(--text)}input:focus{outline:none;border-color:var(--accent)}
+button{display:block;width:100%;min-height:48px;margin-top:10px;border:0;border-radius:999px;background:var(--accent);color:var(--ink);font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 60%,#000)}
+button.secondary{background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:0 1px 2px rgba(60,40,20,.12)}button.link{background:none;color:var(--accent);min-height:40px;box-shadow:none}
 .muted{color:var(--muted)}.small{font-size:.875rem}.error{color:var(--err);font-weight:600}.warn{color:var(--warn)}
 code{background:var(--bg);padding:2px 6px;border-radius:6px}
 details.dev{margin-top:20px;border-top:1px dashed var(--line);padding-top:10px}details.dev summary{cursor:pointer;color:var(--muted);font-size:.875rem}

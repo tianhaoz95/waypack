@@ -13,13 +13,15 @@
 <script src="/feedback.js"></script>
 <title>Terms of Service · Waypack</title>
 <style>
-:root { --bg: #f7f8fa; --text: #0f172a; --muted: #586174; --line: #e1e5ec; --accent: #1d6fe0; }
-@media (prefers-color-scheme: dark) { :root { --bg: #0a0f1c; --text: #e8edf6; --muted: #9aa6bb; --line: #222c42; --accent: #5b9bff; } }
-body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; }
+/* Caveat (SIL OFL 1.1, /fonts/Caveat-OFL.txt): the app's handwriting, self-hosted. */
+@font-face { font-family: "Caveat"; src: url("/fonts/caveat.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+:root { --bg: #f3eadb; --text: #3d332b; --muted: #75685c; --line: #e3d6c3; --accent: #b4523a; --dots: rgba(120, 90, 60, .16); }
+@media (prefers-color-scheme: dark) { :root { --bg: #231d18; --text: #efe4d6; --muted: #ab9b8b; --line: #3f352d; --accent: #e88468; --dots: rgba(255, 230, 200, .06); } }
+body { margin: 0; background: var(--bg) radial-gradient(var(--dots) 1px, transparent 1.4px) 0 0 / 14px 14px; color: var(--text); font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif; }
 main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
 a { color: var(--accent); }
-h1 { font-size: 2rem; margin-bottom: 4px; }
-h2 { font-size: 1.25rem; margin-top: 2em; }
+h1 { font: 700 2.8rem/1.05 "Caveat", "Bradley Hand", cursive; margin-bottom: 4px; }
+h2 { font: 700 1.9rem/1.1 "Caveat", "Bradley Hand", cursive; margin-top: 1.6em; }
 .muted { color: var(--muted); }
 table { width: 100%; border-collapse: collapse; font-size: .95rem; }
 th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: top; }
