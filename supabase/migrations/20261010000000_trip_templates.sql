@@ -1,4 +1,4 @@
--- Trip templates (DECISIONS #64): a trip someone actually took, turned into a reusable plan for
+-- Trip templates (DECISIONS #66): a trip someone actually took, turned into a reusable plan for
 -- the public gallery (Discover). No dates, no names: `card` is what the gallery shows
 -- (season, length, crew shape, notes from the trip) and `manifest` is the cleaned, dateless plan
 -- agents read with get_template. One template per source trip. Drafts are visible only to their

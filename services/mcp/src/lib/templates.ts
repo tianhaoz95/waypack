@@ -1,4 +1,4 @@
-// Trip templates (DECISIONS #64): a trip someone actually took, turned into a plan others can start
+// Trip templates (DECISIONS #66): a trip someone actually took, turned into a plan others can start
 // from. The owner's agent runs a short debrief (what they kept, would cut, what surprised them),
 // removes personal details, and calls draft_template; the owner checks the draft and publishes it.
 // The gallery (Discover, on the site and in the app) lists published templates; another person's

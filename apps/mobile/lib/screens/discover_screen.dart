@@ -13,7 +13,7 @@ import '../state/app_state.dart';
 import '../widgets/postcard.dart';
 import '../widgets/scrapbook.dart';
 
-/// Trip gallery (DECISIONS #64): Discover is a magazine (trip of the week, collections, most
+/// Trip gallery (DECISIONS #66): Discover is a magazine (trip of the week, collections, most
 /// planned); search shows the same results as postcards or on a map; a template page is the
 /// postcard, the travelers' notes, the route and a "Plan this trip" hand-off to the user's agent.
 

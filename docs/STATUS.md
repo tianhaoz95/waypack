@@ -41,7 +41,7 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - Not verified: QR scanning with a real camera, and two physical phones over a Personal Hotspot (simulators share the Mac's network).
 
 ## Public, remixable trips (2026-10-04)
-- MCP `share_trip` / `unshare_trip` / `get_shared_trip` (17 tools). Shared trips are frozen, redacted snapshots on the preview origin with a "Plan this trip" button → `/remix/<token>` on the site (prompt builder, "Open in Claude", copy). Portal: Share / public page / copy link / update to latest / stop sharing.
+- MCP `share_trip` / `unshare_trip` / `get_shared_trip` (17 tools; 22 with the trip gallery below). Shared trips are frozen, redacted snapshots on the preview origin with a "Plan this trip" button → `/remix/<token>` on the site (prompt builder, "Open in Claude", copy). Portal: Share / public page / copy link / update to latest / stop sharing.
 - Verified: `scripts/e2e-shares.mjs` 28/28 (ownership, redaction, isolation, public summary has no owner data, remix via another account, v2 update keeps the link, cleaned-copy sharing, stop + delete kill the link), Worker unit tests 37.
 
 ## Live previews (2026-10-04)
@@ -71,3 +71,5 @@ Milestones from design §14, all built and verified **locally**. No cloud resour
 - `flutter_inappwebview` is on 6.2.0-beta.3 (stable fails on AGP 9).
 - Dev routing/geocoding uses public OSM demo servers when `ORS_API_KEY` is unset. Not for production.
 - Multiple map areas with different `max_zoom` render each archive only up to its own zoom (overzoom is per source).
+
+- **Trip gallery (DECISIONS #66):** MCP `draft_template` / `publish_template` / `unpublish_template` / `search_templates` / `get_template`; site `/discover` (magazine), `/discover/search` (postcards ⇄ map), `/trips/<slug>`; portal "Your templates"; app Discover (compass button). Tests: `services/mcp/test/templates.test.ts`, `apps/mobile/test/discover_test.dart`. Local samples: `node services/mcp/scripts/seed-templates.mjs`.

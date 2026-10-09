@@ -25,6 +25,8 @@ Ask **only what you don't already know**, in **one batched message** (numbered, 
 
 If the user says "just plan it", make sensible assumptions and **list them** at the top of the Overview.
 
+**Check the trip gallery first.** Once you know roughly where, when and who, call `search_templates` (place or vibe as `query`, plus `month`, `length`, `who`, `getting_around`). Templates are plans from trips people actually took, with notes on what worked, what they'd cut and what surprised them. If one fits, offer it ("There's a proven 3-day winter Sequoia trip, tested with kids; start from it?"). If the user picks one (or gives a `…/trips/<slug>` link), call `get_template { url }` and ask only what's different. Follow the notes (drop what they'd cut), re-check everything in `recheck` for the new dates, geocode new places, recompute every route, and credit it in the Overview ("Based on <title>, a Waypack template").
+
 **Starting from a shared trip?** If the user gives a Waypack link (`…/t/<token>/` or `…/remix/<token>`), call MCP `get_shared_trip { url }` first and ask only about what's different: their dates, group, pace and changes. Treat it as a starting point: a new season changes hours, closures, daylight, gear and sometimes whole activities. Re-research, geocode any new places, recompute every route, and credit it in the Overview ("Based on a shared Waypack trip").
 
 ## Phase 2 — Research
@@ -131,3 +133,10 @@ If the update contradicts the plan (e.g. a hotel far outside the map area), say 
 
 ## Sharing (only when the user asks)
 `share_trip { trip_id }` makes a public, read-only page with a "Plan this trip" button that lets others have their own agent adapt it. Booking/confirmation numbers are masked automatically, but **names, private phone numbers and personal notes are not**. If the plan has any, pass `files` with a cleaned copy (same bundle with those removed). Give the user the `remix_url` to share. `unshare_trip` turns the link off.
+
+## Turning a finished trip into a template (offer it after a trip they enjoyed)
+Only for trips whose dates have passed. Templates are listed in the public gallery (Discover on waypack.app and in the app).
+1. **Debrief** in a few short questions: what would you keep (the must-dos)? What would you cut, and why? What surprised you (closures, rules, conditions)? Would you go again? Credit you by a first name, or stay anonymous?
+2. **Clean it.** Dates are removed automatically (only the month traveled stays), travelers become a crew shape, booking codes are masked. Names, phone numbers, the address of a private stay and personal notes are **not** detected: if the plan has any, pass `manifest` with a cleaned copy.
+3. `draft_template { trip_id, tagline, region, notes: {kept, cut, surprise}, recheck, tags, pace, getting_around, good_months?, starts_from?, author_name? }`. Short sentences in the traveler's words, no names.
+4. Show the user the summary and the draft link, ask them to check it for anything personal, and call `publish_template { template_id }` **only after they say yes**. `unpublish_template` takes it down.
