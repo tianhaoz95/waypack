@@ -12,7 +12,7 @@ export const PLANS: Record<Tier, Plan> = {
 };
 
 export const upgradeHint = (publicUrl: string) =>
-  `Upgrade to Waypack Pro at ${publicUrl}/account to unlock offline maps and up to 10 active trips.`;
+  `Upgrade to Waypack Pro at ${publicUrl}/account#billing to unlock offline maps and up to 10 active trips.`;
 
 interface EntRow { tier: Tier; active: boolean; expires_at: string | null }
 

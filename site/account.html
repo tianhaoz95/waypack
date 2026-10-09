@@ -95,6 +95,21 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
 code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
 [hidden] { display: none !important; }
 
+/* ── Portal tabs: Trips · Set up · Settings */
+.ptabs { display: flex; gap: 6px; margin: 4px 0 18px; padding: 4px; width: fit-content; max-width: 100%; border-radius: 999px; background: color-mix(in srgb, var(--text) 7%, transparent); }
+.ptabs a { padding: 8px 18px; border-radius: 999px; font-weight: 700; font-size: .95rem; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.ptabs a:hover { color: var(--text); }
+.ptabs a[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(60, 40, 20, .18); }
+.tabpanel[hidden] { display: none !important; }
+.plan-chip { margin-left: 4px; padding: 3px 10px; border-radius: 2px; background: var(--sticky); color: #3d332b; font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; text-decoration: none; transform: rotate(-2deg); white-space: nowrap; }
+.note { padding: 12px 14px; border-radius: 3px; background: var(--sticky); color: #3d332b; box-shadow: var(--paper-shadow); transform: rotate(-.4deg); margin: 0 0 16px; }
+.note a { color: #b4523a; font-weight: 700; }
+.onboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 4px; }
+.onboard .step { padding: 16px; border-radius: 8px; background: var(--bg); }
+.onboard .step b { display: block; font: 700 1.5rem/1.1 var(--hand); margin-bottom: 6px; }
+.onboard .step p { margin: 0 0 12px; color: var(--muted); font-size: .92rem; }
+@media (max-width: 480px) { .ptabs { width: 100%; } .ptabs a { flex: 1; text-align: center; padding: 8px 6px; } }
+
 /* ── Trip listings: each trip as a store-style listing (cover, screenshots, about, facts) */
 .listings { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
 .lcard { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 0; border: 0; background: var(--bg); color: var(--text); text-align: left; border-radius: 10px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 2px rgba(60, 40, 20, .12); min-height: 0; transition: transform .15s ease, box-shadow .15s ease; font: inherit; }
@@ -159,6 +174,7 @@ dialog.lbox::backdrop { background: transparent; }
 <nav class="top"><div class="wrap">
   <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
   <span class="who" id="who"></span>
+  <a class="plan-chip" id="plan-chip" href="#settings" hidden></a>
 </div></nav>
 
 <main class="wrap">
@@ -179,36 +195,17 @@ dialog.lbox::backdrop { background: transparent; }
   <!-- Signed in -->
   <div id="dash" hidden>
     <div id="banner"></div>
-    <h1>Your account</h1>
+    <nav class="ptabs" role="tablist" aria-label="Account sections">
+      <a role="tab" href="#trips" data-tab="trips">Trips</a>
+      <a role="tab" href="#setup" data-tab="setup">Set up</a>
+      <a role="tab" href="#settings" data-tab="settings">Settings</a>
+    </nav>
 
-    <section class="card" id="plan">
-      <div class="row" style="justify-content:space-between">
-        <div>
-          <span class="badge">Plan</span>
-          <div class="plan-name" id="plan-name">…</div>
-          <div class="muted" id="plan-detail"></div>
-        </div>
-        <button class="secondary" id="manage" hidden>Manage billing</button>
-      </div>
-      <div class="offers" id="offers" hidden>
-        <div class="offer" id="offer-annual" hidden>
-          <b>Waypack Pro · Annual</b>
-          <div class="price">$14.99<span class="muted small"> / year</span></div>
-          <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul>
-          <button data-plan="annual">Subscribe</button>
-        </div>
-        <div class="offer" id="offer-lifetime" hidden>
-          <b>Waypack Pro · Lifetime</b>
-          <div class="price">$39.99<span class="muted small"> once</span></div>
-          <ul><li>Everything in Pro</li><li>Founding member, limited</li></ul>
-          <button data-plan="lifetime" class="secondary">Buy lifetime</button>
-        </div>
-      </div>
-      <p class="muted small" id="billing-off" hidden>Billing isn't configured on this server yet.</p>
-    </section>
-
-    <section class="card">
-      <h2>Trips</h2>
+    <!-- Trips: every visit -->
+    <div class="tabpanel" id="tab-trips" role="tabpanel" data-panel-tab="trips">
+      <h1>Your trips</h1>
+    <p class="note" id="limit-note" hidden></p>
+    <section class="card" aria-label="Trips">
       <div id="trips"><p class="empty">Loading…</p></div>
       <p class="muted small">Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p>
     </section>
@@ -219,6 +216,11 @@ dialog.lbox::backdrop { background: transparent; }
       <div id="previews"></div>
     </section>
 
+    </div>
+
+    <!-- Set up: connect an agent, get the app -->
+    <div class="tabpanel" id="tab-setup" role="tabpanel" data-panel-tab="setup" hidden>
+      <h1>Set up</h1>
     <section class="card" id="connect">
       <h2>Connect your AI agent</h2>
       <p class="muted">Add this MCP server to your agent. For the best plans, also install the Waypack skill so your agent learns the interview, coverage checklist and bundle format.</p>
@@ -279,7 +281,38 @@ dialog.lbox::backdrop { background: transparent; }
       <div class="row"><a class="btn" href="/#download">iPhone &amp; Android beta</a> <a class="btn secondary" href="/download/mac">Download for Mac</a></div>
     </section>
 
-    <section class="card">
+    </div>
+
+    <!-- Settings: plan, tokens, account -->
+    <div class="tabpanel" id="tab-settings" role="tabpanel" data-panel-tab="settings" hidden>
+      <h1>Settings</h1>
+    <section class="card" id="plan">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <span class="badge">Plan</span>
+          <div class="plan-name" id="plan-name">…</div>
+          <div class="muted" id="plan-detail"></div>
+        </div>
+        <button class="secondary" id="manage" hidden>Manage billing</button>
+      </div>
+      <div class="offers" id="offers" hidden>
+        <div class="offer" id="offer-annual" hidden>
+          <b>Waypack Pro · Annual</b>
+          <div class="price">$14.99<span class="muted small"> / year</span></div>
+          <ul><li>Offline maps with GPS</li><li>Up to 10 active trips</li><li>Up to 4 map areas per trip</li></ul>
+          <button data-plan="annual">Subscribe</button>
+        </div>
+        <div class="offer" id="offer-lifetime" hidden>
+          <b>Waypack Pro · Lifetime</b>
+          <div class="price">$39.99<span class="muted small"> once</span></div>
+          <ul><li>Everything in Pro</li><li>Founding member, limited</li></ul>
+          <button data-plan="lifetime" class="secondary">Buy lifetime</button>
+        </div>
+      </div>
+      <p class="muted small" id="billing-off" hidden>Billing isn't configured on this server yet.</p>
+    </section>
+
+    <section class="card" id="tokens-card">
       <h2>API tokens</h2>
       <p class="muted small">For headless MCP clients that can't sign in with OAuth. Send as <code>Authorization: Bearer wpk_…</code>.</p>
       <div id="tokens"></div>
@@ -290,7 +323,7 @@ dialog.lbox::backdrop { background: transparent; }
       <button class="secondary" id="create-token">Create token</button>
     </section>
 
-    <section class="card">
+    <section class="card" id="account-card">
       <h2>Account</h2>
       <div class="row">
         <button class="secondary" id="signout">Sign out</button>
@@ -298,6 +331,8 @@ dialog.lbox::backdrop { background: transparent; }
       </div>
       <p class="muted small">Deleting your account cancels any subscription and permanently deletes your trips and offline maps.</p>
     </section>
+    </div>
+
   </div>
 </main>
 
@@ -350,6 +385,7 @@ dialog.lbox::backdrop { background: transparent; }
       $("dash").hidden = false;
       $("who").textContent = m.email || "";
       renderPlan();
+      scrollToSection();
       loadTrips();
       loadPreviews();
       $("cc-cmd").textContent = "claude mcp add --transport http waypack " + m.mcp_url + "\nnpx @waypack/cli skill install";
@@ -376,6 +412,11 @@ dialog.lbox::backdrop { background: transparent; }
 
   function renderPlan() {
     var tier = me.plan.tier, b = me.billing;
+    var chipEl = $("plan-chip");
+    chipEl.textContent = tier === "free" ? "Free" : "Pro";
+    chipEl.title = tier === "free" ? "Free plan: see Settings to upgrade" : "Waypack Pro";
+    chipEl.href = "#billing";
+    chipEl.hidden = false;
     $("plan-name").textContent = tier === "free" ? "Free" : tier === "lifetime" ? "Waypack Pro · Lifetime" : "Waypack Pro · Annual";
     $("plan-detail").textContent = tier === "free"
       ? "1 active trip · maps need a connection"
@@ -520,8 +561,13 @@ dialog.lbox::backdrop { background: transparent; }
     Promise.all([api("GET", "/api/trips"), api("GET", "/api/shares").catch(function () { return { shares: [], enabled: false }; })]).then(function (both) {
       TRIPS = both[0].trips; SHARES = {}; SHARING = both[1].enabled;
       both[1].shares.forEach(function (x) { SHARES[x.trip_id] = x; });
+      limitNote();
       if (!TRIPS.length) {
-        $("trips").innerHTML = '<p class="empty">No trips yet. Ask your agent to "plan a trip with Waypack".</p>';
+        // First visit: a short getting-started guide instead of an empty list.
+        $("trips").innerHTML = "<p class='muted' style='margin-top:0'>No trips yet. Three steps to your first one:</p><div class='onboard'>" +
+          "<div class='step'><b>1 · Connect your agent</b><p>Add Waypack to Claude, Gemini, Cursor or another MCP agent.</p><a class='btn' href='#setup'>Set up</a></div>" +
+          "<div class='step'><b>2 · Ask for a trip</b><p>Try <code class='inline'>Plan a weekend in Lake Tahoe in January with Waypack</code>. It appears here when it's published.</p></div>" +
+          "<div class='step'><b>3 · Get the app</b><p>Download the trip on your phone before you lose signal.</p><a class='btn secondary' href='#setup'>Get the app</a></div></div>";
         if (OPEN) closeListing();
         return;
       }
@@ -536,6 +582,17 @@ dialog.lbox::backdrop { background: transparent; }
       if (OPEN) { if (byId(OPEN)) renderListing(OPEN); else closeListing(); }
       else { var m = /^#trip=([0-9a-f-]{36})$/.exec(location.hash); if (m && byId(m[1])) openListing(m[1]); }
     }).catch(function (err) { $("trips").innerHTML = '<p class="error">' + esc(err.message) + "</p>"; });
+  }
+
+  // On the free plan, say so before the agent hits the limit mid-planning.
+  function limitNote() {
+    var el = $("limit-note");
+    if (!me || !me.plan || me.plan.tier !== "free") { el.hidden = true; return; }
+    var today = new Date().toISOString().slice(0, 10);
+    var active = TRIPS.filter(function (t) { return t.role !== "member" && (!t.end_date || t.end_date >= today); }).length;
+    var max = me.plan.activeTrips || 1;
+    el.hidden = active < max;
+    el.innerHTML = "You're using " + active + " of " + max + " active trip" + (max === 1 ? "" : "s") + " on the Free plan. Waypack Pro allows up to 10, with offline maps. <a href='#billing'>See plans</a>";
   }
 
   function renderListing(id) {
@@ -592,7 +649,7 @@ dialog.lbox::backdrop { background: transparent; }
     OPEN = null; closeLightbox();
     var d = $("listing");
     if (d.open) { if (d.close) d.close(); else d.removeAttribute("open"); }
-    if (/^#trip=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+    if (/^#trip=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search + "#trips");
   }
   $("listing").addEventListener("close", function () { if (OPEN) closeListing(); });
   window.addEventListener("hashchange", function () {
@@ -749,6 +806,27 @@ dialog.lbox::backdrop { background: transparent; }
     if (!confirm("Permanently delete your account, cancel your subscription, and delete all trips and maps?")) return;
     api("DELETE", "/api/account").then(function () { location.href = "/"; }).catch(function (err) { banner("err", err.message); });
   });
+
+  // ---------- Tabs: #trips (default) · #setup · #settings. Older links keep working:
+  // #connect → Set up; #tokens, #billing, #plan, #account → Settings; #trip=<id> → Trips with that listing.
+  var TAB_OF = { trips: "trips", setup: "setup", connect: "setup", app: "setup", settings: "settings", tokens: "settings", billing: "settings", plan: "settings", account: "settings" };
+  var SCROLL_TO = { tokens: "tokens-card", billing: "plan", plan: "plan", account: "account-card" };
+  var TITLES = { trips: "Your trips", setup: "Set up", settings: "Settings" };
+  function route() {
+    var h = location.hash.replace(/^#/, ""), key = /^trip=/.test(h) ? "trips" : h, tab = TAB_OF[key] || "trips";
+    document.querySelectorAll("[data-panel-tab]").forEach(function (el) { el.hidden = el.getAttribute("data-panel-tab") !== tab; });
+    document.querySelectorAll(".ptabs [data-tab]").forEach(function (a) { a.setAttribute("aria-selected", a.getAttribute("data-tab") === tab ? "true" : "false"); });
+    document.title = TITLES[tab] + " · Waypack";
+    if (tab !== "trips" && OPEN) closeListing();
+    scrollToSection();
+  }
+  // #tokens / #billing / …: bring that card into view (again once the account data has rendered).
+  function scrollToSection() {
+    var id = SCROLL_TO[location.hash.replace(/^#/, "")];
+    if (id && $(id)) setTimeout(function () { $(id).scrollIntoView({ block: "start" }); }, 0);
+  }
+  window.addEventListener("hashchange", route);
+  route();
 
   function banner(kind, text) { $("banner").innerHTML = text ? '<div class="banner ' + kind + '">' + esc(text) + "</div>" : ""; }
 
