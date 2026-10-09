@@ -24,7 +24,7 @@ export const PROVIDER_CSS = `.provider{display:flex;align-items:center;justify-c
 export function page(title: string, body: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light dark">
-<title>${esc(title)} · Waypack</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.png" type="image/png" sizes="32x32"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>${esc(title)} · Waypack</title><link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml"><link rel="icon" href="/favicon.png?v=2" type="image/png" sizes="32x32"><link rel="icon" href="/favicon.ico?v=2" sizes="any"><link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <style>
 @font-face{font-family:"Caveat";src:url("/fonts/caveat.woff2") format("woff2");font-weight:400 700;font-display:swap}
 :root{--bg:#f3eadb;--card:#fffdf8;--text:#3d332b;--muted:#75685c;--line:#e3d6c3;--accent:#b4523a;--ink:#fff;--err:#b8402a;--warn:#a86d0c;--dots:rgba(120,90,60,.16);--hand:"Caveat","Bradley Hand",cursive}

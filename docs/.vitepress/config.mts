@@ -7,8 +7,8 @@ export default withMermaid(
   description: "Architectural designs, data formats, offline vector maps, and backend pipelines for Waypack",
   base: "/waypack/",
   head: [
-    ["link", { rel: "icon", href: "/waypack/favicon.svg", type: "image/svg+xml" }],
-    ["link", { rel: "icon", href: "/waypack/favicon.png", type: "image/png" }],
+    ["link", { rel: "icon", href: "/waypack/favicon.svg?v=2", type: "image/svg+xml" }],
+    ["link", { rel: "icon", href: "/waypack/favicon.png?v=2", type: "image/png" }],
   ],
   themeConfig: {
     logo: "/favicon.svg",
