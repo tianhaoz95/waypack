@@ -43,6 +43,8 @@ nav.top { border-bottom: 1px solid var(--line); background: color-mix(in srgb, v
 nav.top .wrap { display: flex; align-items: center; height: 60px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 700 1.75rem/1 var(--hand); color: var(--text); text-decoration: none; }
 .brand img { display: block; width: 30px; height: 30px; }
+nav.top .navlink { color: var(--muted); font-weight: 600; font-size: .92rem; text-decoration: none; padding: 6px 10px; border-radius: 8px; }
+nav.top .navlink:hover { color: var(--text); background: var(--surface); }
 nav.top .who { margin-left: auto; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw; }
 .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
 main { padding: 28px 0 64px; }
@@ -173,6 +175,7 @@ dialog.lbox::backdrop { background: transparent; }
 <body>
 <nav class="top"><div class="wrap">
   <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
+  <a class="navlink" href="/discover">Discover trips</a>
   <span class="who" id="who"></span>
   <a class="plan-chip" id="plan-chip" href="#settings" hidden></a>
 </div></nav>
@@ -210,9 +213,9 @@ dialog.lbox::backdrop { background: transparent; }
       <p class="muted small">Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p>
     </section>
 
-    <section class="card" id="templates" hidden>
-      <h2>Your templates</h2>
-      <p class="muted small">Trips you turned into templates for the <a href="/discover">trip gallery</a>. Drafts are only visible to you until you publish them.</p>
+    <section class="card" id="templates">
+      <h2>Trip gallery</h2>
+      <p class="muted small">Plans from trips people actually took. <a href="/discover">Browse the gallery</a> for ideas, or share a trip you've taken: drafts are only visible to you until you publish them.</p>
       <div id="templates-list"></div>
     </section>
 
@@ -744,8 +747,10 @@ dialog.lbox::backdrop { background: transparent; }
 
   function loadTemplates() {
     api("GET", "/api/templates").then(function (r) {
-      $("templates").hidden = !r.templates.length;
-      if (!r.templates.length) return;
+      if (!r.templates.length) {
+        $("templates-list").innerHTML = "<p class='empty'>No templates yet. After a trip you loved, ask your agent: <b>“turn my Waypack trip into a template”</b>. It asks what you'd keep, cut and what surprised you, removes dates and names, and shows you the draft here before anything is public.</p>";
+        return;
+      }
       var label = { draft: "<span class='status-processing'>draft</span>", published: "<span class='status-ready'>in the gallery</span>", hidden: "<span class='muted'>hidden</span>" };
       $("templates-list").innerHTML = '<table><thead><tr><th>Template</th><th class="hide-sm">Planned from it</th><th>Status</th><th></th></tr></thead><tbody>' +
         r.templates.map(function (t) {
@@ -755,7 +760,7 @@ dialog.lbox::backdrop { background: transparent; }
             (t.status === "published" ? "<button class='secondary' data-tpl-unpublish='" + esc(t.template_id) + "'>Take down</button>" : "<button data-tpl-publish='" + esc(t.template_id) + "'>Publish</button>") +
             "<button class='danger' data-tpl-delete='" + esc(t.template_id) + "'>Delete</button></div></td></tr>";
         }).join("") + "</tbody></table>";
-    }).catch(function () { $("templates").hidden = true; });
+    }).catch(function () { $("templates-list").innerHTML = "<p class='empty'>Your templates couldn't load. <a href='/discover'>Browse the gallery</a>.</p>"; });
   }
   document.addEventListener("click", function (e) {
     var b = e.target.closest("[data-tpl-publish],[data-tpl-unpublish],[data-tpl-delete]");
