@@ -6,6 +6,7 @@ import { publishBundle, tripStatus, type PublishResult, type TripRow } from "../
 import { keys, signedFileUrl, signedUploadUrl } from "../lib/storage.js";
 import { deletePreview, listPreviews, PreviewError, publishPreview, pushPreview, type PushResult } from "../lib/previews.js";
 import { ShareError, sharedTripForAgent, shareTrip, unshareTrip } from "../lib/shares.js";
+import { draftTemplate, filterCards, MONTHS, MOVES, PACES, publishedCards, setTemplateStatus, templateForAgent, TemplateError, type SearchQuery, type TemplateCard, type TemplateInput, matchReasons } from "../lib/templates.js";
 import { GUIDE } from "../generated/guide.js";
 import { ToolError, type ToolDef, type ToolResult } from "./protocol.js";
 
@@ -79,7 +80,8 @@ async function ownTrip(ctx: ToolCtx, tripId: string): Promise<TripRow> {
 export const INSTRUCTIONS = `Waypack publishes trip plans as offline mobile bundles for the Waypack phone app.
 Workflow: interview the user → research → geocode every place and compute_route every non-trivial move → write manifest.json + index.html (call get_authoring_guide first if you don't have the Waypack skill) → validate_bundle → upload (create_upload + PUT + finalize_upload, or upload_bundle_inline for chat agents) → get_trip_status until ready → tell the user to tap Download in the app.
 Live preview: as soon as there's a skeleton, push_preview and give the user the link; push again (changed files only) at milestones so they can watch it take shape on any device. When they approve, publish_preview publishes it to the app.
-Updates to an existing trip ("we booked X", "add a day", "the road is closed"): list_trips → get_trip (latest files) → revise everything the change affects → push_preview { trip_id, changed files, note } → publish_preview when approved.`;
+Updates to an existing trip ("we booked X", "add a day", "the road is closed"): list_trips → get_trip (latest files) → revise everything the change affects → push_preview { trip_id, changed files, note } → publish_preview when approved.
+Trip gallery: early in a new plan, search_templates for proven trips that fit (season, length, who's going) and offer the best ones; if the user picks one, get_template and adapt it. After a trip the user enjoyed, offer to turn it into a template: debrief them (kept / would cut / surprised), draft_template, show them the draft, publish_template only after they approve.`;
 
 export const tools: ToolDef<ToolCtx>[] = [
   {
@@ -490,6 +492,166 @@ export const tools: ToolDef<ToolCtx>[] = [
     },
   },
   {
+    name: "search_templates",
+    title: "Search the trip gallery",
+    description:
+      "Searches the public trip gallery: plans from trips people actually took, each with notes on what worked, what to cut and what surprised them. " +
+      "Call it early when planning a new trip (after you know roughly where/when/who) and offer the best matches; starting from a proven plan means fewer questions and fewer revisions. " +
+      "All filters are optional. Returns cards with `reasons` (why each fits); read one in full with get_template.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Free text: a place, region or vibe (\"Sequoia\", \"Japan\", \"snow\", \"beach\")." },
+        month: { type: "integer", minimum: 1, maximum: 12, description: "Month of travel (1 = January): only plans that suit it." },
+        length: { type: "string", enum: ["weekend", "mid", "long"], description: "weekend = 2–3 days, mid = 4–6, long = 7+." },
+        who: { type: "string", enum: ["kids", "couple", "friends", "dog"] },
+        getting_around: { type: "string", enum: ["car", "nocar"] },
+        limit: { type: "integer", minimum: 1, maximum: 20, default: 8 },
+      },
+    },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      const q: SearchQuery = {};
+      if (typeof args.query === "string" && args.query.trim()) q.q = args.query.trim().slice(0, 120);
+      if (Number.isInteger(args.month) && (args.month as number) >= 1 && (args.month as number) <= 12) q.month = args.month as number;
+      if (args.length === "weekend" || args.length === "mid" || args.length === "long") q.length = args.length;
+      if (args.who === "kids" || args.who === "couple" || args.who === "friends" || args.who === "dog") q.who = args.who;
+      if (args.getting_around === "car" || args.getting_around === "nocar") q.move = args.getting_around;
+      const limit = Math.min(20, Math.max(1, Number(args.limit) || 8));
+      const all = await publishedCards(ctx.db);
+      let hits = filterCards(all, q);
+      let relaxed = false;
+      // Nothing for the exact filters: fall back to the text/place match alone so the agent still sees nearby options.
+      if (!hits.length && q.q && Object.keys(q).length > 1) { hits = filterCards(all, { q: q.q }); relaxed = true; }
+      const results = hits.slice(0, limit).map((c) => ({ ...summarize(c, ctx.env.PUBLIC_URL), reasons: matchReasons(c, q) }));
+      const text = results.length
+        ? `${results.length} proven trip(s)${relaxed ? " matching the place (not every filter)" : ""}:\n` +
+          results.map((r, i) => `${i + 1}. ${r.title} (${r.region}): ${r.days} days, ${r.season.toLowerCase()} (traveled ${r.traveled}), ${r.pace}, ${r.getting_around}, crew ${r.crew}; planned from ${r.remix_count}×. ${r.reasons.length ? `Fits: ${r.reasons.join(", ")}. ` : ""}${r.url}`).join("\n") +
+          "\nOffer the best ones to the user; if they pick one, call get_template with its url."
+        : `No templates match yet (${all.length} in the gallery). Plan from scratch as usual.`;
+      return { text, structured: { total: all.length, relaxed, results } };
+    },
+  },
+  {
+    name: "get_template",
+    title: "Read a trip template",
+    description:
+      "Reads a template from the trip gallery (a link like https://…/trips/<slug>, or the slug) so you can plan a new trip from it: the travelers' notes (kept / would cut / surprised), what to re-check, " +
+      "and the dateless plan (manifest with places, days and items; route geometry omitted). Adapt it, don't copy it: ask only what's different (dates, who's coming, pace, start point), " +
+      "follow the notes (drop what they'd cut), re-check every item in `recheck` and all hours/closures for the new dates, geocode new places, recompute every route, set trip_id to null, " +
+      "and credit it in the Overview (\"Based on <title>, a Waypack template\").",
+    inputSchema: { type: "object", properties: { url: { type: "string", description: "Template link or slug." } }, required: ["url"] },
+    annotations: { readOnlyHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      try {
+        const t = await templateForAgent(ctx.env, ctx.db, str(args, "url")!, ctx.userId);
+        const c = t.card;
+        const notes = [...c.notes.kept.map((n) => `  + kept: ${n}`), ...c.notes.cut.map((n) => `  - would cut: ${n}`), ...c.notes.surprise.map((n) => `  ! surprised them: ${n}`)].join("\n");
+        return {
+          text:
+            `Template "${c.title}" (${t.url}): ${c.days} days in ${c.region}, traveled ${c.traveled} (${c.season.toLowerCase()}), suits ${c.months.map((m) => MONTHS[m - 1].slice(0, 3)).join(", ")}. ` +
+            `Crew: ${crewText(c)}. Pace ${c.pace}, getting around: ${c.getting_around}${c.starts_from ? `, from ${c.starts_from}` : ""}.\n` +
+            `Notes from the trip (follow these):\n${notes}\n` +
+            (c.recheck.length ? `Re-check for the new dates: ${c.recheck.join("; ")}.\n` : "") +
+            "Ask the user only what's different (dates, who's coming, pace, where they start), then adapt.\n\n" +
+            `manifest.json (dateless, routes without geometry):\n\`\`\`json\n${JSON.stringify(t.manifest, null, 2)}\n\`\`\``,
+          structured: { ...t },
+        };
+      } catch (e) {
+        if (e instanceof TemplateError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "draft_template",
+    title: "Turn a trip into a template (draft)",
+    description:
+      "Turns a trip the user has TAKEN (its end date has passed) into a template for the public trip gallery, as a draft only they can see. " +
+      "First debrief the user: what they'd keep, what they'd cut, what surprised them, would they go again, and whether to credit them by a first name (default: anonymous). " +
+      "Dates are removed automatically (only the month traveled stays), crew becomes a shape (2 adults, kids 9 & 6), booking codes are masked. Names, phone numbers, addresses of private stays " +
+      "and personal notes are NOT detected: if the plan has any, pass `manifest` with a cleaned copy. Show the user the draft link, and call publish_template only after they approve. Calling again updates the draft.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        trip_id: { type: "string" },
+        title: { type: "string", description: "Public title (defaults to the trip's). No names: \"Sequoia in the snow\", not \"The Zhous do Sequoia\"." },
+        tagline: { type: "string", description: "One sentence on what makes it good." },
+        region: { type: "string", description: "e.g. \"California, USA\" or \"Kyoto, Japan\"." },
+        notes: {
+          type: "object",
+          description: "From the debrief, in the traveler's words (short sentences, no names).",
+          properties: {
+            kept: { type: "array", items: { type: "string" }, description: "What worked; the must-dos." },
+            cut: { type: "array", items: { type: "string" }, description: "What they'd skip and why." },
+            surprise: { type: "array", items: { type: "string" }, description: "What surprised them (closures, rules, conditions)." },
+          },
+        },
+        recheck: { type: "array", items: { type: "string" }, description: "What the next planner must verify for their dates (permits, road status, seasonal hours)." },
+        tags: { type: "array", items: { type: "string" }, description: "Up to 8 short tags: \"Snow\", \"Kids\", \"No car\"." },
+        pace: { type: "string", enum: [...PACES] },
+        getting_around: { type: "string", enum: [...MOVES] },
+        good_months: { type: "array", items: { type: "integer", minimum: 1, maximum: 12 }, description: "Other months this plan suits as-is (the traveled months are always included)." },
+        starts_from: { type: "string", description: "Where it starts and how far, e.g. \"4 h from the SF Bay Area\"." },
+        author_name: { type: "string", description: "Credit (a first name or \"the Parks\"), only if the user wants it." },
+        would_go_again: { type: "boolean", default: true },
+        manifest: { type: "object", description: "Optional cleaned copy of the trip's manifest.json with personal details removed (replaces the published one for the template)." },
+      },
+      required: ["trip_id", "tagline", "region", "notes", "pace", "getting_around"],
+    },
+    annotations: { openWorldHint: false },
+    async run(args, ctx) {
+      const tripId = tripIdArg(args, true)!;
+      try {
+        const r = await draftTemplate(ctx.env, ctx.db, ctx.userId, tripId, args as unknown as TemplateInput, args.manifest as never);
+        const c = r.card;
+        return {
+          text:
+            `Draft template "${c.title}" saved (only the user can see it): ${r.url}\n` +
+            `Public card: ${c.days} days in ${c.region}, traveled ${c.traveled}, ${c.season.toLowerCase()}, crew ${crewText(c)}, ${c.pace}, ${c.getting_around}${c.author ? `, credited to ${c.author}` : ", anonymous"}.\n` +
+            `Notes: ${c.notes.kept.length} kept, ${c.notes.cut.length} would cut, ${c.notes.surprise.length} surprises. ${c.places} places across ${c.plan.length} days.\n` +
+            "Show the user this summary and the link, and ask them to check it for anything personal. Call publish_template { template_id } only after they say yes.",
+          structured: { ...r },
+        };
+      } catch (e) {
+        if (e instanceof TemplateError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "publish_template",
+    title: "Publish a template to the gallery",
+    description: "Lists a draft template in the public trip gallery. Only call this after the user has seen the draft and said yes.",
+    inputSchema: { type: "object", properties: { template_id: { type: "string" } }, required: ["template_id"] },
+    annotations: { openWorldHint: true },
+    async run(args, ctx) {
+      try {
+        const r = await setTemplateStatus(ctx.env, ctx.db, ctx.userId, str(args, "template_id")!, "published");
+        return { text: `Published: ${r.url}\nIt's in the gallery (${r.gallery_url}). To take it down, call unpublish_template.`, structured: { ...r } };
+      } catch (e) {
+        if (e instanceof TemplateError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
+    name: "unpublish_template",
+    title: "Take a template out of the gallery",
+    description: "Hides a template from the public gallery (its link stops working for others). It can be published again later.",
+    inputSchema: { type: "object", properties: { template_id: { type: "string" } }, required: ["template_id"] },
+    annotations: { destructiveHint: true, openWorldHint: false },
+    async run(args, ctx) {
+      try {
+        const r = await setTemplateStatus(ctx.env, ctx.db, ctx.userId, str(args, "template_id")!, "hidden");
+        return { text: "Taken out of the gallery; the link no longer works for others.", structured: { ...r } };
+      } catch (e) {
+        if (e instanceof TemplateError) throw new ToolError(e.message);
+        throw e;
+      }
+    },
+  },
+  {
     name: "get_trip_status",
     title: "Get trip status",
     description: "Processing status of a trip: status (processing | ready | failed), tiles_status, and sizes. Poll every ~20 s after uploading until ready.",
@@ -540,6 +702,7 @@ async function ownUpload(ctx: ToolCtx, id: string) {
 /** Soft-deletes the trip row and removes its stored files (bundles + tiles). */
 export async function deleteTripData(env: Env, db: Db, userId: string, tripId: string): Promise<void> {
   await unshareTrip(env, db, userId, tripId);
+  await db.delete("trip_templates", `trip_id=${eq(tripId)}&user_id=${eq(userId)}`);
   for (const prefix of [`bundles/${userId}/${tripId}/`, `tiles/${userId}/${tripId}/`]) {
     let cursor: string | undefined;
     do {
@@ -578,4 +741,12 @@ export function formatPush(r: PushResult): string {
     `preview_id ${r.preview_id} (pass it to the next push_preview) · ${r.files} files, ${(r.bytes / 1024).toFixed(0)} KB · expires ${r.expires_at.slice(0, 10)} unless pushed again.`,
     status,
   ].join("\n");
+}
+
+function crewText(c: TemplateCard): string {
+  return [`${c.crew.adults} adult${c.crew.adults === 1 ? "" : "s"}`, c.crew.kids.length ? `kids ${c.crew.kids.join(" & ")}` : "", c.crew.pets ? "dog" : ""].filter(Boolean).join(", ");
+}
+
+function summarize(c: TemplateCard, publicUrl: string) {
+  return { title: c.title, region: c.region, days: c.days, season: c.season, traveled: c.traveled, months: c.months, pace: c.pace, getting_around: c.getting_around, crew: crewText(c), tags: c.tags, remix_count: c.remix_count, tagline: c.tagline, url: `${publicUrl}/trips/${c.slug}` };
 }

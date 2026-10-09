@@ -18,6 +18,7 @@ import { homePage } from "./pages.js";
 import { handleMacDownload } from "./lib/releases.js";
 import { deletePreview, listPreviews, PreviewError, previewOrigin, publishPreview } from "./lib/previews.js";
 import { listShares, publicSummary, ShareError, shareByToken, shareTrip, unshareTrip } from "./lib/shares.js";
+import { deleteTemplate, filterCards, homeFeed, listCard, listMyTemplates, matchReasons, parseQuery, publicTemplate, publishedCards, setTemplateStatus, templateBySlug, TemplateError } from "./lib/templates.js";
 import { acceptInvite, companionTrips, createInvite, inviteSummary, listMembers, MemberError, removeMember, revokeInvite, tripAccess } from "./lib/members.js";
 
 const jsonErr = (status: number, error: string, extra: Record<string, unknown> = {}) => Response.json({ error, ...extra }, { status });
@@ -70,6 +71,15 @@ export async function handleApp(req: Request, env: Env): Promise<Response> {
   if (/^\/join\/[A-Za-z0-9_-]{24}$/.test(path) && req.method === "GET" && env.ASSETS) {
     return env.ASSETS.fetch(new Request(new URL("/join", req.url), req));
   }
+  // Trip gallery (Discover): the magazine home and search share one page (site/discover.html);
+  // each template has its own page (site/template.html). Data comes from /api/public/templates.
+  if ((path === "/discover/search" || path === "/discover/") && req.method === "GET" && env.ASSETS) {
+    return env.ASSETS.fetch(new Request(new URL("/discover", req.url), req));
+  }
+  if (/^\/trips\/[a-z0-9-]{3,80}$/.test(path) && req.method === "GET" && env.ASSETS) {
+    return env.ASSETS.fetch(new Request(new URL("/template", req.url), req));
+  }
+  if (path.startsWith("/api/public/templates") && req.method === "GET") return handlePublicTemplates(req, env, url);
   const inv = path.match(/^\/api\/public\/invites\/([A-Za-z0-9_-]{24})$/);
   if (inv && req.method === "GET") {
     const s = await inviteSummary(new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY), inv[1]);
@@ -222,6 +232,20 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
   const acc = m(/^\/api\/invites\/([A-Za-z0-9_-]{24})\/accept$/);
   if (acc && req.method === "POST") return members(() => acceptInvite(db, user.userId, user.email, acc[1]));
 
+  // The owner's templates (drafts are reviewed and published here or by the agent).
+  if (path === "/api/templates" && req.method === "GET") return Response.json({ templates: await listMyTemplates(env, db, user.userId) });
+  const tpl = m(/^\/api\/templates\/([0-9a-f-]{36})(\/publish|\/unpublish)?$/);
+  if (tpl) {
+    try {
+      if (req.method === "POST" && tpl[2] === "/publish") return Response.json(await setTemplateStatus(env, db, user.userId, tpl[1], "published"));
+      if (req.method === "POST" && tpl[2] === "/unpublish") return Response.json(await setTemplateStatus(env, db, user.userId, tpl[1], "hidden"));
+      if (req.method === "DELETE" && !tpl[2]) return Response.json({ ok: await deleteTemplate(db, user.userId, tpl[1]) });
+    } catch (e) {
+      if (e instanceof TemplateError) return jsonErr(e.status, e.message);
+      throw e;
+    }
+  }
+
   // Public shares of published trips.
   if (path === "/api/shares" && req.method === "GET") {
     if (!previewOrigin(env)) return Response.json({ shares: [], enabled: false });
@@ -371,4 +395,29 @@ async function members(fn: () => Promise<unknown>): Promise<Response> {
     if (e instanceof MemberError) return jsonErr(e.status, e.message);
     throw e;
   }
+}
+
+/**
+ * Public gallery data (no sign-in): `/api/public/templates/home` (magazine), `/api/public/templates?…`
+ * (search, see parseQuery) and `/api/public/templates/<slug>` (one template; drafts only for their owner).
+ */
+async function handlePublicTemplates(req: Request, env: Env, url: URL): Promise<Response> {
+  const db = new Db(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+  const path = url.pathname.replace(/\/$/, "");
+  const cache = { "Cache-Control": "public, max-age=60" };
+  if (path === "/api/public/templates/home") return Response.json(homeFeed(await publishedCards(db)), { headers: cache });
+  if (path === "/api/public/templates") {
+    const q = parseQuery(url.searchParams);
+    const all = await publishedCards(db);
+    const results = filterCards(all, q).map((c) => ({ ...listCard(c), reasons: matchReasons(c, q) }));
+    return Response.json({ query: q, total: all.length, count: results.length, results }, { headers: cache });
+  }
+  const one = path.match(/^\/api\/public\/templates\/([a-z0-9-]{3,80})$/);
+  if (one) {
+    const viewer = await authUser(req, env).catch(() => null);
+    const row = await templateBySlug(db, one[1], viewer?.userId);
+    if (!row) return jsonErr(404, "This trip isn't in the gallery (anymore).");
+    return Response.json(publicTemplate(env, row, viewer?.userId), { headers: { "Cache-Control": row.status === "published" && !viewer ? "public, max-age=60" : "no-store" } });
+  }
+  return jsonErr(404, "not found");
 }

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
+import '../models/template.dart';
 import '../models/trip.dart';
 
 class ApiException implements Exception {
@@ -92,6 +93,22 @@ class Api {
   Future<String> shareTrip(String tripId) async =>
       (await _json('POST', '/api/trips/$tripId/share'))['share_url']
           as String;
+
+  /// Trip gallery (public, no sign-in needed): the magazine home.
+  Future<DiscoverHome> discoverHome() async =>
+      DiscoverHome(await _json('GET', '/api/public/templates/home'));
+
+  /// Gallery search. Keys: q, season, month, length, who, move, sort (see templates.ts parseQuery).
+  Future<List<TripTemplate>> searchTemplates(Map<String, String> query) async {
+    final q = Uri(queryParameters: query.isEmpty ? null : query).query;
+    final j = await _json('GET', '/api/public/templates${q.isEmpty ? '' : '?$q'}');
+    return (j['results'] as List)
+        .map((t) => TripTemplate(t as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<TripTemplate> template(String slug) async =>
+      TripTemplate(await _json('GET', '/api/public/templates/$slug'));
 
   Future<List<Map<String, dynamic>>> tokens() async =>
       ((await _json('GET', '/api/tokens'))['tokens'] as List)

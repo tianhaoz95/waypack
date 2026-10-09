@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Trip template · Waypack</title>
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.png?v=2" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<link rel="stylesheet" href="/gallery.css">
+<style>
+main { padding: 18px 0 40px; }
+.crumb { font-size: .85rem; color: var(--muted); margin-bottom: 16px; }
+.crumb a { color: inherit; }
+.draft { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 20px; padding: 14px 16px; }
+.draft b { font: 700 1.5rem/1 var(--hand); }
+.draft p { flex: 1 1 320px; margin: 0; font-size: .92rem; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px; align-items: start; }
+.back { position: relative; display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; margin-top: 26px; padding: 18px 16px 16px; background: var(--paper); color: var(--cap); border-radius: 3px; box-shadow: var(--obj-shadow); transform: rotate(.6deg); }
+.msg { border-right: 1.5px solid rgba(120, 90, 60, .25); padding-right: 14px; }
+.msg .hand { display: block; font-size: 1.45rem; line-height: 1.08; font-weight: 600; }
+.msg p.hand { margin: 9px 0 0; font-size: 1.3rem; }
+.msg p.hand .k { font: 800 .62rem var(--font); letter-spacing: .08em; text-transform: uppercase; margin-right: 4px; vertical-align: 2px; }
+.msg .sig { margin-top: 12px; text-align: right; }
+.addr { display: flex; flex-direction: column; gap: 4px; }
+.addr .pmk { align-self: flex-end; margin-bottom: 4px; }
+.addr .ln { border-bottom: 1px solid rgba(120, 90, 60, .3); padding: 3px 0 4px; font-size: .8rem; font-weight: 600; line-height: 1.3; }
+.addr .ln small { display: block; font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--capm); }
+h1.t { margin: 0; font: 700 clamp(2.6rem, 6vw, 3.6rem)/.95 var(--hand); }
+.lede { font-size: 1.1rem; color: var(--muted); margin: 10px 0 12px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: .9rem; }
+.facts { margin: 10px 0 0; font-size: .9rem; color: var(--muted); }
+.plan { margin: 18px 0 6px; padding: 18px; }
+.plan h2 { margin: 0 0 4px; font: 700 1.9rem/1 var(--hand); }
+.plan label { display: block; font-weight: 600; font-size: .85rem; margin: 10px 0 4px; }
+.plan input, .plan textarea { width: 100%; min-height: 42px; font: inherit; padding: 8px 12px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--bg); color: var(--text); }
+.plan textarea { min-height: 42px; resize: vertical; }
+.plan .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.plan pre { white-space: pre-wrap; margin: 12px 0; padding: 12px 14px; border-radius: 8px; background: #2b231d; color: #f3eadb; font: 12.5px/1.55 var(--mono); }
+.plan .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.plan ol { margin: 10px 0 0; padding-left: 20px; color: var(--muted); font-size: .88rem; }
+h3.h { margin: 30px 0 12px; font: 700 2rem/1 var(--hand); }
+.rm { position: relative; border-radius: 8px; overflow: hidden; box-shadow: var(--paper-shadow); }
+.rm .rm-bg { fill: var(--surface); }
+.rm .rm-grid { stroke: var(--grid); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: .8rem; font-weight: 700; }
+.legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+.days { display: flex; flex-direction: column; gap: 10px; }
+.day { display: flex; gap: 12px; padding: 12px 14px; border-radius: 6px; background: var(--surface); box-shadow: 0 1px 2px rgba(60, 40, 20, .12); }
+.day > b { width: 52px; flex: none; font-size: .85rem; }
+.day strong { display: block; }
+.day small { display: block; margin-top: 3px; color: var(--muted); font-size: .85rem; line-height: 1.45; }
+ul.rc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+ul.rc li { display: flex; gap: 8px; align-items: baseline; }
+ul.rc li::before { content: "↻"; color: #3e7a8c; font-weight: 800; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 10px; } }
+@media (max-width: 520px) { .back { grid-template-columns: 1fr; } .msg { border-right: 0; padding-right: 0; border-bottom: 1.5px solid rgba(120, 90, 60, .25); padding-bottom: 12px; } .plan .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
+  <span class="links"><a href="/discover" class="on">Discover</a><a href="/account">Your account</a></span>
+  <span class="sp"></span>
+</div></nav>
+<main class="wrap">
+  <div id="page"><p class="muted">Loading…</p></div>
+</main>
+<footer class="foot wrap">Plans come from trips people took, with dates and names removed. Your agent re-checks everything for your dates. <a href="/discover">More trips</a></footer>
+
+<script src="/gallery.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = WG.esc;
+  var slug = (location.pathname.match(/^\/trips\/([a-z0-9-]{3,80})$/) || [])[1];
+  var c = null;
+
+  function gone() {
+    $("page").innerHTML = '<div class="sticky tilt-l" style="max-width:560px;margin:30px auto"><i class="tape"></i><b class="hand" style="font-size:2rem">This trip isn\'t in the gallery</b><p>Its owner took it down, or the link is wrong. <a href="/discover">Browse other trips</a>.</p></div>';
+  }
+  if (!slug) return gone();
+
+  function noteLines(card) {
+    var kinds = [["kept", "Kept"], ["cut", "Would cut"], ["surprise", "Surprised us"]];
+    return kinds.map(function (k) { return card.notes[k[0]].map(function (n) { return '<p class="hand"><span class="k ' + k[0] + '">' + k[1] + "</span>" + esc(n) + "</p>"; }).join(""); }).join("");
+  }
+  function render() {
+    document.title = c.title + " · Waypack trip gallery";
+    var dayStops = 0;
+    var html = "";
+    if (c.owner && c.status !== "published") {
+      html += '<div class="sticky draft"><i class="tape t2"></i><b>' + (c.status === "draft" ? "Draft: only you can see this" : "Hidden from the gallery") + "</b>" +
+        "<p>Check it for anything personal (names, phone numbers, where you stayed). Publishing lists it in the gallery for anyone to plan from.</p>" +
+        '<button class="btn" id="pub" type="button">Publish to the gallery</button><button class="btn secondary" id="del" type="button">Delete</button></div>';
+    } else if (c.owner) {
+      html += '<div class="sticky draft" style="background:#e5f2ea"><i class="tape t1"></i><b>Your template is live</b><p>' + esc(WG.planned(c)) + '. Edits from your agent go back to draft until you publish again.</p><button class="btn secondary" id="unpub" type="button">Take it down</button></div>';
+    }
+    html += '<div class="crumb"><a href="/discover">Discover</a> › <a href="/discover/search?q=' + encodeURIComponent(c.region.split(",")[0]) + '">' + esc(c.region) + "</a> › " + esc(c.title) + "</div>";
+    html += '<div class="layout"><div>' + WG.postcard(c, { big: true, rot: -1.2 }) +
+      '<div class="back"><i class="tape t1"></i><div class="msg"><span class="hand">Dear future traveler,</span>' + noteLines(c) + '<span class="hand sig">— ' + esc(c.author || "a Waypacker") + "</span></div>" +
+      '<div class="addr"><span class="pmk">' + WG.postmark(c, 58) + "</span>" +
+      '<div class="ln"><small>Who</small>' + esc(WG.crew(c)) + "</div>" +
+      '<div class="ln"><small>When</small>' + esc(c.season) + ", " + c.days + " days</div>" +
+      '<div class="ln"><small>Pace</small>' + esc(WG.cap(c.pace)) + " · " + esc(WG.move(c)) + "</div>" +
+      (c.starts_from ? '<div class="ln"><small>From</small>' + esc(c.starts_from) + "</div>" : "") +
+      '<div class="ln"><small>Would go again</small>' + (c.would_go_again ? "Yes" : "Not sure") + "</div></div></div></div>";
+    html += '<div><h1 class="t">' + esc(c.title) + '</h1><p class="lede">' + esc(c.tagline) + "</p>" +
+      '<div class="meta"><span class="stamp">✓ Traveled ' + esc(WG.traveled(c)) + "</span><span>✦ <b>" + c.remix_count + "</b> planned from it</span></div>" +
+      '<p class="facts">' + esc(c.region) + " · " + c.days + " days · " + c.places + " places · " + esc(WG.crew(c)) + " · good in " + c.months.map(function (m) { return WG.MON[m - 1]; }).join(", ") + "</p>" +
+      (c.tags.length ? '<div class="chips" style="margin-top:12px">' + c.tags.map(function (t) { return '<a class="chip" href="/discover/search?q=' + encodeURIComponent(t) + '">' + esc(t) + "</a>"; }).join("") + "</div>" : "") +
+      '<section class="card plan"><h2>Plan this trip</h2><p class="muted small" style="margin:0">Your AI agent adapts it to your dates and group, follows the notes above, re-checks hours and conditions, and sends it to the Waypack app for offline use.</p>' +
+      '<div class="two"><div><label for="when">When</label><input id="when" placeholder="e.g. Feb 13–15"></div><div><label for="who">Who\'s going</label><input id="who" placeholder="e.g. 2 adults, a 7-year-old"></div></div>' +
+      '<label for="chg">Anything to change? <span class="muted">(optional)</span></label><textarea id="chg" rows="1" placeholder="e.g. no drives over 2 hours"></textarea>' +
+      '<pre id="prompt"></pre><div class="row"><a class="btn" id="claude" target="_blank" rel="noopener">✦ Open in Claude</a><button class="btn secondary" id="copy" type="button">Copy prompt</button></div>' +
+      '<ol><li>First time? <a href="/account">Connect Waypack to your agent</a> (free).</li><li>Paste the prompt. Your agent sends a live preview link as it works.</li><li>Tap Download in the Waypack app before you lose signal.</li></ol></section>';
+    var rm = WG.routeMap(c, 640, 320);
+    if (rm) html += '<h3 class="h">The route</h3><div class="rm">' + rm + '</div><div class="legend">' + c.plan.map(function (d, i) { return '<span><i style="background:' + WG.dayColor(i) + '"></i>Day ' + (i + 1) + "</span>"; }).join("") + "</div>";
+    html += '<h3 class="h">Day by day</h3><div class="days">' + c.plan.map(function (d, i) { return '<div class="day"><b style="color:' + WG.dayColor(i) + '">Day ' + (i + 1) + "</b><div><strong>" + esc(d.title) + "</strong><small>" + d.stops.map(function (s) { return esc(s.name); }).join(" · ") + "</small></div></div>"; }).join("") + "</div>";
+    if (c.recheck.length) html += '<h3 class="h">Your agent re-checks</h3><ul class="rc">' + c.recheck.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul>";
+    html += "</div></div>";
+    $("page").innerHTML = html;
+    void dayStops;
+    wire();
+  }
+  function prompt() { return WG.prompt(c, c.url, $("when").value.trim(), $("who").value.trim(), $("chg").value.trim()); }
+  function update() { var p = prompt(); $("prompt").textContent = p; $("claude").href = "https://claude.ai/new?q=" + encodeURIComponent(p); }
+  function act(path, method) {
+    return fetch(path, { method: method, headers: { "X-Waypack": "1" }, credentials: "same-origin" }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Failed"); return j; }); });
+  }
+  function wire() {
+    ["when", "who", "chg"].forEach(function (id) { $(id).addEventListener("input", update); });
+    $("copy").addEventListener("click", function () { var b = this; navigator.clipboard.writeText(prompt()).then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy prompt"; }, 1500); }); });
+    update();
+    var pub = $("pub"), del = $("del"), unpub = $("unpub");
+    if (pub) pub.addEventListener("click", function () { pub.disabled = true; act("/api/templates/" + c.template_id + "/publish", "POST").then(load).catch(function (e) { alert(e.message); pub.disabled = false; }); });
+    if (unpub) unpub.addEventListener("click", function () { unpub.disabled = true; act("/api/templates/" + c.template_id + "/unpublish", "POST").then(load).catch(function (e) { alert(e.message); unpub.disabled = false; }); });
+    if (del) del.addEventListener("click", function () { if (!confirm("Delete this template? Your trip itself stays.")) return; act("/api/templates/" + c.template_id, "DELETE").then(function () { location.href = "/account#templates"; }).catch(function (e) { alert(e.message); }); });
+  }
+  function load() {
+    return fetch("/api/public/templates/" + slug, { credentials: "same-origin" }).then(function (r) { if (!r.ok) throw new Error("gone"); return r.json(); }).then(function (j) { c = j; render(); }).catch(gone);
+  }
+  load();
+})();
+</script>
+</body>
+</html>

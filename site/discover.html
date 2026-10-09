@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Discover trips · Waypack</title>
+<meta name="description" content="Trip plans from trips people actually took, with what worked, what they'd cut and what surprised them. Pick one and your AI agent adapts it to your dates.">
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+<link rel="icon" href="/favicon.png?v=2" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<link rel="stylesheet" href="/gallery.css">
+<style>
+/* magazine home */
+.mast { display: flex; flex-wrap: wrap; gap: 14px 30px; align-items: flex-end; justify-content: space-between; padding: 26px 0 16px; border-bottom: 2px solid var(--text); margin-bottom: 24px; }
+.mast h1 { margin: 0; font: 700 clamp(2.8rem, 7vw, 4.4rem)/.95 var(--hand); }
+.mast .issue { margin-top: 6px; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.mast form { flex: 0 1 460px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.mast form .search { width: 100%; }
+.mast .hint { font-size: .82rem; font-weight: 600; }
+.mast .hint a { text-decoration: none; }
+.lead { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+.hero { position: relative; display: block; border-radius: 4px; overflow: hidden; box-shadow: var(--obj-shadow); color: #fff; text-decoration: none; min-height: 320px; }
+.hero .scene { position: absolute; inset: 0; }
+.hero .t { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 26px 22px; background: linear-gradient(transparent, rgba(30, 20, 12, .72)); }
+.hero small, .kick { font-size: .7rem; font-weight: 900; letter-spacing: .12em; }
+.kick { color: var(--accent); }
+.hero b { display: block; font: 700 clamp(2.4rem, 5vw, 4rem)/.95 var(--hand); margin: 6px 0 8px; }
+.hero span { font-size: .95rem; opacity: .95; }
+.side { display: flex; flex-direction: column; gap: 16px; }
+.feat { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; color: inherit; text-decoration: none; }
+.feat b { display: block; font: 700 1.8rem/.95 var(--hand); margin: 3px 0 4px; }
+.feat span { font-size: .85rem; color: var(--muted); }
+.chart { padding: 14px 18px; }
+.chart h3 { margin: 0 0 6px; font: 700 1.6rem/1 var(--hand); }
+.chart a { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; color: inherit; text-decoration: none; font-size: .93rem; }
+.chart a b { width: 18px; font: 700 1.5rem/1 var(--hand); color: var(--accent); }
+.chart a span { flex: 1; }
+.chart a small { color: var(--muted); font-weight: 700; }
+.row-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 34px 0 12px; }
+.row-h h2 { margin: 0; font: 700 2rem/1 var(--hand); }
+.row-h a { font-weight: 700; font-size: .9rem; text-decoration: none; white-space: nowrap; }
+.rowc { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 20px; overflow-x: auto; padding: 4px 4px 14px; scroll-snap-type: x mandatory; }
+.rowc > * { scroll-snap-align: start; }
+.share { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; margin-top: 40px; padding: 22px; }
+.share b { font: 700 1.8rem/1 var(--hand); }
+.share p { margin: 6px 0 0; }
+.welcome { max-width: 640px; margin: 10px auto 0; padding: 22px 24px; font-size: 1rem; }
+.welcome b { display: block; font: 700 1.9rem/1 var(--hand); margin-bottom: 6px; }
+
+/* search */
+.sbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 22px 0 18px; }
+.sbar form { flex: 1 1 420px; }
+.sbar .count { margin-left: auto; font-size: .88rem; color: var(--muted); }
+.sbar select { height: 36px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .85rem var(--font); padding: 0 10px; }
+.cols { display: grid; grid-template-columns: 200px 1fr; gap: 30px; align-items: start; }
+.filters { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; }
+.filters h5 { margin: 0 0 6px; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.filters .chips { gap: 5px; }
+.filters .chip { height: 30px; font-size: .8rem; }
+.mapview { display: grid; grid-template-columns: 380px 1fr; gap: 0; height: calc(100vh - 180px); min-height: 480px; border-radius: 10px; overflow: hidden; box-shadow: var(--paper-shadow); background: var(--surface); }
+.mlist { overflow-y: auto; padding: 12px; border-right: 1px solid var(--line); }
+.mlist a { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; padding: 10px; border-radius: 10px; color: inherit; text-decoration: none; }
+.mlist a.on { box-shadow: 0 0 0 2px var(--accent); background: var(--bg); }
+.mlist a b { display: block; font: 700 1.3rem/1 var(--hand); }
+.mlist a small { display: block; font-size: .75rem; color: var(--muted); margin-top: 3px; }
+.map { position: relative; background: var(--sea); touch-action: none; cursor: grab; overflow: hidden; }
+.map.drag { cursor: grabbing; }
+.map svg.world { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map .landp { fill: var(--land); stroke: var(--edge); stroke-linejoin: round; }
+.map .pin { cursor: pointer; }
+.map .pin circle.ring { opacity: .25; }
+.map .pin.on circle.dot { fill: var(--accent); }
+.map .zoom { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.map .zoom button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--surface); color: var(--text); font: 700 1.2rem var(--font); box-shadow: 0 1px 3px rgba(60, 40, 20, .25); cursor: pointer; }
+.map .area { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); }
+.map .pop { position: absolute; width: 210px; padding: 10px; border-radius: 8px; background: var(--surface); box-shadow: 0 10px 30px -10px rgba(40, 25, 12, .5); }
+.map .pop .btn { margin-top: 8px; }
+.map .attrib { position: absolute; right: 8px; bottom: 6px; font-size: .68rem; color: var(--muted); }
+@media (max-width: 900px) {
+  .lead { grid-template-columns: 1fr; }
+  .cols { grid-template-columns: 1fr; }
+  .filters { position: static; flex-direction: row; flex-wrap: wrap; }
+  .mapview { grid-template-columns: 1fr; grid-template-rows: 55vh auto; height: auto; }
+  .mlist { border-right: 0; border-top: 1px solid var(--line); display: grid; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; }
+  .mlist a { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) { .feat { grid-template-columns: 110px 1fr; } .share { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav class="top"><div class="wrap">
+  <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
+  <span class="links"><a href="/discover" class="on">Discover</a><a href="/account">Your account</a></span>
+  <span class="sp"></span>
+</div></nav>
+
+<main class="wrap">
+  <!-- Magazine home (/discover) -->
+  <section id="home" hidden>
+    <header class="mast">
+      <div><h1>The Waypack Journal</h1><div class="issue" id="issue">Trips people actually took</div></div>
+      <form action="/discover/search" method="get" role="search">
+        <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input name="q" placeholder="Search places, seasons, who's going" aria-label="Search trips"><button class="btn" type="submit">Search</button></label>
+        <span class="hint" id="hint"></span>
+      </form>
+    </header>
+    <div id="homeBody"><p class="muted">Loading…</p></div>
+  </section>
+
+  <!-- Search (/discover/search): postcards or map -->
+  <section id="find" hidden>
+    <div class="sbar">
+      <form id="sform" role="search"><label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" name="q" placeholder="Search places, seasons, who's going" aria-label="Search trips"><button class="btn" type="submit">Search</button></label></form>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-view="cards" aria-pressed="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="3" y="4" width="8" height="7" rx="1.2"/><rect x="13" y="4" width="8" height="7" rx="1.2"/><rect x="3" y="13" width="8" height="7" rx="1.2"/><rect x="13" y="13" width="8" height="7" rx="1.2"/></svg>Postcards</button>
+        <button type="button" data-view="map" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>Map</button>
+      </div>
+      <select id="sort" aria-label="Sort"><option value="">Most planned</option><option value="new">Newest</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="cols" id="cols">
+      <aside class="filters" id="filters"></aside>
+      <div>
+        <div id="cards" class="pcgrid"></div>
+        <div id="mapview" class="mapview" hidden>
+          <div class="mlist" id="mlist"></div>
+          <div class="map" id="map">
+            <svg class="world" id="world" aria-label="Map of the trips"><path class="landp" id="landp"/><g id="pins"></g></svg>
+            <button class="btn secondary sm area" id="area" type="button" hidden>Search this area</button>
+            <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
+            <div class="pop" id="pop" hidden></div>
+            <span class="attrib">Natural Earth</span>
+          </div>
+        </div>
+        <div id="none" class="empty" hidden></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="foot wrap">Plans come from trips people took, with dates and names removed. Your agent re-checks everything for your dates. <a href="/">About Waypack</a></footer>
+
+<script src="/gallery.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = WG.esc;
+  var isSearch = /^\/discover\/search\/?$/.test(location.pathname);
+
+  // ───────────── home
+  function home() {
+    $("home").hidden = false;
+    fetch("/api/public/templates/home").then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (h) {
+      $("issue").textContent = h.issue.month + " · trips people actually took";
+      $("hint").innerHTML = h.total ? 'Browse all ' + h.total + ' as <a href="/discover/search">postcards</a> or <a href="/discover/search?view=map">a map</a>' : "";
+      if (!h.total) { $("homeBody").innerHTML = welcome(); return; }
+      var f = h.featured, side = (h.newest.filter(function (c) { return c.slug !== f.slug; })).slice(0, 2);
+      var out = '<div class="lead"><a class="hero" href="/trips/' + esc(f.slug) + '">' + WG.scene(f) +
+        '<span class="t"><small>TRIP OF THE WEEK</small><b>' + esc(f.title) + '</b><span>' + (f.notes.kept[0] ? "“" + esc(f.notes.kept[0]) + "” " : esc(f.tagline) + " ") + "· " + esc(f.author || "a Waypacker") + ", " + esc(WG.traveled(f)) + "</span></span></a>" +
+        '<div class="side">' + side.map(function (c) { return '<a class="feat" href="/trips/' + esc(c.slug) + '">' + WG.postcard(c, { rot: -1 }) + '<span><small class="kick">NEW IN THE GALLERY</small><b>' + esc(c.title) + "</b><span>" + esc(c.tagline) + "</span></span></a>"; }).join("") +
+        '<div class="card chart"><h3>Most planned</h3>' + h.most_planned.map(function (c, i) { return '<a href="/trips/' + esc(c.slug) + '"><b>' + (i + 1) + "</b><span>" + esc(c.title) + "</span><small>" + WG.k(c.remix_count) + "</small></a>"; }).join("") + "</div></div></div>";
+      if (h.in_season.length) out += row("Good in " + h.issue.month, "/discover/search?month=" + (new Date().getUTCMonth() + 1), h.in_season);
+      h.collections.forEach(function (c) { out += row(c.name, "/discover/search?" + new URLSearchParams(c.query).toString(), c.items); });
+      out += shareCard();
+      $("homeBody").innerHTML = out;
+    }).catch(function () { $("homeBody").innerHTML = '<p class="err">The gallery couldn\'t load. Try again in a moment.</p>'; });
+  }
+  function row(title, href, items) {
+    return '<div class="row-h"><h2>' + esc(title) + '</h2><a href="' + esc(href) + '">See all →</a></div><div class="rowc">' +
+      items.map(function (c, i) { return WG.card(c, { rot: i % 2 ? 1 : -1 }); }).join("") + "</div>";
+  }
+  function shareCard() {
+    return '<div class="card share"><div class="sticky tilt-l" style="width:150px"><i class="tape t1"></i><span class="hand" style="font-size:1.4rem">After a trip you loved…</span></div>' +
+      "<div><b>Share it as a template</b><p class=\"muted\">Ask your agent: “turn my Waypack trip into a template”. It asks what you'd keep, cut and what surprised you, removes dates and names, and shows you the draft before anything is public.</p></div></div>";
+  }
+  function welcome() {
+    return '<div class="sticky welcome tilt-l"><i class="tape"></i><b>The gallery is just opening</b>Plans appear here when travelers share a trip they took, with what worked, what they\'d cut and what surprised them. After your next trip, ask your agent to “turn my Waypack trip into a template”.<p style="margin:12px 0 0"><a href="/account">Connect your agent</a> · <a href="/">How Waypack works</a></p></div>';
+  }
+
+  // ───────────── search
+  var GROUPS = [
+    ["season", "Season", [["", "Any"], ["winter", "Winter"], ["spring", "Spring"], ["summer", "Summer"], ["autumn", "Autumn"]]],
+    ["length", "Length", [["", "Any"], ["weekend", "Weekend (2–3 days)"], ["mid", "4–6 days"], ["long", "A week+"]]],
+    ["who", "Who's going", [["", "Anyone"], ["kids", "With kids"], ["couple", "Couple"], ["friends", "Friends"], ["dog", "With a dog"]]],
+    ["move", "Getting around", [["", "Any"], ["car", "Car"], ["nocar", "No car"]]],
+  ];
+  var params = new URLSearchParams(location.search);
+  var view = params.get("view") === "map" ? "map" : "cards";
+  var results = [], sel = null, vb = null, inArea = null;
+
+  function syncUrl() {
+    var p = new URLSearchParams(params);
+    if (view === "map") p.set("view", "map"); else p.delete("view");
+    history.replaceState(null, "", "/discover/search" + (p.toString() ? "?" + p : ""));
+  }
+  function filters() {
+    $("filters").innerHTML = GROUPS.map(function (g) {
+      var cur = params.get(g[0]) || "";
+      return "<div><h5>" + g[1] + '</h5><div class="chips">' + g[2].map(function (o) { return '<button type="button" class="chip' + (cur === o[0] ? " on" : "") + '" data-k="' + g[0] + '" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '">' + o[1] + "</button>"; }).join("") + "</div></div>";
+    }).join("") + (params.get("month") ? '<div><h5>Month</h5><div class="chips"><button type="button" class="chip on" data-k="month" data-v="">' + WG.MONTHS[Number(params.get("month")) - 1] + " ✕</button></div></div>" : "");
+  }
+  function search() {
+    filters();
+    $("q").value = params.get("q") || "";
+    $("sort").value = params.get("sort") || "";
+    var p = new URLSearchParams(params); p.delete("view");
+    fetch("/api/public/templates?" + p).then(function (r) { return r.json(); }).then(function (j) {
+      results = j.results || [];
+      inArea = null;
+      $("count").textContent = results.length + " of " + j.total + " trip" + (j.total === 1 ? "" : "s");
+      render(true);
+      if (!j.total) { $("none").innerHTML = 'No trips in the gallery yet. <a href="/discover">See how it works</a>.'; }
+    }).catch(function () { $("none").hidden = false; $("none").innerHTML = '<span class="err">Search failed. Try again.</span>'; });
+  }
+  function shown() { return inArea || results; }
+  function render(refit) {
+    document.querySelectorAll(".seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
+    var list = shown();
+    $("none").hidden = list.length > 0;
+    if (!list.length && results.length === 0) $("none").innerHTML = "Nothing matches. Try fewer filters or another place.";
+    $("cards").hidden = view !== "cards";
+    $("mapview").hidden = view !== "map" || !results.length;
+    if (view === "cards") {
+      $("cards").innerHTML = list.map(function (c, i) { return WG.card(c, { rot: [-1, .8, 1.2, -.6][i % 4], planned: true }); }).join("");
+    } else {
+      $("mlist").innerHTML = list.map(function (c) { return '<a href="/trips/' + esc(c.slug) + '" data-slug="' + esc(c.slug) + '"' + (sel === c.slug ? ' class="on"' : "") + ">" + WG.postcard(c) + "<span><b>" + esc(c.title) + "</b><small>" + esc(c.region) + "</small><small>" + esc(WG.facts(c)) + " · " + esc(WG.crew(c)) + "</small><small>" + esc(WG.planned(c)) + "</small></span></a>"; }).join("");
+      WG.loadLand().then(function () {
+        if (!$("landp").getAttribute("d")) $("landp").setAttribute("d", WG.landPath());
+        if (refit || !vb) fit();
+        draw();
+      });
+    }
+  }
+
+  // map: equirectangular, SVG user units are (lon, -lat)
+  function fit() {
+    var pts = results.filter(function (c) { return typeof c.lon === "number"; });
+    var box = pts.length ? pts.reduce(function (b, c) { return [Math.min(b[0], c.lon), Math.min(b[1], -c.lat), Math.max(b[2], c.lon), Math.max(b[3], -c.lat)]; }, [999, 999, -999, -999]) : [-170, -75, 190, 60];
+    var r = $("map").getBoundingClientRect(), asp = r.width / Math.max(1, r.height);
+    var w = Math.max(box[2] - box[0], 12) * 1.18 + 6, h = Math.max(box[3] - box[1], 8) * 1.18 + 6;
+    if (w / h < asp) w = h * asp; else h = w / asp;
+    vb = { x: (box[0] + box[2]) / 2 - w / 2, y: (box[1] + box[3]) / 2 - h / 2, w: w, h: h };
+  }
+  function draw() {
+    var svg = $("world"), r = $("map").getBoundingClientRect(), u = vb.w / Math.max(1, r.width);
+    svg.setAttribute("viewBox", [vb.x, vb.y, vb.w, vb.h].join(" "));
+    $("landp").setAttribute("stroke-width", String(u * 1.1));
+    $("pins").innerHTML = shown().filter(function (c) { return typeof c.lon === "number"; }).map(function (c) {
+      var on = c.slug === sel;
+      return '<g class="pin' + (on ? " on" : "") + '" data-slug="' + esc(c.slug) + '" role="button" tabindex="0" aria-label="' + esc(c.title) + '"><circle class="ring" cx="' + c.lon + '" cy="' + -c.lat + '" r="' + u * (on ? 13 : 10) + '" fill="' + esc(c.accent || "#C2562D") + '"/><circle class="dot" cx="' + c.lon + '" cy="' + -c.lat + '" r="' + u * (on ? 8 : 6) + '" fill="' + esc(c.accent || "#C2562D") + '" stroke="#FFFDF8" stroke-width="' + u * 2 + '"/><title>' + esc(c.title) + "</title></g>";
+    }).join("");
+    var c = sel && results.find(function (x) { return x.slug === sel; }), pop = $("pop");
+    if (c) {
+      var px = ((c.lon - vb.x) / vb.w) * r.width, py = ((-c.lat - vb.y) / vb.h) * r.height;
+      pop.innerHTML = WG.postcard(c) + '<div style="padding-top:6px"><b class="hand" style="font-size:1.3rem">' + esc(c.title) + '</b><div class="small muted">' + esc(WG.facts(c)) + '</div></div><a class="btn sm block" href="/trips/' + esc(c.slug) + '">Open</a>';
+      pop.style.left = Math.min(Math.max(8, px + 16), r.width - 220) + "px";
+      pop.style.top = Math.min(Math.max(8, py - 60), r.height - 260) + "px";
+      pop.hidden = false;
+    } else pop.hidden = true;
+  }
+  function zoomAt(f, cx, cy) {
+    var r = $("map").getBoundingClientRect();
+    var mx = vb.x + (cx / r.width) * vb.w, my = vb.y + (cy / r.height) * vb.h;
+    var w = Math.min(400, Math.max(1.5, vb.w * f)), k = w / vb.w;
+    vb = { x: mx - (mx - vb.x) * k, y: my - (my - vb.y) * k, w: w, h: vb.h * k };
+    $("area").hidden = false;
+    draw();
+  }
+  function select(slug, scroll) {
+    sel = sel === slug ? null : slug;
+    document.querySelectorAll("#mlist a").forEach(function (a) { a.classList.toggle("on", a.dataset.slug === sel); });
+    if (sel && scroll) { var a = document.querySelector('#mlist a[data-slug="' + sel + '"]'); if (a) a.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" }); }
+    draw();
+  }
+
+  function wireSearch() {
+    $("find").hidden = false;
+    $("filters").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-k]"); if (!b) return;
+      if (b.dataset.v) params.set(b.dataset.k, b.dataset.v); else params.delete(b.dataset.k);
+      syncUrl(); search();
+    });
+    $("sform").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = $("q").value.trim(); if (v) params.set("q", v); else params.delete("q");
+      syncUrl(); search();
+    });
+    $("sort").addEventListener("change", function () { if (this.value) params.set("sort", this.value); else params.delete("sort"); syncUrl(); search(); });
+    document.querySelectorAll(".seg button").forEach(function (b) { b.addEventListener("click", function () { view = b.dataset.view; syncUrl(); render(true); }); });
+    var map = $("map"), drag = null;
+    map.addEventListener("wheel", function (e) { e.preventDefault(); var r = map.getBoundingClientRect(); zoomAt(e.deltaY > 0 ? 1.18 : 1 / 1.18, e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+    map.addEventListener("pointerdown", function (e) {
+      if (e.target.closest(".pin,.pop,.zoom,.area")) return;
+      drag = { x: e.clientX, y: e.clientY, vb: Object.assign({}, vb), moved: false }; map.setPointerCapture(e.pointerId); map.classList.add("drag");
+    });
+    map.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var r = map.getBoundingClientRect(), dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+      vb = { x: drag.vb.x - (dx / r.width) * vb.w, y: drag.vb.y - (dy / r.height) * vb.h, w: vb.w, h: vb.h };
+      draw();
+    });
+    map.addEventListener("pointerup", function () { if (drag && drag.moved) $("area").hidden = false; drag = null; map.classList.remove("drag"); });
+    $("pins").addEventListener("click", function (e) { var g = e.target.closest(".pin"); if (g) select(g.dataset.slug, true); });
+    $("pins").addEventListener("keydown", function (e) { var g = e.target.closest(".pin"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(g.dataset.slug, true); } });
+    $("mlist").addEventListener("mouseover", function (e) { var a = e.target.closest("a"); if (a && a.dataset.slug !== sel) { sel = a.dataset.slug; draw(); document.querySelectorAll("#mlist a").forEach(function (x) { x.classList.toggle("on", x === a); }); } });
+    $("zin").addEventListener("click", function () { var r = map.getBoundingClientRect(); zoomAt(1 / 1.6, r.width / 2, r.height / 2); });
+    $("zout").addEventListener("click", function () { var r = map.getBoundingClientRect(); zoomAt(1.6, r.width / 2, r.height / 2); });
+    $("area").addEventListener("click", function () {
+      inArea = results.filter(function (c) { return typeof c.lon === "number" && c.lon >= vb.x && c.lon <= vb.x + vb.w && -c.lat >= vb.y && -c.lat <= vb.y + vb.h; });
+      $("count").textContent = inArea.length + " in this area";
+      $("area").hidden = true;
+      render(false);
+    });
+    window.addEventListener("resize", function () { if (view === "map" && vb) draw(); });
+    search();
+  }
+
+  if (isSearch) wireSearch(); else home();
+})();
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../util/format.dart';
 import '../widgets/scrapbook.dart';
 import '../widgets/share_trip_sheet.dart';
+import 'discover_screen.dart';
 import 'nearby_screens.dart';
 import 'settings_screen.dart';
 import 'trip_screen.dart';
@@ -118,6 +119,19 @@ class _TopBar extends StatelessWidget {
               ],
             ),
           ),
+          RoundButton(
+            key: const Key('open-discover'),
+            tooltip: 'Discover trips',
+            icon: Icons.explore_outlined,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                settings: const RouteSettings(name: 'Discover'),
+                builder: (_) => const DiscoverScreen(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           RoundButton(
             tooltip: 'Receive from a nearby phone',
             icon: Icons.qr_code_scanner,

@@ -86,6 +86,7 @@ flutter:
     - assets/sdk_version.txt
     - assets/app/map.html
     - assets/brand/logo.png
+    - assets/data/land-110m.json
 
   # Handwritten captions on the scrapbook home screen (SIL OFL, see assets/fonts/Caveat-OFL.txt).
   fonts:

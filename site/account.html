@@ -210,6 +210,12 @@ dialog.lbox::backdrop { background: transparent; }
       <p class="muted small">Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p>
     </section>
 
+    <section class="card" id="templates" hidden>
+      <h2>Your templates</h2>
+      <p class="muted small">Trips you turned into templates for the <a href="/discover">trip gallery</a>. Drafts are only visible to you until you publish them.</p>
+      <div id="templates-list"></div>
+    </section>
+
     <section class="card" id="previews-card" hidden>
       <h2>Previews</h2>
       <p class="muted small">Drafts your agent pushed while building. They update live, aren't in the app yet, and expire 14 days after the last change.</p>
@@ -388,6 +394,7 @@ dialog.lbox::backdrop { background: transparent; }
       scrollToSection();
       loadTrips();
       loadPreviews();
+      loadTemplates();
       $("cc-cmd").textContent = "claude mcp add --transport http waypack " + m.mcp_url + "\nnpx @waypack/cli skill install";
       $("claude-url").textContent = m.mcp_url;
       $("gemini-url").textContent = m.mcp_url;
@@ -734,6 +741,31 @@ dialog.lbox::backdrop { background: transparent; }
         }).join("") + "</tbody></table>";
     }).catch(function () { $("previews-card").hidden = true; });
   }
+
+  function loadTemplates() {
+    api("GET", "/api/templates").then(function (r) {
+      $("templates").hidden = !r.templates.length;
+      if (!r.templates.length) return;
+      var label = { draft: "<span class='status-processing'>draft</span>", published: "<span class='status-ready'>in the gallery</span>", hidden: "<span class='muted'>hidden</span>" };
+      $("templates-list").innerHTML = '<table><thead><tr><th>Template</th><th class="hide-sm">Planned from it</th><th>Status</th><th></th></tr></thead><tbody>' +
+        r.templates.map(function (t) {
+          return "<tr><td><b>" + esc(t.title) + "</b><div class='muted small'>" + esc(t.card.days) + " days · " + esc(t.card.region) + "</div></td>" +
+            "<td class='hide-sm'>" + esc(t.remix_count) + "</td><td>" + (label[t.status] || esc(t.status)) + "</td>" +
+            "<td><div class='row' style='justify-content:flex-end'><a class='btn secondary' href='" + esc(t.url) + "'>Open</a>" +
+            (t.status === "published" ? "<button class='secondary' data-tpl-unpublish='" + esc(t.template_id) + "'>Take down</button>" : "<button data-tpl-publish='" + esc(t.template_id) + "'>Publish</button>") +
+            "<button class='danger' data-tpl-delete='" + esc(t.template_id) + "'>Delete</button></div></td></tr>";
+        }).join("") + "</tbody></table>";
+    }).catch(function () { $("templates").hidden = true; });
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tpl-publish],[data-tpl-unpublish],[data-tpl-delete]");
+    if (!b) return;
+    var id = b.dataset.tplPublish || b.dataset.tplUnpublish || b.dataset.tplDelete;
+    if (b.dataset.tplDelete && !confirm("Delete this template? Your trip itself stays.")) return;
+    b.disabled = true;
+    var req = b.dataset.tplDelete ? api("DELETE", "/api/templates/" + id) : api("POST", "/api/templates/" + id + (b.dataset.tplPublish ? "/publish" : "/unpublish"));
+    req.then(loadTemplates).catch(function (err) { alert(err.message); b.disabled = false; });
+  });
 
   var currentToken = null;
 
