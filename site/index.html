@@ -118,6 +118,11 @@ section .sub { color: var(--muted); max-width: 42em; margin: 0 0 28px; line-heig
   position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
   width: 96px; height: 3.5px; background: #0f172a; border-radius: 2px; opacity: 0.85; z-index: 20; pointer-events: none;
 }
+.gallery-phone .phone-status-bar { height: 34px; padding: 0 20px; background: #f6f7f9; }
+.gallery-phone .phone-status-bar .phone-status-time { font-size: 11px; }
+.gallery-phone .phone-status-bar svg { width: 13px; height: auto; }
+.gallery-phone .phone-status-bar svg:last-child { width: 19px; }
+.gallery-phone .phone-content { padding-bottom: 12px; }
 .gallery-phone img {
   display: block; width: 100%; height: auto; border-radius: 0; border: 0; box-shadow: none;
 }
@@ -252,8 +257,17 @@ footer a:hover { color: var(--text); }
           <div class="phone-chassis">
             <div class="phone-screen">
               <div class="phone-speaker" aria-hidden="true"></div>
-              <div class="phone-dynamic-island" aria-hidden="true"></div>
-              <img src="img/today.jpg" alt="Today view" loading="lazy" width="600" height="1298">
+              <div class="phone-status-bar" aria-hidden="true">
+                <span class="phone-status-time">9:41</span>
+                <div class="phone-dynamic-island"></div>
+                <div class="phone-status-icons">
+                  <svg viewBox="0 0 17 12" width="16" height="11" fill="currentColor"><rect x="0" y="8.5" width="2.8" height="3.5" rx="0.6"/><rect x="4.4" y="6" width="2.8" height="6" rx="0.6"/><rect x="8.8" y="3" width="2.8" height="9" rx="0.6"/><rect x="13.2" y="0" width="2.8" height="12" rx="0.6"/></svg>
+                  <svg viewBox="0 0 25 12" width="23" height="11" fill="currentColor"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2.5" y="2.5" width="15" height="7" rx="2" fill="currentColor"/><path d="M23 4.2c.8.3 1.3 1 1.3 1.8s-.5 1.5-1.3 1.8v-3.6z"/></svg>
+                </div>
+              </div>
+              <div class="phone-content">
+                <img src="img/today.jpg" alt="Today view" loading="lazy" width="600" height="1298">
+              </div>
               <div class="phone-home-indicator" aria-hidden="true"></div>
             </div>
           </div>
@@ -265,8 +279,17 @@ footer a:hover { color: var(--text); }
           <div class="phone-chassis">
             <div class="phone-screen">
               <div class="phone-speaker" aria-hidden="true"></div>
-              <div class="phone-dynamic-island" aria-hidden="true"></div>
-              <img src="img/plan.jpg" alt="Day-by-day plan" loading="lazy" width="600" height="1298">
+              <div class="phone-status-bar" aria-hidden="true">
+                <span class="phone-status-time">9:41</span>
+                <div class="phone-dynamic-island"></div>
+                <div class="phone-status-icons">
+                  <svg viewBox="0 0 17 12" width="16" height="11" fill="currentColor"><rect x="0" y="8.5" width="2.8" height="3.5" rx="0.6"/><rect x="4.4" y="6" width="2.8" height="6" rx="0.6"/><rect x="8.8" y="3" width="2.8" height="9" rx="0.6"/><rect x="13.2" y="0" width="2.8" height="12" rx="0.6"/></svg>
+                  <svg viewBox="0 0 25 12" width="23" height="11" fill="currentColor"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2.5" y="2.5" width="15" height="7" rx="2" fill="currentColor"/><path d="M23 4.2c.8.3 1.3 1 1.3 1.8s-.5 1.5-1.3 1.8v-3.6z"/></svg>
+                </div>
+              </div>
+              <div class="phone-content">
+                <img src="img/plan.jpg" alt="Day-by-day plan" loading="lazy" width="600" height="1298">
+              </div>
               <div class="phone-home-indicator" aria-hidden="true"></div>
             </div>
           </div>
@@ -278,8 +301,17 @@ footer a:hover { color: var(--text); }
           <div class="phone-chassis">
             <div class="phone-screen">
               <div class="phone-speaker" aria-hidden="true"></div>
-              <div class="phone-dynamic-island" aria-hidden="true"></div>
-              <img src="img/map.jpg" alt="Offline map with routes and places" loading="lazy" width="600" height="1298">
+              <div class="phone-status-bar" aria-hidden="true">
+                <span class="phone-status-time">9:41</span>
+                <div class="phone-dynamic-island"></div>
+                <div class="phone-status-icons">
+                  <svg viewBox="0 0 17 12" width="16" height="11" fill="currentColor"><rect x="0" y="8.5" width="2.8" height="3.5" rx="0.6"/><rect x="4.4" y="6" width="2.8" height="6" rx="0.6"/><rect x="8.8" y="3" width="2.8" height="9" rx="0.6"/><rect x="13.2" y="0" width="2.8" height="12" rx="0.6"/></svg>
+                  <svg viewBox="0 0 25 12" width="23" height="11" fill="currentColor"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2.5" y="2.5" width="15" height="7" rx="2" fill="currentColor"/><path d="M23 4.2c.8.3 1.3 1 1.3 1.8s-.5 1.5-1.3 1.8v-3.6z"/></svg>
+                </div>
+              </div>
+              <div class="phone-content">
+                <img src="img/map.jpg" alt="Offline map with routes and places" loading="lazy" width="600" height="1298">
+              </div>
               <div class="phone-home-indicator" aria-hidden="true"></div>
             </div>
           </div>
@@ -291,8 +323,17 @@ footer a:hover { color: var(--text); }
           <div class="phone-chassis">
             <div class="phone-screen">
               <div class="phone-speaker" aria-hidden="true"></div>
-              <div class="phone-dynamic-island" aria-hidden="true"></div>
-              <img src="img/guide.jpg" alt="Guide with packing list" loading="lazy" width="600" height="1298">
+              <div class="phone-status-bar" aria-hidden="true">
+                <span class="phone-status-time">9:41</span>
+                <div class="phone-dynamic-island"></div>
+                <div class="phone-status-icons">
+                  <svg viewBox="0 0 17 12" width="16" height="11" fill="currentColor"><rect x="0" y="8.5" width="2.8" height="3.5" rx="0.6"/><rect x="4.4" y="6" width="2.8" height="6" rx="0.6"/><rect x="8.8" y="3" width="2.8" height="9" rx="0.6"/><rect x="13.2" y="0" width="2.8" height="12" rx="0.6"/></svg>
+                  <svg viewBox="0 0 25 12" width="23" height="11" fill="currentColor"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="2.5" y="2.5" width="15" height="7" rx="2" fill="currentColor"/><path d="M23 4.2c.8.3 1.3 1 1.3 1.8s-.5 1.5-1.3 1.8v-3.6z"/></svg>
+                </div>
+              </div>
+              <div class="phone-content">
+                <img src="img/guide.jpg" alt="Guide with packing list" loading="lazy" width="600" height="1298">
+              </div>
               <div class="phone-home-indicator" aria-hidden="true"></div>
             </div>
           </div>
