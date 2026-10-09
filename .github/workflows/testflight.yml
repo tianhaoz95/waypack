@@ -37,6 +37,15 @@ jobs:
           p12-password: ${{ secrets.SIGNING_P12_PASSWORD }}
           asc-key-id: ${{ secrets.ASC_KEY_ID }}
           asc-key-p8-base64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          # Pinned Apple Development identity: the archive reuses it instead of minting a new one.
+          dev-p12-base64: ${{ secrets.DEV_SIGNING_P12_BASE64 }}
+          dev-p12-password: ${{ secrets.DEV_SIGNING_P12_PASSWORD }}
+      - name: Fail if the pinned development identity is missing
+        env:
+          HAS_DEV: ${{ secrets.DEV_SIGNING_P12_BASE64 != '' }}
+        run: |
+          [ "$HAS_DEV" = "true" ] || { echo "::error::DEV_SIGNING_P12_BASE64 is not set; the archive would mint a new Apple Development certificate (see docs/DEPLOY.md §4b)"; exit 1; }
+          security find-identity -v -p codesigning "$SIGNING_KEYCHAIN_PATH" | grep -q "Apple Development" || { echo "::error::no Apple Development identity in the keychain"; exit 1; }
       - name: Version
         env:
           TAG: ${{ github.event.release.tag_name }}
