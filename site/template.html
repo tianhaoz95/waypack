@@ -137,7 +137,7 @@ ul.rc li::before { content: "↻"; color: #3e7a8c; font-weight: 800; }
     var pub = $("pub"), del = $("del"), unpub = $("unpub");
     if (pub) pub.addEventListener("click", function () { pub.disabled = true; act("/api/templates/" + c.template_id + "/publish", "POST").then(load).catch(function (e) { alert(e.message); pub.disabled = false; }); });
     if (unpub) unpub.addEventListener("click", function () { unpub.disabled = true; act("/api/templates/" + c.template_id + "/unpublish", "POST").then(load).catch(function (e) { alert(e.message); unpub.disabled = false; }); });
-    if (del) del.addEventListener("click", function () { if (!confirm("Delete this template? Your trip itself stays.")) return; act("/api/templates/" + c.template_id, "DELETE").then(function () { location.href = "/account#templates"; }).catch(function (e) { alert(e.message); }); });
+    if (del) del.addEventListener("click", function () { if (!confirm("Delete this template? Your trip itself stays.")) return; act("/api/templates/" + c.template_id, "DELETE").then(function () { location.href = "/account#discover"; }).catch(function (e) { alert(e.message); }); });
   }
   function load() {
     return fetch("/api/public/templates/" + slug, { credentials: "same-origin" }).then(function (r) { if (!r.ok) throw new Error("gone"); return r.json(); }).then(function (j) { c = j; render(); }).catch(gone);

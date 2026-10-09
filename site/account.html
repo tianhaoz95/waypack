@@ -43,8 +43,6 @@ nav.top { border-bottom: 1px solid var(--line); background: color-mix(in srgb, v
 nav.top .wrap { display: flex; align-items: center; height: 60px; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 700 1.75rem/1 var(--hand); color: var(--text); text-decoration: none; }
 .brand img { display: block; width: 30px; height: 30px; }
-nav.top .navlink { color: var(--muted); font-weight: 600; font-size: .92rem; text-decoration: none; padding: 6px 10px; border-radius: 8px; }
-nav.top .navlink:hover { color: var(--text); background: var(--surface); }
 nav.top .who { margin-left: auto; color: var(--muted); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50vw; }
 .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
 main { padding: 28px 0 64px; }
@@ -101,6 +99,10 @@ code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5p
 .ptabs { display: flex; gap: 6px; margin: 4px 0 18px; padding: 4px; width: fit-content; max-width: 100%; border-radius: 999px; background: color-mix(in srgb, var(--text) 7%, transparent); }
 .ptabs a { padding: 8px 18px; border-radius: 999px; font-weight: 700; font-size: .95rem; color: var(--muted); text-decoration: none; white-space: nowrap; }
 .ptabs a:hover { color: var(--text); }
+details.mytpl { padding: 14px 20px; }
+details.mytpl summary { cursor: pointer; font-size: 1rem; }
+details.mytpl[open] summary { margin-bottom: 8px; }
+iframe.gallery { display: block; width: 100%; height: 900px; border: 0; margin-top: 8px; background: transparent; }
 .ptabs a[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(60, 40, 20, .18); }
 .tabpanel[hidden] { display: none !important; }
 .plan-chip { margin-left: 4px; padding: 3px 10px; border-radius: 2px; background: var(--sticky); color: #3d332b; font-size: .74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; text-decoration: none; transform: rotate(-2deg); white-space: nowrap; }
@@ -175,7 +177,6 @@ dialog.lbox::backdrop { background: transparent; }
 <body>
 <nav class="top"><div class="wrap">
   <a class="brand" href="/"><img src="/img/logo.svg" alt="" width="30" height="30">Waypack</a>
-  <a class="navlink" href="/discover">Discover trips</a>
   <span class="who" id="who"></span>
   <a class="plan-chip" id="plan-chip" href="#settings" hidden></a>
 </div></nav>
@@ -200,6 +201,7 @@ dialog.lbox::backdrop { background: transparent; }
     <div id="banner"></div>
     <nav class="ptabs" role="tablist" aria-label="Account sections">
       <a role="tab" href="#trips" data-tab="trips">Trips</a>
+      <a role="tab" href="#discover" data-tab="discover">Discover</a>
       <a role="tab" href="#setup" data-tab="setup">Set up</a>
       <a role="tab" href="#settings" data-tab="settings">Settings</a>
     </nav>
@@ -213,11 +215,6 @@ dialog.lbox::backdrop { background: transparent; }
       <p class="muted small">Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p>
     </section>
 
-    <section class="card" id="templates">
-      <h2>Trip gallery</h2>
-      <p class="muted small">Plans from trips people actually took. <a href="/discover">Browse the gallery</a> for ideas, or share a trip you've taken: drafts are only visible to you until you publish them.</p>
-      <div id="templates-list"></div>
-    </section>
 
     <section class="card" id="previews-card" hidden>
       <h2>Previews</h2>
@@ -225,6 +222,17 @@ dialog.lbox::backdrop { background: transparent; }
       <div id="previews"></div>
     </section>
 
+    </div>
+
+    <!-- Discover: the public trip gallery (site/discover.html, embedded) + the user's own templates -->
+    <div class="tabpanel" id="tab-discover" role="tabpanel" data-panel-tab="discover" hidden>
+      <h1>Discover</h1>
+    <details class="card mytpl" id="templates">
+      <summary><b>Your templates</b> <span class="muted small" id="templates-count"></span></summary>
+      <p class="muted small">Trips you shared with the gallery. Drafts are only visible to you until you publish them.</p>
+      <div id="templates-list"></div>
+    </details>
+      <iframe id="gallery" class="gallery" title="Trip gallery" loading="lazy"></iframe>
     </div>
 
     <!-- Set up: connect an agent, get the app -->
@@ -747,6 +755,10 @@ dialog.lbox::backdrop { background: transparent; }
 
   function loadTemplates() {
     api("GET", "/api/templates").then(function (r) {
+      var drafts = r.templates.filter(function (t) { return t.status === "draft"; }).length;
+      $("templates-count").textContent = r.templates.length ? "· " + r.templates.length + (drafts ? " (" + drafts + " draft" + (drafts === 1 ? "" : "s") + " to review)" : "") : "· share a trip you took";
+      // Open by default only when something needs the owner's review.
+      if (drafts) $("templates").open = true;
       if (!r.templates.length) {
         $("templates-list").innerHTML = "<p class='empty'>No templates yet. After a trip you loved, ask your agent: <b>“turn my Waypack trip into a template”</b>. It asks what you'd keep, cut and what surprised you, removes dates and names, and shows you the draft here before anything is public.</p>";
         return;
@@ -846,15 +858,17 @@ dialog.lbox::backdrop { background: transparent; }
 
   // ---------- Tabs: #trips (default) · #setup · #settings. Older links keep working:
   // #connect → Set up; #tokens, #billing, #plan, #account → Settings; #trip=<id> → Trips with that listing.
-  var TAB_OF = { trips: "trips", setup: "setup", connect: "setup", app: "setup", settings: "settings", tokens: "settings", billing: "settings", plan: "settings", account: "settings" };
+  var TAB_OF = { trips: "trips", discover: "discover", templates: "discover", setup: "setup", connect: "setup", app: "setup", settings: "settings", tokens: "settings", billing: "settings", plan: "settings", account: "settings" };
   var SCROLL_TO = { tokens: "tokens-card", billing: "plan", plan: "plan", account: "account-card" };
-  var TITLES = { trips: "Your trips", setup: "Set up", settings: "Settings" };
+  var TITLES = { trips: "Your trips", discover: "Discover", setup: "Set up", settings: "Settings" };
   function route() {
     var h = location.hash.replace(/^#/, ""), key = /^trip=/.test(h) ? "trips" : h, tab = TAB_OF[key] || "trips";
     document.querySelectorAll("[data-panel-tab]").forEach(function (el) { el.hidden = el.getAttribute("data-panel-tab") !== tab; });
     document.querySelectorAll(".ptabs [data-tab]").forEach(function (a) { a.setAttribute("aria-selected", a.getAttribute("data-tab") === tab ? "true" : "false"); });
     document.title = TITLES[tab] + " · Waypack";
     if (tab !== "trips" && OPEN) closeListing();
+    // The gallery loads the first time the tab opens.
+    if (tab === "discover" && !$("gallery").getAttribute("src")) $("gallery").setAttribute("src", "/discover?embed=1");
     scrollToSection();
   }
   // #tokens / #billing / …: bring that card into view (again once the account data has rendered).
@@ -863,6 +877,11 @@ dialog.lbox::backdrop { background: transparent; }
     if (id && $(id)) setTimeout(function () { $(id).scrollIntoView({ block: "start" }); }, 0);
   }
   window.addEventListener("hashchange", route);
+  // The embedded gallery reports its height so the page scrolls as one.
+  window.addEventListener("message", function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.type !== "waypack-gallery-height") return;
+    $("gallery").style.height = Math.max(400, Math.ceil(e.data.height)) + "px";
+  });
   route();
 
   function banner(kind, text) { $("banner").innerHTML = text ? '<div class="banner ' + kind + '">' + esc(text) + "</div>" : ""; }

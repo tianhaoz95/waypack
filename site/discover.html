@@ -77,12 +77,21 @@
 .map .pop { position: absolute; width: 210px; padding: 10px; border-radius: 8px; background: var(--surface); box-shadow: 0 10px 30px -10px rgba(40, 25, 12, .5); }
 .map .pop .btn { margin-top: 8px; }
 .map .attrib { position: absolute; right: 8px; bottom: 6px; font-size: .68rem; color: var(--muted); }
+/* Embedded in the account portal's Discover tab (/discover?embed=1): no site header/footer. */
+html.embed body { background: transparent; }
+html.embed nav.top, html.embed footer.foot { display: none; }
+html.embed main.wrap { padding: 0; max-width: none; }
+html.embed .mast { padding-top: 0; }
+html.embed .mapview { height: 640px; }
 @media (max-width: 900px) {
   .lead { grid-template-columns: 1fr; }
   .cols { grid-template-columns: 1fr; }
   .filters { position: static; flex-direction: row; flex-wrap: wrap; }
-  .mapview { grid-template-columns: 1fr; grid-template-rows: 55vh auto; height: auto; }
-  .mlist { border-right: 0; border-top: 1px solid var(--line); display: grid; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; }
+  .mapview { grid-template-columns: 1fr; grid-template-rows: min(55vh, 460px) auto; height: auto; min-height: 0; }
+  html.embed .mapview { height: auto; grid-template-rows: 460px auto; }
+  .mapview .map { grid-row: 1; }
+  .mapview .mlist { grid-row: 2; align-items: start; }
+  .mlist { border-right: 0; border-top: 1px solid var(--line); display: grid; grid-auto-flow: column; grid-auto-columns: 240px; overflow-x: auto; }
   .mlist a { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) { .feat { grid-template-columns: 110px 1fr; } .share { grid-template-columns: 1fr; } }
@@ -147,6 +156,21 @@
   var $ = function (id) { return document.getElementById(id); };
   var esc = WG.esc;
   var isSearch = /^\/discover\/search\/?$/.test(location.pathname);
+  var embed = new URLSearchParams(location.search).get("embed") === "1" && window.parent !== window;
+  if (embed) {
+    document.documentElement.classList.add("embed");
+    // Gallery pages stay in the frame; a trip page (or anything else) opens in the whole window.
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest("a[href]"); if (!a) return;
+      var u = new URL(a.href, location.href);
+      if (u.origin === location.origin && /^\/discover(\/search)?\/?$/.test(u.pathname)) { u.searchParams.set("embed", "1"); a.href = u.pathname + u.search; }
+      else a.target = "_top";
+    }, true);
+    document.querySelectorAll('form[action="/discover/search"]').forEach(function (f) { var i = document.createElement("input"); i.type = "hidden"; i.name = "embed"; i.value = "1"; f.appendChild(i); });
+    var report = function () { parent.postMessage({ type: "waypack-gallery-height", height: document.body.getBoundingClientRect().height + 24 }, location.origin); };
+    new ResizeObserver(report).observe(document.body);
+    window.addEventListener("load", report);
+  }
 
   // ───────────── home
   function home() {
@@ -192,6 +216,7 @@
   function syncUrl() {
     var p = new URLSearchParams(params);
     if (view === "map") p.set("view", "map"); else p.delete("view");
+    if (embed) p.set("embed", "1");
     history.replaceState(null, "", "/discover/search" + (p.toString() ? "?" + p : ""));
   }
   function filters() {
@@ -204,7 +229,7 @@
     filters();
     $("q").value = params.get("q") || "";
     $("sort").value = params.get("sort") || "";
-    var p = new URLSearchParams(params); p.delete("view");
+    var p = new URLSearchParams(params); p.delete("view"); p.delete("embed");
     fetch("/api/public/templates?" + p).then(function (r) { return r.json(); }).then(function (j) {
       results = j.results || [];
       inArea = null;
