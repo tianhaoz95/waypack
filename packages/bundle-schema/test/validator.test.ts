@@ -173,6 +173,7 @@ describe("validateFiles", () => {
     expect(w).toMatch(/emergency: no emergency numbers/);
     expect(w).toMatch(/packing list/);
     expect(w).toMatch(/SDK not included/);
+    expect(w).toMatch(/no top bar \(data-waypack-bar\)/);
     expect(w).toMatch(/Add to calendar/);
   });
 });

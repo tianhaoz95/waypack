@@ -17,6 +17,10 @@ class BundleWebView extends StatefulWidget {
     required this.origin,
     this.navApp,
     this.onRecover,
+    this.onBack,
+    this.onMenu,
+    this.onBarReady,
+    this.onLoaded,
   });
 
   final String url;
@@ -25,6 +29,19 @@ class BundleWebView extends StatefulWidget {
 
   /// Brings the local server back (AppState.ensureServer) before a retry.
   final Future<void> Function()? onRecover;
+
+  /// The page's top bar (added by the trip SDK): back, ⋯ trip menu, and "the bar is up".
+  final VoidCallback? onBack;
+  final VoidCallback? onMenu;
+  final VoidCallback? onBarReady;
+
+  /// The main page finished loading.
+  final VoidCallback? onLoaded;
+
+  /// The most recently created WebView; integration tests drive the page through it
+  /// (synthetic test taps don't reach a native platform view).
+  @visibleForTesting
+  static InAppWebViewController? debugLastController;
 
   @override
   State<BundleWebView> createState() => _BundleWebViewState();
@@ -128,6 +145,7 @@ class _BundleWebViewState extends State<BundleWebView> {
         ),
       ]),
       onWebViewCreated: (c) {
+        BundleWebView.debugLastController = c;
         c.addJavaScriptHandler(
           handlerName: 'openInMaps',
           callback: (args) async {
@@ -160,6 +178,28 @@ class _BundleWebViewState extends State<BundleWebView> {
               TripEvent.fromBridge(a),
               app: '${a['app'] ?? 'auto'}',
             );
+            return true;
+          },
+        );
+        // Waypack top bar (SDK ≥ 1.1): the page draws the bar, the app acts on its buttons.
+        c.addJavaScriptHandler(
+          handlerName: 'waypackBack',
+          callback: (_) {
+            widget.onBack?.call();
+            return true;
+          },
+        );
+        c.addJavaScriptHandler(
+          handlerName: 'waypackMenu',
+          callback: (_) {
+            widget.onMenu?.call();
+            return true;
+          },
+        );
+        c.addJavaScriptHandler(
+          handlerName: 'waypackBar',
+          callback: (_) {
+            widget.onBarReady?.call();
             return true;
           },
         );
@@ -209,6 +249,7 @@ class _BundleWebViewState extends State<BundleWebView> {
               : PermissionResponseAction.DENY,
         );
       },
+      onLoadStop: (c, url) => widget.onLoaded?.call(),
       onReceivedError: (c, req, err) {
         if (req.isForMainFrame != true || !mounted) return;
         // Usually the local server was torn down while the app was in the

@@ -55,15 +55,16 @@ small { font-size: .85rem; }
 @keyframes wp-rain { from { transform: translate(0, 0); } to { transform: translate(-60px, 360px); } }
 @media (prefers-reduced-motion: reduce) { .p-fall, .p-drift, .p-rain { animation: none; } }
 
-/* ---------- Sticky top navigation bar with sidebar toggle ---------- */
+/* ---------- Top bar ----------
+   The Waypack SDK pins this bar to the top (sticky, safe-area padding) and adds its buttons:
+   back and ⋯ in the app, ☰ for the sections menu. Style it freely; don't position it. */
 .topbar {
-  position: sticky; top: 0; left: 0; right: 0; z-index: 25;
-  display: flex; align-items: center; gap: 10px;
-  min-height: 52px;
-  padding: calc(env(safe-area-inset-top) + 6px) 16px 8px 12px;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 6px) 12px 8px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--line);
+  --wp-bar-btn-bg: var(--surface-2);
 }
 .topbar-inner { flex: 1; min-width: 0; }
 .topbar h1 { font-size: 1.05rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
@@ -170,18 +171,7 @@ details summary { min-height: 40px; display: flex; align-items: center; font-wei
 .sheet .btn .cal-icon { width: 26px; height: 26px; border-radius: 6px; display: grid; place-items: center; font-size: 14px; font-weight: 800; }
 .sheet .note { color: var(--muted); font-size: .82rem; margin: 10px 2px 0; }
 
-/* ---------- Navigation toggle & backdrop (collapsible sidebar on mobile) ---------- */
-.nav-toggle {
-  position: relative; z-index: 1;
-  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  color: var(--text); font-size: 1.25rem; line-height: 1;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  transition: background .15s ease;
-}
-.nav-toggle:active { background: color-mix(in srgb, var(--surface-2) 80%, var(--text)); }
+/* ---------- Sidebar backdrop (collapsible sidebar on mobile) ---------- */
 .nav-scrim {
   position: fixed; inset: 0; z-index: 28;
   background: rgba(0, 0, 0, 0.45);
@@ -242,9 +232,12 @@ details summary { min-height: 40px; display: flex; align-items: center; font-wei
 /* ---------- Desktop: rail + pinned map ---------- */
 @media (min-width: 1100px) {
   html { scroll-padding-top: 16px; scroll-padding-bottom: 16px; }
+  html[data-waypack-app] { scroll-padding-top: calc(env(safe-area-inset-top) + 64px); }
   body { padding-bottom: 0; }
   body.wide { padding-left: var(--rail-w); padding-right: min(42vw, 640px); }
-  .nav-toggle, .nav-scrim, .nav-close, .topbar { display: none !important; }
+  /* The rail is always visible: no ☰. On the web the top bar goes too; in the app it stays for back and ⋯. */
+  .nav-scrim, .nav-close, .wp-bar-menu { display: none !important; }
+  html:not([data-waypack-app]) .topbar { display: none !important; }
   .hero-banner .hero-text { padding-left: 24px; }
   .sidebar {
     top: 0; bottom: 0; right: auto; width: var(--rail-w); height: auto;
@@ -271,7 +264,7 @@ details summary { min-height: 40px; display: flex; align-items: center; font-wei
 }
 
 @media print {
-  .sidebar, .tabbar, .nav-toggle, .nav-scrim, .topbar, .tab-map, #map-pane, .btn, .filters, .hero-banner .scene { display: none !important; }
+  .sidebar, .tabbar, .nav-scrim, .topbar, .tab-map, #map-pane, .btn, .filters, .hero-banner .scene { display: none !important; }
   .tab[hidden] { display: block !important; }
   .card, .item { break-inside: avoid; }
 }

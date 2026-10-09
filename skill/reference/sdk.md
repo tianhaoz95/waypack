@@ -40,10 +40,30 @@ Waypack.downloadCalendar({ dates?, filename? }) // whole trip (or some dates) as
 
 Waypack.openExternal(url)           // system browser
 Waypack.share(text)                 // native share sheet
+Waypack.onMenu(open | null)         // shows the top bar's ☰ and calls open(); null hides it
 
 Waypack.categories                  // { lodging: {color, emoji, label}, … } for consistent styling
 Waypack.routeModes                  // { driving: {color, dash?, label}, … }
 ```
+
+## Top bar (v1.1)
+
+Every trip has exactly one top bar. **You own its look and title; the SDK owns its controls and position.**
+
+```html
+<body>
+  <header data-waypack-bar class="topbar">   <!-- first element in <body> -->
+    <h1>Lake Tahoe, January</h1>             <!-- your title, badges, styling -->
+  </header>
+  …
+```
+
+- The SDK adds, in this order: **‹ back** (app only: returns to the trip list), **☰** (only after `Waypack.onMenu(fn)`; opens your sections drawer), your content, then **⋯** (app only: the Waypack trip menu with Today, Map, Ask, Share, hand-off and delete). Don't build these yourself.
+- It keeps the bar first in `<body>`, `position: sticky; top: 0`, with safe-area padding, and in the app always visible (also on wide screens).
+- Style freely: background, border, fonts, title, height (≥ 52px). Button colours: `--wp-bar-btn-bg`, `--wp-bar-btn-fg`. Don't set its `position`, `top`, `transform` or `display`; those are fixed.
+- Nothing else may be fixed or sticky at the top of the page.
+- No bar in the page? The SDK adds a plain one with `manifest.title`, so the app's buttons always exist. The validator warns about it.
+- Hide the ☰ when your sections are always visible (e.g. a desktop rail): `@media (min-width: 1100px) { .wp-bar-menu { display: none !important } }` (the template does this).
 
 ## Notes
 - **Add to calendar.** In the app, Apple Calendar opens the native "new event" sheet (works offline); on the Mac app it opens Calendar with an `.ics`. Google Calendar opens Google's add-event page (needs signal); on Android it uses the device calendar. In a browser, Apple downloads an `.ics` and Google opens the link. Times are local to `manifest.timezone`. With no `end_time`, the event runs until the next timed item (at most 3 hours), or 1 hour for the day's last item. An item with no `time` becomes an all-day event. The template's `data-cal="<date>|<index>"` buttons already open an Apple/Google chooser.

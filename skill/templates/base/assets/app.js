@@ -127,22 +127,26 @@
   var currentTab = "today";
   var sidebar = $("#sidebar");
   var navScrim = $("#nav-scrim");
-  var navToggle = $("#nav-toggle");
   var navClose = $("#nav-close");
+  // The ☰ button lives in the Waypack top bar (added by the SDK); keep its aria-expanded in sync.
+  function setExpanded(open) {
+    var b = document.querySelector("[data-waypack-bar] .wp-bar-menu");
+    if (b) b.setAttribute("aria-expanded", open ? "true" : "false");
+  }
 
   function openSidebar() {
     if (!sidebar) return;
     sidebar.classList.add("open");
     if (navScrim) navScrim.hidden = false;
-    if (navToggle) navToggle.setAttribute("aria-expanded", "true");
+    setExpanded(true);
   }
   function closeSidebar() {
     if (!sidebar) return;
     sidebar.classList.remove("open");
     if (navScrim) navScrim.hidden = true;
-    if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+    setExpanded(false);
   }
-  if (navToggle) navToggle.addEventListener("click", function () {
+  if (window.Waypack && Waypack.onMenu) Waypack.onMenu(function () {
     if (sidebar && sidebar.classList.contains("open")) closeSidebar(); else openSidebar();
   });
   if (navClose) navClose.addEventListener("click", closeSidebar);

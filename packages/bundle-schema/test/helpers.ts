@@ -33,7 +33,7 @@ export function baseManifest(): Manifest {
 
 export const goodHtml = `<!doctype html><html><head><meta name="viewport" content="width=device-width">
 <link rel="stylesheet" href="assets/style.css"><script src="/__waypack/sdk/v1/waypack.js"></script></head>
-<body><h2>Packing</h2><h2>Budget</h2><h2>Emergency</h2><h2>Backup plan</h2>
+<body><header data-waypack-bar><h1>Trip</h1></header><h2>Packing</h2><h2>Budget</h2><h2>Emergency</h2><h2>Backup plan</h2>
 <button onclick="Waypack.openInMaps('lodge')">Navigate</button><button onclick="Waypack.addToCalendar({date:'2026-12-24',index:0})">Add to calendar</button>
 <a href="https://nps.gov">NPS</a><img src="data:image/png;base64,AAAA"><script src="assets/app.js"></script></body></html>`;
 

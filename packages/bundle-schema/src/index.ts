@@ -109,6 +109,10 @@ export function validateFiles(input: BundleFile[]): ValidationResult {
       warnings.push({ path: "index.html", message: "Waypack SDK not included", hint: `add <script src="${SDK_SCRIPT_PATH}"></script> for offline maps and Navigate buttons` });
     }
     if (!/<meta[^>]+name=["']?viewport/i.test(html)) warnings.push({ path: "index.html", message: "no viewport meta tag; the page won't be mobile-friendly" });
+    // The trip's one top bar: the page styles it and sets the title; the SDK adds back / ☰ / ⋯ and pins it.
+    if (!/data-waypack-bar/i.test(html)) {
+      warnings.push({ path: "index.html", message: "no top bar (data-waypack-bar)", hint: 'add <header data-waypack-bar><h1>Trip title</h1></header> as the first element in <body> and style it; the SDK adds the back, menu and trip-menu buttons (without one it adds a plain bar)' });
+    }
   }
   const lower = allText.toLowerCase();
   const nudges: [RegExp, string][] = [

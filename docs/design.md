@@ -349,7 +349,7 @@ Exposed as `window.Waypack`.
 - Category → icon/color mapping built in; routes styled by mode (hiking dashed, driving solid).
 - User location: MapLibre `GeolocateControl` (GPS works offline). App must grant WebView geolocation permission.
 - Attribution control always visible: "© OpenStreetMap contributors, Protomaps" (ODbL requirement).
-- Native bridge (in-app): `openInMaps`, `openExternal`, `share` call Flutter via `flutter_inappwebview` JavaScript handlers; on web, fall back to standard URLs (`https://www.google.com/maps/dir/?api=1&destination=lat,lon`, `https://maps.apple.com/?daddr=lat,lon`).
+- Native bridge (in-app): `openInMaps`, `openExternal`, `share`, `addToCalendar` and the top bar's `waypackBack`, `waypackMenu`, `waypackBar` (bar is up) call Flutter via `flutter_inappwebview` JavaScript handlers; on web, fall back to standard URLs (`https://www.google.com/maps/dir/?api=1&destination=lat,lon`, `https://maps.apple.com/?daddr=lat,lon`).
 
 ---
 
@@ -358,7 +358,7 @@ Exposed as `window.Waypack`.
 ### 8.1 Screens
 1. **Sign in** — Sign in with Apple, Google, email magic link (Supabase).
 2. **Trips** — upcoming/past; per trip: dates, download state (Not downloaded / Downloading x% / Offline ✓ / Update available), size.
-3. **Trip** — opens the bundle full-screen in a WebView; a small native overlay button reveals: Today, Map, Info (download status, version, last synced), Re-download, Delete local copy.
+3. **Trip** — opens the bundle full-screen in a WebView. Nothing native is drawn over it: the page's one top bar (`<header data-waypack-bar>`, styled by the agent) gets its back, ☰ and ⋯ buttons from the trip SDK, and ⋯ opens the native trip menu: Today, Map, Ask, Share, hand-off, invite, Re-download, Delete local copy. A page without the SDK falls back to a floating ⋯ button.
 4. **Today (native)** — rendered from `manifest.json`: current/next items, tap → navigate. Guaranteed to work even if the bundle UI is buggy.
 5. **Settings** — account, subscription (RevenueCat paywall), storage used, API tokens, "How to connect your agent" (MCP URL + skill install instructions), attribution/licenses.
 

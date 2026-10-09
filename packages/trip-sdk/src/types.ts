@@ -44,6 +44,11 @@ export interface WaypackSDK {
   calendarEvents(): Promise<import("./calendar.js").CalEvent[]>;
   /** Downloads an .ics file with the whole trip (or some dates). Browser only; the app adds events one by one. */
   downloadCalendar(opts?: { dates?: string[]; filename?: string }): void;
+  /**
+   * The top bar (v1.1): the SDK adds back / ☰ / ⋯ to `<header data-waypack-bar>` (or creates one).
+   * Register the page's section menu here to show the ☰ button; pass null to hide it.
+   */
+  onMenu(open: (() => void) | null): void;
   /** Additive helpers (v1.x). */
   categories: Record<string, { color: string; emoji: string; label: string }>;
   routeModes: Record<string, { color: string; dash?: number[]; label: string }>;

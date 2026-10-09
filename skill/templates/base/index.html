@@ -15,9 +15,9 @@
   <!-- Collapsible navigation backdrop for mobile screens -->
   <div class="nav-scrim" id="nav-scrim" hidden></div>
 
-  <!-- Sticky top bar with sidebar menu toggle for mobile/tablet screens -->
-  <header class="topbar" id="topbar">
-    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span aria-hidden="true">☰</span></button>
+  <!-- The trip's one top bar. Style it and set its title; the Waypack SDK adds the controls
+       (back and ⋯ in the app, ☰ for the sections menu) and keeps it pinned to the top. -->
+  <header class="topbar" id="topbar" data-waypack-bar>
     <div class="topbar-inner"><h1 id="bar-title">Trip</h1></div>
     <span id="net" class="net" hidden>Offline</span>
   </header>

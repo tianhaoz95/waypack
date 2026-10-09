@@ -1,6 +1,6 @@
 {
   "name": "@waypack/trip-sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "window.Waypack — the JavaScript SDK that trip bundles use for offline maps and native hand-offs",
   "type": "module",
   "main": "dist/waypack.js",

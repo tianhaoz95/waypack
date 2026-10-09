@@ -1,4 +1,5 @@
 import type { Manifest } from "@waypack/bundle-schema";
+import { mountBar, setMenu } from "./bar.js";
 import { callNative, host } from "./host.js";
 import { chooseApp, mapsUrl } from "./links.js";
 import { createMap } from "./map.js";
@@ -147,9 +148,12 @@ const Waypack: WaypackSDK = {
     });
   },
 
+  onMenu: setMenu,
+
   categories,
   routeModes,
 };
 
 (window as unknown as { Waypack: WaypackSDK }).Waypack = Waypack;
+mountBar(() => manifest().then((m) => m.title));
 export default Waypack;

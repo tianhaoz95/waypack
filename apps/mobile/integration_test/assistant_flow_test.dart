@@ -7,6 +7,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/main.dart';
+import 'package:waypack/screens/trip_screen.dart';
 
 const email = String.fromEnvironment(
   'TEST_EMAIL',
@@ -72,7 +73,7 @@ void main() {
     await until(t, find.byTooltip('Available offline'));
     await t.tap(find.byTooltip('Available offline').first);
     await settle(t, 3000);
-    await t.tap(find.byTooltip('Waypack menu'));
+    t.state<TripScreenState>(find.byType(TripScreen)).openMenu(); // the page's ⋯ button
     await settle(t);
     await t.tap(find.text('Ask'));
     await settle(t, 2500);

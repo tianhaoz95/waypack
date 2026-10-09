@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:waypack/config.dart';
 import 'package:waypack/main.dart';
+import 'package:waypack/screens/trip_screen.dart';
 
 const email = String.fromEnvironment(
   'TEST_EMAIL',
@@ -136,7 +137,7 @@ void main() {
     // Open the trip (WebView). Give the map time to render for the host-side screenshot.
     await t.tap(find.text('Sequoia Winter Weekend'));
     await t.pump(const Duration(seconds: 2));
-    expect(find.byTooltip('Waypack menu'), findsOneWidget);
+    expect(find.byType(TripScreen), findsOneWidget);
     final shotDelay =
         int.tryParse(
           const String.fromEnvironment('SHOT_DELAY', defaultValue: '6'),
@@ -147,7 +148,7 @@ void main() {
     }
 
     // Native Today view from the manifest.
-    await t.tap(find.byTooltip('Waypack menu'));
+    t.state<TripScreenState>(find.byType(TripScreen)).openMenu(); // the page's ⋯ button
     await t.pumpAndSettle();
     await t.tap(find.text('Today'));
     await pumpUntil(t, find.textContaining('days to go'));
@@ -157,7 +158,7 @@ void main() {
     // Native offline Map (SDK page served by the app, tiles from the device).
     await t.pageBack();
     await t.pumpAndSettle();
-    await t.tap(find.byTooltip('Waypack menu'));
+    t.state<TripScreenState>(find.byType(TripScreen)).openMenu(); // the page's ⋯ button
     await t.pumpAndSettle();
     await t.tap(find.text('Map'));
     for (var i = 0; i < shotDelay * 2; i++) {

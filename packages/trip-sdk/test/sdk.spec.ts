@@ -10,6 +10,41 @@ async function tap(l: Locator) {
 const BASE = "http://127.0.0.1:4199/t/local/";
 
 test.describe("Waypack SDK in a phone viewport", () => {
+  test("top bar on the web: pinned first, no app-only buttons", async ({ page }) => {
+    await page.goto(BASE);
+    const bar = page.locator("[data-waypack-bar]");
+    await expect(bar).toBeVisible();
+    expect(await page.evaluate(() => document.body.firstElementChild?.hasAttribute("data-waypack-bar"))).toBe(true);
+    await expect(bar.locator(".wp-bar-back")).toHaveCount(0);
+    await expect(bar.locator(".wp-bar-more")).toHaveCount(0);
+    // This example has a bottom tab bar and no section drawer, so no ☰ either.
+    await expect(bar.locator(".wp-bar-menu")).toBeHidden();
+    await page.evaluate(() => window.scrollTo(0, 800));
+    expect(await bar.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBe(0);
+  });
+
+  test("top bar in the app: back, sections menu and trip menu call the shell", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __WAYPACK_HOST__: unknown; __calls: string[]; flutter_inappwebview: unknown };
+      w.__WAYPACK_HOST__ = { platform: "ios" };
+      w.__calls = [];
+      w.flutter_inappwebview = { callHandler: (n: string) => (w.__calls.push(n), Promise.resolve(true)) };
+    });
+    await page.goto(BASE);
+    const bar = page.locator("[data-waypack-bar]");
+    await expect(bar.locator(".wp-bar-back")).toBeVisible();
+    await expect(bar.locator(".wp-bar-more")).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-waypack-app", "");
+    let opened = 0;
+    await page.exposeFunction("__menuOpened", () => opened++);
+    await page.evaluate(() => (window as unknown as { Waypack: { onMenu(f: () => void): void } }).Waypack.onMenu(() => (window as unknown as { __menuOpened(): void }).__menuOpened()));
+    await bar.locator(".wp-bar-menu").click();
+    await bar.locator(".wp-bar-back").click();
+    await bar.locator(".wp-bar-more").click();
+    await expect.poll(() => opened).toBe(1);
+    expect(await page.evaluate(() => (window as unknown as { __calls: string[] }).__calls)).toEqual(["waypackBar", "waypackBack", "waypackMenu"]);
+  });
+
   test("renders the offline map with no external requests or CSP violations", async ({ page }) => {
     const external: string[] = [];
     const problems: string[] = [];

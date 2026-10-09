@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,10 +13,56 @@ import 'assistant_screen.dart';
 import 'nearby_screens.dart';
 import 'today_screen.dart';
 
-/// Full-screen trip bundle with a small native overlay button (design §8.1 #3).
-class TripScreen extends StatelessWidget {
+/// The trip bundle, full screen. Its one top bar is drawn by the page (trip SDK ≥ 1.1: back, ☰,
+/// title, ⋯), so nothing native floats over trip content; the bar's buttons call back into here.
+/// Pages without the bar (no SDK, broken page) get the old floating ⋯ button as a fallback.
+class TripScreen extends StatefulWidget {
   const TripScreen({super.key, required this.tripId});
   final String tripId;
+
+  @override
+  State<TripScreen> createState() => TripScreenState();
+}
+
+class TripScreenState extends State<TripScreen> {
+  bool _barReady = false;
+  bool _showFallback = false;
+  Timer? _fallbackTimer;
+
+  String get tripId => widget.tripId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Even if the page never finishes loading, don't leave the user without the menu.
+    _armFallback(const Duration(seconds: 6));
+  }
+
+  @override
+  void dispose() {
+    _fallbackTimer?.cancel();
+    super.dispose();
+  }
+
+  void _armFallback(Duration after) {
+    _fallbackTimer?.cancel();
+    _fallbackTimer = Timer(after, () {
+      if (mounted && !_barReady) setState(() => _showFallback = true);
+    });
+  }
+
+  void _onBarReady() {
+    _fallbackTimer?.cancel();
+    if (!_barReady || _showFallback) {
+      setState(() {
+        _barReady = true;
+        _showFallback = false;
+      });
+    }
+  }
+
+  /// Opens the trip menu (the page's ⋯ button; also used by integration tests).
+  void openMenu() => _menu(context);
 
   @override
   Widget build(BuildContext context) {
@@ -44,18 +92,26 @@ class TripScreen extends StatelessWidget {
               url: s.server.tripUrl(tripId),
               origin: s.server.origin,
               onRecover: s.ensureServer,
+              onBack: () => Navigator.maybePop(context),
+              onMenu: openMenu,
+              onBarReady: _onBarReady,
+              onLoaded: () {
+                if (!_barReady) {
+                  _armFallback(const Duration(milliseconds: 1500));
+                }
+              },
             ),
           ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomRight,
-              child: Padding(
-                // Sit above typical bottom tab bars (64px) without covering them.
-                padding: const EdgeInsets.only(right: 12, bottom: 76),
-                child: _MenuButton(onPressed: () => _menu(context)),
+          if (_showFallback)
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12, bottom: 76),
+                  child: _MenuButton(onPressed: openMenu),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

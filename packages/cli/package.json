@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@waypack/bundle-schema": "1.0.0",
-    "@waypack/trip-sdk": "1.0.0"
+    "@waypack/trip-sdk": "1.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
