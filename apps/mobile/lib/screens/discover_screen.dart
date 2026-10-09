@@ -27,11 +27,20 @@ void openTemplate(BuildContext context, TripTemplate t) => Navigator.push(
   ),
 );
 
-void openSearch(BuildContext context, {Map<String, String> query = const {}, bool map = false, String? title}) => Navigator.push(
+void openSearch(
+  BuildContext context, {
+  Map<String, String> query = const {},
+  bool map = false,
+  String? title,
+}) => Navigator.push(
   context,
   MaterialPageRoute(
     settings: const RouteSettings(name: 'TemplateSearch'),
-    builder: (_) => TemplateSearchScreen(initialQuery: query, startOnMap: map, title: title),
+    builder: (_) => TemplateSearchScreen(
+      initialQuery: query,
+      startOnMap: map,
+      title: title,
+    ),
   ),
 );
 
@@ -59,7 +68,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final h = await _api(context).discoverHome();
       if (mounted) setState(() => _home = h);
     } catch (e) {
-      if (mounted) setState(() => _error = "The gallery couldn't load. Check your connection and try again.");
+      if (mounted) {
+        setState(
+          () => _error =
+              "The gallery couldn't load. Check your connection and try again.",
+        );
+      }
     }
   }
 
@@ -69,7 +83,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     final h = _home;
     return KraftScaffold(
       title: 'The Waypack Journal',
-      subtitle: h == null ? 'Trips people actually took' : '${h.month} · trips people actually took',
+      subtitle: h == null
+          ? 'Trips people actually took'
+          : '${h.month} · trips people actually took',
       maxWidth: 900,
       body: _error != null
           ? _Retry(message: _error!, onRetry: _load)
@@ -80,17 +96,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 40),
                 children: [
-                  _SearchPill(onTap: () => openSearch(context), onMap: () => openSearch(context, map: true)),
-                  if (h.total == 0) const _Welcome() else ...[
+                  _SearchPill(
+                    onTap: () => openSearch(context),
+                    onMap: () => openSearch(context, map: true),
+                  ),
+                  if (h.total == 0)
+                    const _Welcome()
+                  else ...[
                     if (h.featured != null) _Hero(t: h.featured!),
                     if (h.inSeason.isNotEmpty)
                       _Row(
                         title: 'Good in ${h.month}',
                         items: h.inSeason,
-                        onAll: () => openSearch(context, query: {'month': '${DateTime.now().month}'}, title: 'Good in ${h.month}'),
+                        onAll: () => openSearch(
+                          context,
+                          query: {'month': '${DateTime.now().month}'},
+                          title: 'Good in ${h.month}',
+                        ),
                       ),
                     for (final c in h.collections)
-                      _Row(title: c.name, items: c.items, onAll: () => openSearch(context, query: c.query, title: c.name)),
+                      _Row(
+                        title: c.name,
+                        items: c.items,
+                        onAll: () =>
+                            openSearch(context, query: c.query, title: c.name),
+                      ),
                     if (h.mostPlanned.isNotEmpty) ...[
                       const SectionTitle('Most planned'),
                       PaperCard(
@@ -99,20 +129,49 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             InkWell(
                               onTap: () => openTemplate(context, t),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 11,
+                                ),
                                 child: Row(
                                   children: [
-                                    SizedBox(width: 26, child: Text('${i + 1}', style: hand(26, p.accent))),
+                                    SizedBox(
+                                      width: 26,
+                                      child: Text(
+                                        '${i + 1}',
+                                        style: hand(26, p.accent),
+                                      ),
+                                    ),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(t.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                                          Text(t.facts, style: TextStyle(fontSize: 12, color: p.muted)),
+                                          Text(
+                                            t.title,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            t.facts,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: p.muted,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
-                                    Text('${t.remixCount}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.muted)),
+                                    Text(
+                                      '${t.remixCount}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: p.muted,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -163,8 +222,17 @@ class _SearchPill extends StatelessWidget {
                 const SizedBox(width: 16),
                 Icon(Icons.search, size: 20, color: p.muted),
                 const SizedBox(width: 10),
-                Expanded(child: Text("Search places, seasons, who's going", style: TextStyle(fontSize: 14.5, color: p.muted))),
-                IconButton(tooltip: 'Map', onPressed: onMap, icon: Icon(Icons.map_outlined, color: p.muted)),
+                Expanded(
+                  child: Text(
+                    "Search places, seasons, who's going",
+                    style: TextStyle(fontSize: 14.5, color: p.muted),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Map',
+                  onPressed: onMap,
+                  icon: Icon(Icons.map_outlined, color: p.muted),
+                ),
                 const SizedBox(width: 4),
               ],
             ),
@@ -180,7 +248,9 @@ class _Hero extends StatelessWidget {
   final TripTemplate t;
   @override
   Widget build(BuildContext context) {
-    final quote = t.notes('kept').isNotEmpty ? '“${t.notes('kept').first}”' : t.tagline;
+    final quote = t.notes('kept').isNotEmpty
+        ? '“${t.notes('kept').first}”'
+        : t.tagline;
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
       child: Semantics(
@@ -189,7 +259,10 @@ class _Hero extends StatelessWidget {
         child: GestureDetector(
           onTap: () => openTemplate(context, t),
           child: Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), boxShadow: paperShadow),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: paperShadow,
+            ),
             clipBehavior: Clip.antiAlias,
             child: AspectRatio(
               aspectRatio: 1 / .9,
@@ -214,7 +287,15 @@ class _Hero extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('TRIP OF THE WEEK', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+                          const Text(
+                            'TRIP OF THE WEEK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.3,
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           Text(t.title, style: hand(40, Colors.white)),
                           const SizedBox(height: 6),
@@ -222,7 +303,12 @@ class _Hero extends StatelessWidget {
                             '$quote · ${t.author ?? 'a Waypacker'}, ${t.traveledLabel}',
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500, height: 1.35),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              height: 1.35,
+                            ),
                           ),
                         ],
                       ),
@@ -253,7 +339,12 @@ class _Row extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 24, 12, 8),
           child: Row(
             children: [
-              Expanded(child: Semantics(header: true, child: Text(title, style: hand(28, p.ink)))),
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(title, style: hand(28, p.ink)),
+                ),
+              ),
               TextButton(onPressed: onAll, child: const Text('See all')),
             ],
           ),
@@ -267,7 +358,12 @@ class _Row extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 14),
             itemBuilder: (_, i) => SizedBox(
               width: 172,
-              child: PostcardTile(t: items[i], tilt: i.isOdd ? 1 : -1, titleLines: 1, onTap: () => openTemplate(context, items[i])),
+              child: PostcardTile(
+                t: items[i],
+                tilt: i.isOdd ? 1 : -1,
+                titleLines: 1,
+                onTap: () => openTemplate(context, items[i]),
+              ),
             ),
           ),
         ),
@@ -286,7 +382,15 @@ class _ShareNote extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('After a trip you loved…', style: TextStyle(fontFamily: 'Caveat', fontSize: 24, fontWeight: FontWeight.w700, height: 1)),
+          Text(
+            'After a trip you loved…',
+            style: TextStyle(
+              fontFamily: 'Caveat',
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
           SizedBox(height: 6),
           Text(
             'Ask your agent to "turn my Waypack trip into a template". It asks what you\'d keep, cut and what surprised you, removes dates and names, and shows you the draft before anything is public.',
@@ -308,7 +412,15 @@ class _Welcome extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('The gallery is just opening', style: TextStyle(fontFamily: 'Caveat', fontSize: 28, fontWeight: FontWeight.w700, height: 1)),
+          Text(
+            'The gallery is just opening',
+            style: TextStyle(
+              fontFamily: 'Caveat',
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
           SizedBox(height: 8),
           Text(
             "Plans appear here when travelers share a trip they took, with what worked, what they'd cut and what surprised them. After your next trip, ask your agent to \"turn my Waypack trip into a template\".",
@@ -333,7 +445,11 @@ class _Retry extends StatelessWidget {
         children: [
           Text(message, textAlign: TextAlign.center),
           const SizedBox(height: 14),
-          PaperButton(label: 'Try again', icon: Icons.refresh, onPressed: onRetry),
+          PaperButton(
+            label: 'Try again',
+            icon: Icons.refresh,
+            onPressed: onRetry,
+          ),
         ],
       ),
     ),
@@ -343,7 +459,12 @@ class _Retry extends StatelessWidget {
 // ───────────────────────────── Search: postcards ⇄ map
 
 class TemplateSearchScreen extends StatefulWidget {
-  const TemplateSearchScreen({super.key, this.initialQuery = const {}, this.startOnMap = false, this.title});
+  const TemplateSearchScreen({
+    super.key,
+    this.initialQuery = const {},
+    this.startOnMap = false,
+    this.title,
+  });
   final Map<String, String> initialQuery;
   final bool startOnMap;
   final String? title;
@@ -370,7 +491,9 @@ const _filters = [
 class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
   late final Map<String, String> _q = {...widget.initialQuery};
   late bool _map = widget.startOnMap;
-  late final _text = TextEditingController(text: widget.initialQuery['q'] ?? '');
+  late final _text = TextEditingController(
+    text: widget.initialQuery['q'] ?? '',
+  );
   List<TripTemplate>? _results;
   String? _error;
   String? _selected;
@@ -395,7 +518,11 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
       final r = await _api(context).searchTemplates(_q);
       if (mounted && seq == _seq) setState(() => _results = r);
     } catch (e) {
-      if (mounted && seq == _seq) setState(() => _error = "Search failed. Check your connection and try again.");
+      if (mounted && seq == _seq) {
+        setState(
+          () => _error = "Search failed. Check your connection and try again.",
+        );
+      }
     }
   }
 
@@ -420,28 +547,44 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
                 child: Row(
                   children: [
-                    RoundButton(tooltip: 'Back', icon: Icons.arrow_back_ios_new, iconSize: 17, onPressed: () => Navigator.maybePop(context)),
+                    RoundButton(
+                      tooltip: 'Back',
+                      icon: Icons.arrow_back_ios_new,
+                      iconSize: 17,
+                      onPressed: () => Navigator.maybePop(context),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Material(
                         color: p.card,
-                        shape: StadiumBorder(side: BorderSide(color: p.accent.withValues(alpha: .45), width: 2)),
+                        shape: StadiumBorder(
+                          side: BorderSide(
+                            color: p.accent.withValues(alpha: .45),
+                            width: 2,
+                          ),
+                        ),
                         child: TextField(
                           key: const Key('template-search-field'),
                           controller: _text,
                           textInputAction: TextInputAction.search,
                           onSubmitted: (v) {
-                            v.trim().isEmpty ? _q.remove('q') : _q['q'] = v.trim();
+                            v.trim().isEmpty
+                                ? _q.remove('q')
+                                : _q['q'] = v.trim();
                             _search();
                           },
                           decoration: InputDecoration(
-                            hintText: widget.title ?? "Search places, seasons, who's going",
+                            hintText:
+                                widget.title ??
+                                "Search places, seasons, who's going",
                             prefixIcon: const Icon(Icons.search, size: 20),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
                             filled: false,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
                           ),
                         ),
                       ),
@@ -453,16 +596,38 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
                 child: Row(
                   children: [
-                    _ViewSwitch(map: _map, onChanged: (m) => setState(() => _map = m)),
-                    const Spacer(),
-                    TextButton.icon(
-                      key: const Key('template-sort'),
-                      onPressed: () {
-                        setState(() => _q['sort'] == 'new' ? _q.remove('sort') : _q['sort'] = 'new');
-                        _search();
-                      },
-                      icon: const Icon(Icons.swap_vert, size: 18),
-                      label: Text(_q['sort'] == 'new' ? 'Newest' : 'Most planned'),
+                    // Both shrink rather than overflow with large text.
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: _ViewSwitch(
+                          map: _map,
+                          onChanged: (m) => setState(() => _map = m),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          key: const Key('template-sort'),
+                          onPressed: () {
+                            setState(
+                              () => _q['sort'] == 'new'
+                                  ? _q.remove('sort')
+                                  : _q['sort'] = 'new',
+                            );
+                            _search();
+                          },
+                          icon: const Icon(Icons.swap_vert, size: 18),
+                          label: Text(
+                            _q['sort'] == 'new' ? 'Newest' : 'Most planned',
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -474,17 +639,34 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   children: [
                     if (_q['month'] != null)
-                      _FilterChip(label: '${TripTemplate.months[int.parse(_q['month']!) - 1]} ✕', on: true, index: 0, onTap: () => _toggle('month', _q['month']!)),
+                      _FilterChip(
+                        label:
+                            '${TripTemplate.months[int.parse(_q['month']!) - 1]} ✕',
+                        on: true,
+                        index: 0,
+                        onTap: () => _toggle('month', _q['month']!),
+                      ),
                     for (final (i, f) in _filters.indexed)
-                      _FilterChip(label: f[2], on: _q[f[0]] == f[1], index: i, onTap: () => _toggle(f[0], f[1])),
+                      _FilterChip(
+                        label: f[2],
+                        on: _q[f[0]] == f[1],
+                        index: i,
+                        onTap: () => _toggle(f[0], f[1]),
+                      ),
                   ],
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 6),
                 child: Text(
-                  r == null ? '' : '${r.length} trip${r.length == 1 ? '' : 's'}',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: p.muted),
+                  r == null
+                      ? ''
+                      : '${r.length} trip${r.length == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: p.muted,
+                  ),
                 ),
               ),
               Expanded(
@@ -496,7 +678,11 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(28),
-                          child: Text('Nothing matches. Try fewer filters or another place.', textAlign: TextAlign.center, style: TextStyle(color: p.muted)),
+                          child: Text(
+                            'Nothing matches. Try fewer filters or another place.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: p.muted),
+                          ),
                         ),
                       )
                     : _map
@@ -508,12 +694,13 @@ class _TemplateSearchScreenState extends State<TemplateSearchScreen> {
                     : GridView.builder(
                         key: const Key('template-grid'),
                         padding: const EdgeInsets.fromLTRB(18, 8, 18, 40),
-                        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 220,
-                          mainAxisSpacing: 18,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: .86,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 220,
+                              mainAxisSpacing: 18,
+                              crossAxisSpacing: 14,
+                              childAspectRatio: .86,
+                            ),
                         itemCount: r.length,
                         itemBuilder: (_, i) => PostcardTile(
                           t: r[i],
@@ -538,39 +725,64 @@ class _ViewSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = Paper.of(context);
-    Widget seg(String label, IconData icon, bool on, bool value, Key key) => Semantics(
-      button: true,
-      selected: on,
-      child: GestureDetector(
-        key: key,
-        onTap: () => onChanged(value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: on ? p.card : Colors.transparent,
-            borderRadius: BorderRadius.circular(17),
-            boxShadow: on ? const [BoxShadow(color: Color(0x333C2814), blurRadius: 3, offset: Offset(0, 1))] : null,
+    Widget seg(String label, IconData icon, bool on, bool value, Key key) =>
+        Semantics(
+          button: true,
+          selected: on,
+          child: GestureDetector(
+            key: key,
+            onTap: () => onChanged(value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: on ? p.card : Colors.transparent,
+                borderRadius: BorderRadius.circular(17),
+                boxShadow: on
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x333C2814),
+                          blurRadius: 3,
+                          offset: Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: on ? p.ink : p.muted),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: on ? p.ink : p.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: on ? p.ink : p.muted),
-              const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: on ? p.ink : p.muted)),
-            ],
-          ),
-        ),
-      ),
-    );
+        );
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: p.ink.withValues(alpha: .08), borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: p.ink.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          seg('Postcards', Icons.grid_view_rounded, !map, false, const Key('view-postcards')),
+          seg(
+            'Postcards',
+            Icons.grid_view_rounded,
+            !map,
+            false,
+            const Key('view-postcards'),
+          ),
           seg('Map', Icons.map_outlined, map, true, const Key('view-map')),
         ],
       ),
@@ -579,7 +791,12 @@ class _ViewSwitch extends StatelessWidget {
 }
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.on, required this.onTap, required this.index});
+  const _FilterChip({
+    required this.label,
+    required this.on,
+    required this.onTap,
+    required this.index,
+  });
   final String label;
   final bool on;
   final int index;
@@ -600,9 +817,18 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: _colors[index % 3],
             borderRadius: BorderRadius.circular(2),
-            border: on ? Border.all(color: const Color(0x733C2814), width: 2) : null,
+            border: on
+                ? Border.all(color: const Color(0x733C2814), width: 2)
+                : null,
           ),
-          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: on ? FontWeight.w800 : FontWeight.w600, color: Paper.captionInk)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+              color: Paper.captionInk,
+            ),
+          ),
         ),
       ),
     ),
@@ -611,7 +837,11 @@ class _FilterChip extends StatelessWidget {
 
 /// Map mode: pan/zoom the stylised world map; pins and a postcard carousel stay in sync.
 class _MapView extends StatefulWidget {
-  const _MapView({required this.results, required this.selected, required this.onSelect});
+  const _MapView({
+    required this.results,
+    required this.selected,
+    required this.onSelect,
+  });
   final List<TripTemplate> results;
   final String? selected;
   final ValueChanged<String?> onSelect;
@@ -648,7 +878,9 @@ class _MapViewState extends State<_MapView> {
   }
 
   Rect _fit(Size size) {
-    final pts = widget.results.where((t) => t.lat != null && t.lon != null).toList();
+    final pts = widget.results
+        .where((t) => t.lat != null && t.lon != null)
+        .toList();
     var x0 = -170.0, y0 = -75.0, x1 = 190.0, y1 = 60.0;
     if (pts.isNotEmpty) {
       x0 = pts.map((t) => t.lon!).reduce(math.min);
@@ -656,21 +888,36 @@ class _MapViewState extends State<_MapView> {
       y0 = pts.map((t) => -t.lat!).reduce(math.min);
       y1 = pts.map((t) => -t.lat!).reduce(math.max);
     }
-    var w = math.max(x1 - x0, 12) * 1.25 + 6, h = math.max(y1 - y0, 8) * 1.25 + 6;
+    var w = math.max(x1 - x0, 12) * 1.25 + 6,
+        h = math.max(y1 - y0, 8) * 1.25 + 6;
     final asp = size.width / math.max(1, size.height);
     if (w / h < asp) {
       w = h * asp;
     } else {
       h = w / asp;
     }
-    return Rect.fromCenter(center: Offset((x0 + x1) / 2, (y0 + y1) / 2), width: w, height: h);
+    return Rect.fromCenter(
+      center: Offset((x0 + x1) / 2, (y0 + y1) / 2),
+      width: w,
+      height: h,
+    );
   }
 
   void _zoom(double f, Offset focal) {
     final v = _view!;
-    final m = Offset(v.left + focal.dx / _size.width * v.width, v.top + focal.dy / _size.height * v.height);
+    final m = Offset(
+      v.left + focal.dx / _size.width * v.width,
+      v.top + focal.dy / _size.height * v.height,
+    );
     final w = (v.width * f).clamp(1.5, 400.0), k = w / v.width;
-    setState(() => _view = Rect.fromLTWH(m.dx - (m.dx - v.left) * k, m.dy - (m.dy - v.top) * k, w, v.height * k));
+    setState(
+      () => _view = Rect.fromLTWH(
+        m.dx - (m.dx - v.left) * k,
+        m.dy - (m.dy - v.top) * k,
+        w,
+        v.height * k,
+      ),
+    );
   }
 
   void _tapAt(Offset pos) {
@@ -679,7 +926,10 @@ class _MapViewState extends State<_MapView> {
     var bestD = 26.0;
     for (final t in widget.results) {
       if (t.lat == null || t.lon == null) continue;
-      final o = Offset((t.lon! - v.left) / v.width * _size.width, (-t.lat! - v.top) / v.height * _size.height);
+      final o = Offset(
+        (t.lon! - v.left) / v.width * _size.width,
+        (-t.lat! - v.top) / v.height * _size.height,
+      );
       final d = (o - pos).distance;
       if (d < bestD) {
         bestD = d;
@@ -690,7 +940,11 @@ class _MapViewState extends State<_MapView> {
     if (best != null) {
       final i = widget.results.indexWhere((t) => t.slug == best);
       if (_carousel.hasClients) {
-        _carousel.animateTo((i * 184.0).clamp(0, _carousel.position.maxScrollExtent), duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        _carousel.animateTo(
+          (i * 184.0).clamp(0, _carousel.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     }
   }
@@ -718,13 +972,21 @@ class _MapViewState extends State<_MapView> {
                       },
                       onScaleUpdate: (d) {
                         final s = _startView!, f0 = _startFocal!;
-                        final w = (s.width / d.scale).clamp(1.5, 400.0), k = w / s.width;
-                        final m = Offset(s.left + f0.dx / _size.width * s.width, s.top + f0.dy / _size.height * s.height);
+                        final w = (s.width / d.scale).clamp(1.5, 400.0),
+                            k = w / s.width;
+                        final m = Offset(
+                          s.left + f0.dx / _size.width * s.width,
+                          s.top + f0.dy / _size.height * s.height,
+                        );
                         final moved = d.localFocalPoint - f0;
                         setState(
                           () => _view = Rect.fromLTWH(
-                            m.dx - (m.dx - s.left) * k - moved.dx / _size.width * w,
-                            m.dy - (m.dy - s.top) * k - moved.dy / _size.height * s.height * k,
+                            m.dx -
+                                (m.dx - s.left) * k -
+                                moved.dx / _size.width * w,
+                            m.dy -
+                                (m.dy - s.top) * k -
+                                moved.dy / _size.height * s.height * k,
                             w,
                             s.height * k,
                           ),
@@ -732,7 +994,13 @@ class _MapViewState extends State<_MapView> {
                       },
                       child: CustomPaint(
                         size: _size,
-                        painter: WorldMapPainter(rings: _land ?? const [], view: _view!, pins: widget.results, selected: widget.selected, dark: dark),
+                        painter: WorldMapPainter(
+                          rings: _land ?? const [],
+                          view: _view!,
+                          pins: widget.results,
+                          selected: widget.selected,
+                          dark: dark,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -740,16 +1008,32 @@ class _MapViewState extends State<_MapView> {
                       top: 12,
                       child: Column(
                         children: [
-                          RoundButton(tooltip: 'Zoom in', icon: Icons.add, onPressed: () => _zoom(1 / 1.6, _size.center(Offset.zero))),
+                          RoundButton(
+                            tooltip: 'Zoom in',
+                            icon: Icons.add,
+                            onPressed: () =>
+                                _zoom(1 / 1.6, _size.center(Offset.zero)),
+                          ),
                           const SizedBox(height: 8),
-                          RoundButton(tooltip: 'Zoom out', icon: Icons.remove, onPressed: () => _zoom(1.6, _size.center(Offset.zero))),
+                          RoundButton(
+                            tooltip: 'Zoom out',
+                            icon: Icons.remove,
+                            onPressed: () =>
+                                _zoom(1.6, _size.center(Offset.zero)),
+                          ),
                         ],
                       ),
                     ),
                     Positioned(
                       right: 8,
                       bottom: 4,
-                      child: Text('Natural Earth', style: TextStyle(fontSize: 10, color: Paper.of(context).muted)),
+                      child: Text(
+                        'Natural Earth',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Paper.of(context).muted,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -770,7 +1054,12 @@ class _MapViewState extends State<_MapView> {
               final t = widget.results[i];
               return SizedBox(
                 width: 170,
-                child: PostcardTile(t: t, selected: t.slug == widget.selected, titleLines: 1, onTap: () => openTemplate(context, t)),
+                child: PostcardTile(
+                  t: t,
+                  selected: t.slug == widget.selected,
+                  titleLines: 1,
+                  onTap: () => openTemplate(context, t),
+                ),
               );
             },
           ),
@@ -805,9 +1094,19 @@ class _TemplateScreenState extends State<TemplateScreen> {
       final t = await _api(context).template(widget.slug);
       if (mounted) setState(() => _t = t);
     } on ApiException catch (e) {
-      if (mounted && _t == null) setState(() => _error = e.status == 404 ? "This trip isn't in the gallery anymore." : e.message);
+      if (mounted && _t == null) {
+        setState(
+          () => _error = e.status == 404
+              ? "This trip isn't in the gallery anymore."
+              : e.message,
+        );
+      }
     } catch (_) {
-      if (mounted && _t == null) setState(() => _error = "This trip couldn't load. Check your connection.");
+      if (mounted && _t == null) {
+        setState(
+          () => _error = "This trip couldn't load. Check your connection.",
+        );
+      }
     }
   }
 
@@ -820,13 +1119,22 @@ class _TemplateScreenState extends State<TemplateScreen> {
       subtitle: t == null ? null : '${t.region} · ${t.facts}',
       actions: [
         if (t != null && t.url.isNotEmpty)
-          RoundButton(tooltip: 'Share', icon: Icons.ios_share, onPressed: () => SharePlus.instance.share(ShareParams(uri: Uri.parse(t.url), subject: t.title))),
+          RoundButton(
+            tooltip: 'Share',
+            icon: Icons.ios_share,
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(uri: Uri.parse(t.url), subject: t.title),
+            ),
+          ),
       ],
       body: _error != null
-          ? _Retry(message: _error!, onRetry: () {
-              setState(() => _error = null);
-              _load();
-            })
+          ? _Retry(
+              message: _error!,
+              onRetry: () {
+                setState(() => _error = null);
+                _load();
+              },
+            )
           : t == null
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -834,7 +1142,10 @@ class _TemplateScreenState extends State<TemplateScreen> {
                 ListView(
                   padding: const EdgeInsets.only(bottom: 120),
                   children: [
-                    Padding(padding: const EdgeInsets.fromLTRB(20, 4, 20, 0), child: Postcard(t: t, big: true, tilt: -1.2)),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                      child: Postcard(t: t, big: true, tilt: -1.2),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                       child: Wrap(
@@ -842,16 +1153,37 @@ class _TemplateScreenState extends State<TemplateScreen> {
                         runSpacing: 8,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Stamp(label: 'Traveled ${t.traveledLabel}', color: p.ok, icon: Icons.check),
-                          Text('✦ ${t.plannedLabel}', style: TextStyle(fontSize: 13, color: p.muted, fontWeight: FontWeight.w600)),
+                          Stamp(
+                            label: 'Traveled ${t.traveledLabel}',
+                            color: p.ok,
+                            icon: Icons.check,
+                          ),
+                          Text(
+                            '✦ ${t.plannedLabel}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: p.muted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                      child: Text(t.tagline, style: TextStyle(fontSize: 16, height: 1.4, color: p.muted)),
+                      child: Text(
+                        t.tagline,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.4,
+                          color: p.muted,
+                        ),
+                      ),
                     ),
-                    Padding(padding: const EdgeInsets.fromLTRB(18, 18, 18, 0), child: _PostcardBack(t: t)),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                      child: _PostcardBack(t: t),
+                    ),
                     if (RouteMapPainter.canDraw(t)) ...[
                       SectionTitle('The route', note: '${t.places} places'),
                       Padding(
@@ -860,7 +1192,14 @@ class _TemplateScreenState extends State<TemplateScreen> {
                           borderRadius: BorderRadius.circular(8),
                           child: AspectRatio(
                             aspectRatio: 1.8,
-                            child: CustomPaint(painter: RouteMapPainter(t, dark: Theme.of(context).brightness == Brightness.dark)),
+                            child: CustomPaint(
+                              painter: RouteMapPainter(
+                                t,
+                                dark:
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -873,9 +1212,22 @@ class _TemplateScreenState extends State<TemplateScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Container(width: 18, height: 4, decoration: BoxDecoration(color: dayColor(i), borderRadius: BorderRadius.circular(2))),
+                                  Container(
+                                    width: 18,
+                                    height: 4,
+                                    decoration: BoxDecoration(
+                                      color: dayColor(i),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
                                   const SizedBox(width: 5),
-                                  Text('Day ${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                  Text(
+                                    'Day ${i + 1}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ],
                               ),
                           ],
@@ -891,14 +1243,38 @@ class _TemplateScreenState extends State<TemplateScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(width: 52, child: Text('Day ${i + 1}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: dayColor(i)))),
+                                SizedBox(
+                                  width: 52,
+                                  child: Text(
+                                    'Day ${i + 1}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: dayColor(i),
+                                    ),
+                                  ),
+                                ),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(d.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                                      Text(
+                                        d.title,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                                       const SizedBox(height: 3),
-                                      Text(d.stops.map((s) => s.name).join(' · '), style: TextStyle(fontSize: 13, height: 1.45, color: p.muted)),
+                                      Text(
+                                        d.stops.map((s) => s.name).join(' · '),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          height: 1.45,
+                                          color: p.muted,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -915,9 +1291,18 @@ class _TemplateScreenState extends State<TemplateScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.refresh, size: 16, color: Color(0xFF3E7A8C)),
+                              const Icon(
+                                Icons.refresh,
+                                size: 16,
+                                color: Color(0xFF3E7A8C),
+                              ),
                               const SizedBox(width: 8),
-                              Expanded(child: Text(r, style: const TextStyle(fontSize: 14))),
+                              Expanded(
+                                child: Text(
+                                  r,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -946,7 +1331,10 @@ class _TemplateScreenState extends State<TemplateScreen> {
                           label: 'Plan this trip',
                           icon: Icons.auto_awesome,
                           expand: true,
-                          onPressed: () => showPaperSheet<void>(context, builder: (_) => PlanSheet(t: t)),
+                          onPressed: () => showPaperSheet<void>(
+                            context,
+                            builder: (_) => PlanSheet(t: t),
+                          ),
                         ),
                       ),
                     ),
@@ -964,16 +1352,37 @@ class _PostcardBack extends StatelessWidget {
   final TripTemplate t;
   @override
   Widget build(BuildContext context) {
-    const kinds = [('kept', 'KEPT', Color(0xFF4F8A62)), ('cut', 'WOULD CUT', Color(0xFFC0432B)), ('surprise', 'SURPRISED US', Color(0xFFB87810))];
+    const kinds = [
+      ('kept', 'KEPT', Color(0xFF4F8A62)),
+      ('cut', 'WOULD CUT', Color(0xFFC0432B)),
+      ('surprise', 'SURPRISED US', Color(0xFFB87810)),
+    ];
     Widget line(String k, String v) => Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 4, bottom: 5),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x4D785A3C)))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0x4D785A3C))),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(k, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: .8, color: Paper.captionMuted)),
-          Text(v, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, height: 1.3)),
+          Text(
+            k,
+            style: const TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .8,
+              color: Paper.captionMuted,
+            ),
+          ),
+          Text(
+            v,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+          ),
         ],
       ),
     );
@@ -988,15 +1397,32 @@ class _PostcardBack extends StatelessWidget {
               child: Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: '$label  ', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: .8, color: color)),
-                    TextSpan(text: n, style: hand(19, Paper.captionInk).copyWith(height: 1.1)),
+                    TextSpan(
+                      text: '$label  ',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .8,
+                        color: color,
+                      ),
+                    ),
+                    TextSpan(
+                      text: n,
+                      style: hand(19, Paper.captionInk).copyWith(height: 1.1),
+                    ),
                   ],
                 ),
               ),
             ),
         Align(
           alignment: Alignment.centerRight,
-          child: Padding(padding: const EdgeInsets.only(top: 10), child: Text('— ${t.author ?? 'a Waypacker'}', style: hand(19, Paper.captionInk))),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              '— ${t.author ?? 'a Waypacker'}',
+              style: hand(19, Paper.captionInk),
+            ),
+          ),
         ),
       ],
     );
@@ -1018,12 +1444,20 @@ class _PostcardBack extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
       child: LayoutBuilder(
         builder: (context, c) => c.maxWidth < 330
-            ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [notes, const SizedBox(height: 14), address])
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [notes, const SizedBox(height: 14), address],
+              )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 5, child: notes),
-                  Container(width: 1.5, height: 220, margin: const EdgeInsets.symmetric(horizontal: 12), color: const Color(0x40785A3C)),
+                  Container(
+                    width: 1.5,
+                    height: 220,
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    color: const Color(0x40785A3C),
+                  ),
                   Expanded(flex: 4, child: address),
                 ],
               ),
@@ -1041,7 +1475,9 @@ class PlanSheet extends StatefulWidget {
 }
 
 class _PlanSheetState extends State<PlanSheet> {
-  final _when = TextEditingController(), _who = TextEditingController(), _changes = TextEditingController();
+  final _when = TextEditingController(),
+      _who = TextEditingController(),
+      _changes = TextEditingController();
 
   @override
   void dispose() {
@@ -1051,14 +1487,24 @@ class _PlanSheetState extends State<PlanSheet> {
     super.dispose();
   }
 
-  String get _prompt => widget.t.prompt(when: _when.text.trim(), who: _who.text.trim(), changes: _changes.text.trim());
+  String get _prompt => widget.t.prompt(
+    when: _when.text.trim(),
+    who: _who.text.trim(),
+    changes: _changes.text.trim(),
+  );
 
   @override
   Widget build(BuildContext context) {
     final p = Paper.of(context);
-    InputDecoration dec(String label, String hint) => InputDecoration(labelText: label, hintText: hint);
+    InputDecoration dec(String label, String hint) =>
+        InputDecoration(labelText: label, hintText: hint);
     return Padding(
-      padding: EdgeInsets.fromLTRB(22, 0, 22, MediaQuery.viewInsetsOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(
+        22,
+        0,
+        22,
+        MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1069,16 +1515,42 @@ class _PlanSheetState extends State<PlanSheet> {
             style: TextStyle(fontSize: 13.5, height: 1.45, color: p.muted),
           ),
           const SizedBox(height: 14),
-          TextField(controller: _when, onChanged: (_) => setState(() {}), decoration: dec('When', 'e.g. Feb 13–15')),
+          TextField(
+            controller: _when,
+            onChanged: (_) => setState(() {}),
+            decoration: dec('When', 'e.g. Feb 13–15'),
+          ),
           const SizedBox(height: 10),
-          TextField(controller: _who, onChanged: (_) => setState(() {}), decoration: dec("Who's going", 'e.g. 2 adults, a 7-year-old')),
+          TextField(
+            controller: _who,
+            onChanged: (_) => setState(() {}),
+            decoration: dec("Who's going", 'e.g. 2 adults, a 7-year-old'),
+          ),
           const SizedBox(height: 10),
-          TextField(controller: _changes, onChanged: (_) => setState(() {}), decoration: dec('Anything to change? (optional)', 'e.g. no drives over 2 hours')),
+          TextField(
+            controller: _changes,
+            onChanged: (_) => setState(() {}),
+            decoration: dec(
+              'Anything to change? (optional)',
+              'e.g. no drives over 2 hours',
+            ),
+          ),
           const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFF2B231D), borderRadius: BorderRadius.circular(8)),
-            child: SelectableText(_prompt, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5, color: Color(0xFFF3EADB))),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2B231D),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: SelectableText(
+              _prompt,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                height: 1.5,
+                color: Color(0xFFF3EADB),
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           PaperButton(
@@ -1086,7 +1558,12 @@ class _PlanSheetState extends State<PlanSheet> {
             label: 'Open in Claude',
             icon: Icons.auto_awesome,
             expand: true,
-            onPressed: () => launchUrl(Uri.parse('https://claude.ai/new?q=${Uri.encodeComponent(_prompt)}'), mode: LaunchMode.externalApplication),
+            onPressed: () => launchUrl(
+              Uri.parse(
+                'https://claude.ai/new?q=${Uri.encodeComponent(_prompt)}',
+              ),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
           const SizedBox(height: 10),
           PaperButton(
@@ -1097,7 +1574,11 @@ class _PlanSheetState extends State<PlanSheet> {
             expand: true,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _prompt));
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prompt copied. Paste it into your agent.')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Prompt copied. Paste it into your agent.'),
+                ),
+              );
             },
           ),
           const SizedBox(height: 12),

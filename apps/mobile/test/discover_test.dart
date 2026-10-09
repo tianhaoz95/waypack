@@ -25,7 +25,8 @@ String _fixture(String name) => File('test/fixtures/templates/$name.json').readA
 Future<void> _loadFonts() async {
   await (FontLoader('Caveat')..addFont(rootBundle.load('assets/fonts/Caveat.ttf'))).load();
   const sys = '/System/Library/Fonts/Supplemental/Arial.ttf';
-  if (File(sys).existsSync()) {
+  // CI (Linux) has no Arial and renders the much wider Ahem font; NO_SYSTEM_FONT=1 reproduces that.
+  if (File(sys).existsSync() && Platform.environment['NO_SYSTEM_FONT'] == null) {
     await (FontLoader('Roboto')..addFont(Future.value(ByteData.sublistView(File(sys).readAsBytesSync())))).load();
   }
 }
