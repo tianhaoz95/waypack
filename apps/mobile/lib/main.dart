@@ -10,6 +10,7 @@ import 'dev_flags.dart';
 import 'screens/sign_in_screen.dart';
 import 'screens/trips_screen.dart';
 import 'services/api.dart';
+import 'services/feedback.dart';
 import 'services/local_server.dart';
 import 'services/notifications.dart';
 import 'services/trip_store.dart';
@@ -18,6 +19,13 @@ import 'widgets/scrapbook.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (feedbackAvailable) await _configureFeedback();
+  final state = await bootstrap();
+  runApp(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
+}
+
+/// Shake-to-report (FeedbackKit; phones only, see services/feedback.dart).
+Future<void> _configureFeedback() async {
   await FeedbackKit.configure(
     const FeedbackKitConfiguration(
       endpointUrl: 'https://gpucoladcyvijefdjudf.supabase.co/functions/v1/ingest-feedback',
@@ -31,8 +39,6 @@ Future<void> main() async {
     ),
   );
   await FeedbackKit.enableFixVerification();
-  final state = await bootstrap();
-  runApp(ChangeNotifierProvider.value(value: state, child: const WaypackApp()));
 }
 
 /// Initializes services; shared by main() and integration tests.
@@ -65,7 +71,7 @@ class WaypackApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: scrapbookTheme(Brightness.light),
     darkTheme: scrapbookTheme(Brightness.dark),
-    navigatorObservers: [FeedbackKitNavigatorObserver()],
+    navigatorObservers: [if (feedbackAvailable) FeedbackKitNavigatorObserver()],
     home: const _AuthGate(),
   );
 }
@@ -85,7 +91,9 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _signedIn = Supabase.instance.client.auth.currentSession != null;
-    FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
+    if (feedbackAvailable) {
+      FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
+    }
     _sub = Supabase.instance.client.auth.onAuthStateChange.listen((e) {
       if (!mounted) return;
       // Any transition to a session counts (OAuth, Apple ID token, or a restored session).
@@ -95,7 +103,9 @@ class _AuthGateState extends State<_AuthGate> with WidgetsBindingObserver {
         if (!DevFlags.noPermissionPrompts) Reminders.requestPermission();
       }
       _signedIn = now;
-      FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
+      if (feedbackAvailable) {
+        FeedbackKit.setCurrentScreen(_signedIn ? 'Trips' : 'SignIn');
+      }
       setState(() {});
     });
   }

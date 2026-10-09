@@ -11,6 +11,7 @@ import '../models/manifest.dart';
 import '../models/trip.dart';
 import '../services/api.dart';
 import '../services/downloader.dart';
+import '../services/feedback.dart';
 import '../services/local_server.dart';
 import '../services/notifications.dart';
 import '../services/trip_store.dart';
@@ -35,6 +36,7 @@ class TripEntry {
     if (end == null) return false;
     return end.compareTo(DateTime.now().toIso8601String().substring(0, 10)) < 0;
   }
+
   String? get coverImageUrl => remote?.coverImageUrl;
 
   File? coverFile(TripStore store) {
@@ -141,6 +143,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('shake_to_report', enabled);
+    if (!feedbackAvailable) return;
     if (enabled) {
       await FeedbackKit.enableShakeToReport();
     } else {
@@ -149,12 +152,10 @@ class AppState extends ChangeNotifier {
   }
 
   void _syncFeedbackUser() {
+    if (!feedbackAvailable) return;
     final u = user;
     if (u != null) {
-      FeedbackKit.setUser(FeedbackUser(
-        id: u.id,
-        email: u.email,
-      ));
+      FeedbackKit.setUser(FeedbackUser(id: u.id, email: u.email));
     } else {
       FeedbackKit.setUser(null);
     }
@@ -168,10 +169,12 @@ class AppState extends ChangeNotifier {
     _bookmarked.addAll(prefs.getStringList('bookmarked_trips') ?? const []);
     server.useOnlineMap = prefs.getBool('use_online_map') ?? true;
     _shakeToReport = prefs.getBool('shake_to_report') ?? true;
-    if (_shakeToReport) {
-      await FeedbackKit.enableShakeToReport();
-    } else {
-      await FeedbackKit.disableShakeToReport();
+    if (feedbackAvailable) {
+      if (_shakeToReport) {
+        await FeedbackKit.enableShakeToReport();
+      } else {
+        await FeedbackKit.disableShakeToReport();
+      }
     }
     _syncFeedbackUser();
     final locals = await store.loadAll();
@@ -359,7 +362,7 @@ class AppState extends ChangeNotifier {
     _bookmarked.clear();
     server.versions.clear();
     server.tiles.clear();
-    FeedbackKit.setUser(null);
+    if (feedbackAvailable) FeedbackKit.setUser(null);
     notifyListeners();
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../config.dart';
+import '../services/feedback.dart';
 import '../services/handoff.dart';
 import '../services/updater.dart';
 import '../state/app_state.dart';
@@ -356,17 +357,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SectionTitle('More'),
           PaperCard(
             children: [
-              PaperRow(
-                icon: Icons.vibration,
-                chip: ChipColor.yellow,
-                title: 'Shake to report feedback',
-                subtitle: 'Shake your device to capture a screenshot and report an issue.',
-                trailing: Switch.adaptive(
-                  value: s.shakeToReport,
-                  onChanged: s.setShakeToReport,
+              // Shaking is a phone gesture (and FeedbackKit is phone-only).
+              if (feedbackAvailable)
+                PaperRow(
+                  icon: Icons.vibration,
+                  chip: ChipColor.yellow,
+                  title: 'Shake to report feedback',
+                  subtitle: 'Shake your device to capture a screenshot and report an issue.',
+                  trailing: Switch.adaptive(
+                    value: s.shakeToReport,
+                    onChanged: s.setShakeToReport,
+                  ),
+                  onTap: () => s.setShakeToReport(!s.shakeToReport),
                 ),
-                onTap: () => s.setShakeToReport(!s.shakeToReport),
-              ),
               PaperRow(
                 icon: Icons.privacy_tip_outlined,
                 chip: ChipColor.lilac,
