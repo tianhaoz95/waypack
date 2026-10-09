@@ -1,6 +1,6 @@
 ---
 name: waypack
-description: Plan a trip and publish it to the Waypack phone app as an offline trip bundle (itinerary, lodging, routes on an offline map with GPS, Navigate hand-off). Use when the user asks to plan a trip, itinerary, road trip, park visit or vacation "with Waypack", wants a trip that works offline / without signal, or asks to update a Waypack trip.
+description: Plan a trip and publish it to the Waypack phone app as an offline trip bundle (itinerary, lodging, routes on an offline map with GPS, Navigate hand-off). Use when the user asks to plan a trip, itinerary, road trip, park visit or vacation "with Waypack", wants a trip that works offline / without signal, or asks to update a Waypack trip. Also use it when the user wants to turn a trip into a template, share a trip to the Waypack gallery (Discover), or start from a template.
 ---
 
 # Waypack — offline trip bundles
@@ -8,6 +8,8 @@ description: Plan a trip and publish it to the Waypack phone app as an offline t
 You are building a **trip bundle**: a small mobile web app (`index.html` + `manifest.json` + `assets/`) that the Waypack app downloads and runs **with zero network access**. The Waypack MCP server gives you `geocode`, `compute_route`, `validate_bundle`, and upload tools. The backend adds an offline vector map of the trip area automatically.
 
 Work through the phases below in order. Do not skip validation.
+
+**"Turn my trip into a template" (or "share it to the gallery / Discover") means the trip gallery:** follow [Turning a finished trip into a template](#turning-a-finished-trip-into-a-template-offer-it-after-a-trip-they-enjoyed) and use `draft_template`. It never means copying the bundle into local files with placeholders. The bundle files you start a new trip from are the **starter bundle**, a different thing.
 
 ## Phase 1 — Intake interview
 
@@ -39,12 +41,12 @@ If the user says "just plan it", make sensible assumptions and **list them** at 
 ## Phase 3 — Author the bundle (with a live preview)
 
 **Show your work as you go.** The user can watch the plan take shape on any phone or computer, and redirect you early:
-1. As soon as you have a skeleton (template files + `manifest.json` with title, dates, theme and an outline), call MCP `push_preview` with all files. **Give the user the `preview_url` right away**: "Here's a live preview; it updates as I work."
+1. As soon as you have a skeleton (starter files + `manifest.json` with title, dates, theme and an outline), call MCP `push_preview` with all files. **Give the user the `preview_url` right away**: "Here's a live preview; it updates as I work."
 2. Push again at **milestones**: each finished day, the Guide section, the final pass. Usually 4–6 pushes. Send **only the files that changed** (pass the `preview_id`); unchanged files are kept. Don't push after every small edit.
 3. Unfinished is fine: `push_preview` reports validation issues but never blocks. Previews don't reach the app and don't cut offline maps.
 4. CLI agents can also run `npx @waypack/cli preview ./waypack/<slug>` locally, and push a zip as a preview (`create_upload { preview: true, preview_id }` → PUT → `finalize_upload`); see `reference/upload.md`.
 
-Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>` (or copy `templates/base/` from this skill). Chat agents call `get_authoring_guide` and reproduce the template files.
+Start from the starter bundle: CLI agents run `npx @waypack/cli init ./waypack/<slug>` (or copy `templates/base/` from this skill). Chat agents call `get_authoring_guide` with `section="starter"` and reproduce those files.
 
 1. **`manifest.json`** — structured data, the source of truth for the app's native Today view, notifications and the offline map. Schema: `reference/manifest.md`. Key rules:
    - `places[].id` / `routes[].id`: lowercase slugs (`lodge-wuksachi`, `r-day1-drive`)
@@ -53,10 +55,10 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
    - Set `nav_app` to `"google"` or `"apple"` from the interview.
    - Set `theme` so the plan looks like **the destination in that season** (see "Theme & Cover image" below).
    - Set `cover_image` (e.g. `"assets/cover.jpg"` or `"cover.jpg"`) to give the trip card in the app an eye-catching destination cover image.
-2. **`index.html`** — the rich experience. Keep the template's sections (Today / Plan / Map / Places / Guide); rewrite the **Guide** section content with your research. Add per-day rich notes via `<div data-day-notes="YYYY-MM-DD">`. Use a **collapsible sidebar on the left** for mobile screens instead of a persistent bottom navigator to give maximum vertical screen space to the travel plan. **The top bar is pre-built:** keep `<header data-waypack-bar>` as the first element of `<body>`, and only style it and set its title. The SDK adds the buttons (back and ⋯ trip menu in the app, ☰ for your sections via `Waypack.onMenu`) and pins it to the top (see "Top bar" in `reference/sdk.md`). You may restyle or restructure freely, as long as the rules in `reference/authoring.md` hold.
+2. **`index.html`** — the rich experience. Keep the starter bundle's sections (Today / Plan / Map / Places / Guide); rewrite the **Guide** section content with your research. Add per-day rich notes via `<div data-day-notes="YYYY-MM-DD">`. Use a **collapsible sidebar on the left** for mobile screens instead of a persistent bottom navigator to give maximum vertical screen space to the travel plan. **The top bar is pre-built:** keep `<header data-waypack-bar>` as the first element of `<body>`, and only style it and set its title. The SDK adds the buttons (back and ⋯ trip menu in the app, ☰ for your sections via `Waypack.onMenu`) and pins it to the top (see "Top bar" in `reference/sdk.md`). You may restyle or restructure freely, as long as the rules in `reference/authoring.md` hold.
 3. **Theme & Cover Image**:
    - **Cover Image**: Design or select a 16:9 cover image for the trip card in the mobile app (saved as `assets/cover.jpg`, `cover.jpg`, `cover.png`, or `cover.webp`). Specify `"cover_image": "assets/cover.jpg"` in `manifest.json`. The app renders this cover image on the trip card in the Trips list!
-   - Pick the `theme.preset` closest to the place and season, then compose `theme.scene` from what the traveler will actually see. The template paints the banner from it, and the app tints its native screens with `theme.accent`.
+   - Pick the `theme.preset` closest to the place and season, then compose `theme.scene` from what the traveler will actually see. The starter bundle paints the banner from it, and the app tints its native screens with `theme.accent`.
    - Presets: `alpine-winter`, `winter-forest`, `lake-summer`, `coast`, `tropical`, `desert`, `autumn`, `spring-blossom`, `city`.
    - Examples: Lake Tahoe in January → `alpine-winter` with `snowy-peaks`, `lake`, `snowy-pine`, snow ground and falling snow. Sequoia in December → `winter-forest` with `sequoia` trees. Zion in October → `desert` with `mesas`, `river`, `autumn`. Kyoto in April → `spring-blossom` with `blossom`, `city` ground, `petals`.
    - Be accurate: Lake Tahoe never freezes, so use `lake`, not `frozen-lake`. Set `accent` (and `accent_dark`) only when the preset's color doesn't fit. Full field list: `reference/manifest.md`.
@@ -64,7 +66,7 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
    - [ ] **Overview**: one-screen summary, dates, travelers, key reservations, assumptions
    - [ ] **Today view** reachable in one tap (Today section / sidebar)
    - [ ] **Day-by-day itinerary** with times, durations, buffers; drive times from `compute_route`. Give items an `end_time` where you know it
-   - [ ] **Add to calendar** button on every timed item (template's `data-cal` buttons → `Waypack.addToCalendar`)
+   - [ ] **Add to calendar** button on every timed item (the starter bundle's `data-cal` buttons → `Waypack.addToCalendar`)
    - [ ] **Lodging**: address, coordinates, check-in/out, confirmation #, phone, parking
    - [ ] **Routes**: every non-trivial move, with notes (closures, chains, tolls, last fuel)
    - [ ] **Places**: hours ("verify"), cost, reservation needs, kid/accessibility notes
@@ -81,7 +83,7 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
 - Include the SDK: `<script src="/__waypack/sdk/v1/waypack.js"></script>`. Use `Waypack.map()` for maps — never bundle MapLibre/Leaflet or tile URLs.
 - Every place/item gets a **Navigate** button → `Waypack.openInMaps(placeId)`.
 - Mobile-first: tap targets ≥ 44px, body text ≥ 16px, works one-handed, supports dark mode (`prefers-color-scheme`). **Screen space on mobile:** use a collapsible sidebar on the left (drawer opened by the bar's ☰) rather than a persistent bottom tab bar/navigator. **One top bar, pre-built:** `<header data-waypack-bar>` holds your title and styling only. Don't add your own back, menu or settings buttons, and don't put any other fixed or sticky element at the top: the SDK owns the bar's buttons and position, so app controls never cover the plan.
-- **Responsive:** on mobile/tablet use a collapsible left sidebar; on desktop (≥ 1100px) keep it pinned as a persistent left navigation rail with the map pinned beside the plan (the bar hides on the web there and stays in the app for back and ⋯; the template handles both). Keep the template's wide layouts (two columns from 760px), or write your own `@media (min-width: …)` rules. No stretched single column on a wide screen.
+- **Responsive:** on mobile/tablet use a collapsible left sidebar; on desktop (≥ 1100px) keep it pinned as a persistent left navigation rail with the map pinned beside the plan (the bar hides on the web there and stays in the app for back and ⋯; the starter bundle handles both). Keep the starter bundle's wide layouts (two columns from 760px), or write your own `@media (min-width: …)` rules. No stretched single column on a wide screen.
 - ≤ 25 MB zipped, ≤ 2,000 files; images WebP/JPEG ≤ 1600px. Prefer inline SVG.
 
 SDK reference: `reference/sdk.md`.
@@ -92,7 +94,7 @@ The user's account page shows each trip like an app-store listing: a wide cover,
 
 - Put files under `listing/` and declare them in `manifest.json`:
   `"listing": { "tagline": "Snow, sequoias and a lodge by the fire", "cover": "listing/cover.webp", "screenshots": [{ "src": "listing/screen-1-today.jpg", "caption": "What's next" }] }`
-- **Screenshots** (up to 6, portrait, about 390×844 or 780×1688): with a shell, run `npx @waypack/cli screenshot ./waypack/<slug> --manifest` after the bundle is finished. It captures the template's sections at phone size into `listing/` and records them in the manifest. Check them; re-run after big changes so they match the trip.
+- **Screenshots** (up to 6, portrait, about 390×844 or 780×1688): with a shell, run `npx @waypack/cli screenshot ./waypack/<slug> --manifest` after the bundle is finished. It captures the bundle's sections at phone size into `listing/` and records them in the manifest. Check them; re-run after big changes so they match the trip.
 - **Cover** (about 16:9, e.g. 1600×900): any visualization that sells the trip: illustrated artwork, a composed poster, or a screenshot. PNG, JPEG, WebP, or **SVG**, which chat agents can write as text (plain, self-contained shapes; no scripts, event handlers or remote URLs). A raster cover also becomes the app's card cover if you don't set `cover_image`.
 - **Honest and private:** illustrations, not fake photos of the real place or of people; no confirmation numbers, names or other private details in promotional images; screenshots show the real trip.
 - Limits: each image ≤ 1.5 MB, ≤ 5 MB total. Listing files are stored separately and never downloaded to the phone, so they don't cost the traveller offline space.
@@ -135,7 +137,9 @@ If the update contradicts the plan (e.g. a hotel far outside the map area), say 
 `share_trip { trip_id }` makes a public, read-only page with a "Plan this trip" button that lets others have their own agent adapt it. Booking/confirmation numbers are masked automatically, but **names, private phone numbers and personal notes are not**. If the plan has any, pass `files` with a cleaned copy (same bundle with those removed). Give the user the `remix_url` to share. `unshare_trip` turns the link off.
 
 ## Turning a finished trip into a template (offer it after a trip they enjoyed)
-Only for trips whose dates have passed. Templates are listed in the public gallery (Discover on waypack.app and in the app).
+Only for trips whose dates have passed: a template is a plan someone actually traveled, with their notes on what worked. Templates are listed in the public gallery (Discover on waypack.app and in the app).
+
+**If the trip hasn't happened yet** (check its dates with `list_trips`; `draft_template` refuses future trips), don't build anything. Say so plainly: "Templates are made after the trip, from what you'd keep and cut. Ask me again after <end date>." If they want others to see the plan now, offer `share_trip` (a public link to the plan as it is). Never create local template files or placeholder copies instead.
 1. **Debrief** in a few short questions: what would you keep (the must-dos)? What would you cut, and why? What surprised you (closures, rules, conditions)? Would you go again? Credit you by a first name, or stay anonymous?
 2. **Clean it.** Dates are removed automatically (only the month traveled stays), travelers become a crew shape, booking codes are masked. Names, phone numbers, the address of a private stay and personal notes are **not** detected: if the plan has any, pass `manifest` with a cleaned copy.
 3. `draft_template { trip_id, tagline, region, notes: {kept, cut, surprise}, recheck, tags, pace, getting_around, good_months?, starts_from?, author_name? }`. Short sentences in the traveler's words, no names.

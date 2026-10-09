@@ -81,27 +81,28 @@ export const INSTRUCTIONS = `Waypack publishes trip plans as offline mobile bund
 Workflow: interview the user → research → geocode every place and compute_route every non-trivial move → write manifest.json + index.html (call get_authoring_guide first if you don't have the Waypack skill) → validate_bundle → upload (create_upload + PUT + finalize_upload, or upload_bundle_inline for chat agents) → get_trip_status until ready → tell the user to tap Download in the app.
 Live preview: as soon as there's a skeleton, push_preview and give the user the link; push again (changed files only) at milestones so they can watch it take shape on any device. When they approve, publish_preview publishes it to the app.
 Updates to an existing trip ("we booked X", "add a day", "the road is closed"): list_trips → get_trip (latest files) → revise everything the change affects → push_preview { trip_id, changed files, note } → publish_preview when approved.
-Trip gallery: early in a new plan, search_templates for proven trips that fit (season, length, who's going) and offer the best ones; if the user picks one, get_template and adapt it. After a trip the user enjoyed, offer to turn it into a template: debrief them (kept / would cut / surprised), draft_template, show them the draft, publish_template only after they approve.`;
+Trip gallery: early in a new plan, search_templates for proven trips that fit (season, length, who's going) and offer the best ones; if the user picks one, get_template and adapt it. After a trip the user enjoyed, offer to turn it into a template: debrief them (kept / would cut / surprised), draft_template, show them the draft, publish_template only after they approve.
+"Template" always means a gallery template made with draft_template (only for trips whose dates have passed). It never means a local copy of the bundle with placeholders; the files you build new trips from are the starter bundle (get_authoring_guide section="starter").`;
 
 export const tools: ToolDef<ToolCtx>[] = [
   {
     name: "get_authoring_guide",
     title: "Get authoring guide",
     description:
-      "Returns the Waypack authoring guide (interview, coverage checklist, bundle rules, SDK, upload steps) and current schema/SDK versions. Call with section='template' to get the starter bundle files to copy, or 'schema' for the manifest JSON Schema. Use this if the Waypack skill isn't installed.",
+      "Returns the Waypack authoring guide (interview, coverage checklist, bundle rules, SDK, upload steps) and current schema/SDK versions. Call with section='starter' to get the starter bundle files to copy, or 'schema' for the manifest JSON Schema. Use this if the Waypack skill isn't installed. (Trip gallery templates are different: see draft_template.)",
     inputSchema: {
       type: "object",
-      properties: { section: { type: "string", enum: ["guide", "template", "schema", "all"], default: "guide" } },
+      properties: { section: { type: "string", enum: ["guide", "starter", "template", "schema", "all"], default: "guide", description: "'template' is an old name for 'starter'." } },
     },
     annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     async run(args, ctx) {
-      const section = (args.section as string) ?? "guide";
+      const section = args.section === "starter" ? "template" : ((args.section as string) ?? "guide");
       const versions = `Schema version ${SCHEMA_VERSION} · SDK v${SDK_MAJOR} (\`<script src="/__waypack/sdk/v1/waypack.js"></script>\`)`;
       const guide = [GUIDE.skill, ...Object.entries(GUIDE.references).map(([n, t]) => `\n---\n<!-- reference/${n} -->\n${t}`)].join("\n");
       const template = Object.entries(GUIDE.template).map(([p, t]) => `\n### ${p}\n\`\`\`${p.split(".").pop()}\n${t}\n\`\`\``).join("\n");
       const schema = "```json\n" + JSON.stringify(manifestSchema, null, 2) + "\n```";
       const parts: Record<string, string> = {
-        guide: `${versions}\n\n${guide}\n\nCall get_authoring_guide with section="template" for the starter files.`,
+        guide: `${versions}\n\n${guide}\n\nCall get_authoring_guide with section="starter" for the starter bundle files.`,
         template: `${versions}\n\nStarter bundle (copy these files, then replace the SAMPLE content):\n${template}`,
         schema: `${versions}\n\n${schema}`,
       };
@@ -567,7 +568,8 @@ export const tools: ToolDef<ToolCtx>[] = [
     name: "draft_template",
     title: "Turn a trip into a template (draft)",
     description:
-      "Turns a trip the user has TAKEN (its end date has passed) into a template for the public trip gallery, as a draft only they can see. " +
+      "Use when the user asks to turn a trip into a template or share it to the gallery. Turns a trip the user has TAKEN (its end date has passed) into a template for the public trip gallery, as a draft only they can see. " +
+      "If the trip hasn't happened yet, don't call it and don't build anything else: tell the user to come back after the trip (or offer share_trip). " +
       "First debrief the user: what they'd keep, what they'd cut, what surprised them, would they go again, and whether to credit them by a first name (default: anonymous). " +
       "Dates are removed automatically (only the month traveled stays), crew becomes a shape (2 adults, kids 9 & 6), booking codes are masked. Names, phone numbers, addresses of private stays " +
       "and personal notes are NOT detected: if the plan has any, pass `manifest` with a cleaned copy. Show the user the draft link, and call publish_template only after they approve. Calling again updates the draft.",

@@ -176,7 +176,11 @@ export function buildCard(m: Manifest, input: TemplateInput, opts: { slug: strin
   const today = opts.today ?? new Date().toISOString().slice(0, 10);
   if (!m.start_date || !m.end_date) throw new TemplateError("The trip needs start and end dates.");
   if (m.end_date >= today) {
-    throw new TemplateError(`Templates are made from trips people have taken. This one ends ${m.end_date}; turn it into a template after you're back.`, 409);
+    throw new TemplateError(
+      `This trip hasn't happened yet (it ends ${m.end_date}). Templates are made after a trip, from what the travelers would keep and cut. ` +
+        `Tell the user they can turn it into a template after ${m.end_date}; if they want others to see the plan now, offer share_trip. Don't create a template any other way (no local files or placeholder copies).`,
+      409,
+    );
   }
   const tagline = clean(input.tagline, 160);
   const region = clean(input.region, 80);
