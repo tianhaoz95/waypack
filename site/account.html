@@ -94,6 +94,65 @@ pre button { position: absolute; top: 6px; right: 6px; min-height: 28px; padding
 .panel[hidden] { display: none; }
 code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5px; border-radius: 5px; font-size: .9em; }
 [hidden] { display: none !important; }
+
+/* ── Trip listings: each trip as a store-style listing (cover, screenshots, about, facts) */
+.listings { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.lcard { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 0; border: 0; background: var(--bg); color: var(--text); text-align: left; border-radius: 10px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 2px rgba(60, 40, 20, .12); min-height: 0; transition: transform .15s ease, box-shadow .15s ease; font: inherit; }
+.lcard:hover { transform: translateY(-2px); box-shadow: var(--paper-shadow); }
+.lcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lcover { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--soft); }
+.lcover > img, .lcover > svg, .lhero > img, .lhero > svg, .licon > img, .licon > svg { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+.licon { position: relative; }
+.lcard .lbody { padding: 12px 14px 14px; }
+.lcard .lt { font-weight: 800; font-size: 1.02rem; line-height: 1.25; }
+.lcard .ls { color: var(--muted); font-size: .88rem; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lcard .lm { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; font-size: .8rem; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: .74rem; font-weight: 700; background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--muted); }
+.chip.ready { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.chip.processing { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.chip.failed { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); }
+.chip.shared { background: var(--sticky); color: #3d332b; }
+
+dialog.listing { width: min(860px, 100vw - 24px); max-height: calc(100vh - 24px); margin: auto; padding: 0; border: 0; border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: 0 30px 80px -20px rgba(40, 25, 12, .55); overflow: auto; overscroll-behavior: contain; }
+dialog.listing::backdrop { background: rgba(40, 25, 12, .45); backdrop-filter: blur(2px); }
+.lhero { position: relative; aspect-ratio: 16 / 7; overflow: hidden; background: var(--soft); }
+.lclose { position: absolute; z-index: 1; top: 12px; right: 12px; width: 38px; height: 38px; min-height: 0; padding: 0; border-radius: 50%; background: rgba(255, 253, 248, .92); color: #3d332b; box-shadow: 0 1px 4px rgba(0,0,0,.25); font-size: 1.2rem; line-height: 1; }
+.lhead { display: flex; gap: 16px; align-items: flex-start; padding: 0 24px; margin-top: -34px; position: relative; }
+.licon { flex: none; width: 84px; height: 84px; border-radius: 20px; overflow: hidden; background: var(--soft); box-shadow: 0 0 0 4px var(--surface), 0 6px 16px -6px rgba(40, 25, 12, .5); }
+.lhead .lwho { flex: 1; min-width: 0; padding-top: 40px; }
+.lhead h3 { margin: 0; font-size: 1.45rem; line-height: 1.2; }
+.lhead .ltag { color: var(--muted); margin-top: 2px; }
+.lacts { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 24px 0; }
+.lfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); margin: 18px 24px 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.lfacts div { text-align: center; padding: 2px 8px; border-left: 1px solid var(--line); }
+.lfacts div:first-child { border-left: 0; }
+.lfacts small { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.lfacts b { display: block; font-size: 1.05rem; margin-top: 2px; }
+.lsec { padding: 18px 24px 0; }
+.lsec:last-child { padding-bottom: 24px; }
+.lsec h4 { margin: 0 0 10px; font: 700 1.6rem/1.1 var(--hand); }
+.shots { display: flex; gap: 14px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x mandatory; }
+.shot { flex: none; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; width: 190px; padding: 0; border: 0; background: none; min-height: 0; box-shadow: none; cursor: zoom-in; scroll-snap-align: start; text-align: center; color: var(--muted); font: 600 .78rem var(--font); }
+.shot .frame { display: block; aspect-ratio: 9 / 19.5; border-radius: 22px; overflow: hidden; background: #16120f; padding: 5px; box-shadow: 0 10px 22px -12px rgba(40, 25, 12, .6); }
+.shot .frame img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 17px; background: var(--bg); }
+.shot span { display: block; margin-top: 8px; }
+.labout { white-space: pre-wrap; line-height: 1.6; }
+.labout.clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.lmore { padding: 0; min-height: 0; background: none; color: var(--accent); box-shadow: none; font-weight: 700; margin-top: 4px; }
+dialog.lbox { width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; border: 0; padding: 20px; background: rgba(20, 14, 10, .9); }
+dialog.lbox[open] { display: grid; grid-template-columns: auto 1fr auto; align-items: center; justify-items: center; gap: 8px; }
+dialog.lbox::backdrop { background: transparent; }
+.lbox figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; max-height: 100%; }
+.lbox img { max-width: 100%; max-height: calc(100vh - 110px); border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.5); background: #fff; }
+.lbox figcaption { color: #f3eadb; font: 700 1.5rem/1.1 var(--hand); }
+.lbox button { width: 46px; height: 46px; min-height: 0; padding: 0; border-radius: 50%; background: rgba(255, 253, 248, .14); color: #fff; box-shadow: none; font-size: 1.5rem; }
+.lbox .x { position: absolute; top: 16px; right: 16px; }
+@media (max-width: 640px) {
+  .lhead { padding: 0 16px; } .lacts, .lsec { padding-left: 16px; padding-right: 16px; } .lfacts { margin-left: 16px; margin-right: 16px; }
+  .licon { width: 68px; height: 68px; border-radius: 16px; } .lhead .lwho { padding-top: 36px; } .lhead h3 { font-size: 1.2rem; }
+  .shot { width: 150px; }
+  .lbox { grid-template-columns: 1fr; padding: 12px; } .lbox .prev, .lbox .next { display: none; }
+}
 </style>
 </head>
 <body>
@@ -241,6 +300,8 @@ code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5p
     </section>
   </div>
 </main>
+
+<dialog class="listing" id="listing" aria-labelledby="l-title"></dialog>
 
 <script>
 (function () {
@@ -412,42 +473,166 @@ code.inline { font-family: var(--mono); background: var(--soft); padding: 1px 5p
       .catch(function (err) { banner("err", err.message); $("manage").disabled = false; });
   });
 
+  // ---------- Trips, shown as store-style listings
+  var TRIPS = [], SHARES = {}, SHARING = false, OPEN = null;
+  var PALETTE = ["#C2562D", "#2F7F9E", "#3F6EA8", "#D99A2B", "#8A5BB8", "#4E7D4F", "#E0703A"];
+  function hashCode(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
+  function hex(c) { return /^#[0-9a-f]{6}$/i.test(c || "") ? c : null; }
+  function mix(a, b, t) {
+    var p = function (h) { return [1, 3, 5].map(function (i) { return parseInt(h.slice(i, i + 2), 16); }); };
+    var x = p(a), y = p(b);
+    return "#" + x.map(function (v, i) { return Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0"); }).join("");
+  }
+  // The app's drawn landscape (sky, sun, two hills in the trip colour): the cover when the agent made none.
+  function sceneSvg(t, w, h) {
+    var l = t.listing || {}, accent = hex(l.theme && l.theme.accent) || PALETTE[Math.abs(hashCode(t.id)) % PALETTE.length];
+    var seed = Math.abs(hashCode(t.id)), rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    var sky1 = mix(accent, "#FFF4E2", .62), sky2 = mix(accent, "#FFFBF2", .85), far = mix(accent, sky2, .5), near = mix(accent, "#3A2A22", .12);
+    var hills = function (base, amp, ph) {
+      var d = "M0 " + h;
+      for (var i = 0; i <= 32; i++) { var x = w * i / 32, y = base + Math.sin(i / 32 * Math.PI * 2.2 + ph) * amp + Math.sin(i / 32 * Math.PI * 5.1 + ph * 2) * amp * .35; d += " L" + x.toFixed(1) + " " + y.toFixed(1); }
+      return d + " L" + w + " " + h + " Z";
+    };
+    var id = "g" + Math.abs(hashCode(t.id + w)), sx = w * (.62 + rnd() * .2), sy = h * (.22 + rnd() * .12);
+    return '<svg viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + sky1 + '"/><stop offset="1" stop-color="' + sky2 + '"/></linearGradient></defs>' +
+      '<rect width="' + w + '" height="' + h + '" fill="url(#' + id + ')"/><circle cx="' + sx + '" cy="' + sy + '" r="' + h * .2 + '" fill="#FFF3C4" opacity=".35"/><circle cx="' + sx + '" cy="' + sy + '" r="' + h * .12 + '" fill="#FFF3C4"/>' +
+      '<path d="' + hills(h * .6, h * .1, rnd() * 6) + '" fill="' + far + '"/><path d="' + hills(h * .78, h * .07, rnd() * 6) + '" fill="' + near + '"/></svg>';
+  }
+  // Agent media is only ever shown as <img>; if it fails to load, the drawn cover takes its place.
+  function cover(t, w, h) {
+    var url = t.listing && t.listing.cover_url;
+    return url ? '<img src="' + esc(url) + '" alt="" loading="lazy" data-fallback="' + esc(t.id) + '" data-w="' + w + '" data-h="' + h + '">' : sceneSvg(t, w, h);
+  }
+  document.addEventListener("error", function (e) {
+    var img = e.target;
+    if (!img || img.tagName !== "IMG" || !img.hasAttribute("data-fallback")) return;
+    var t = byId(img.getAttribute("data-fallback"));
+    if (t) img.outerHTML = sceneSvg(t, +img.getAttribute("data-w"), +img.getAttribute("data-h"));
+  }, true);
+  function byId(id) { for (var i = 0; i < TRIPS.length; i++) if (TRIPS[i].id === id) return TRIPS[i]; return null; }
+  function chip(t) {
+    var label = t.status === "ready" ? "Ready" : t.status === "processing" ? "Processing" : t.status === "failed" ? "Failed" : t.status;
+    return "<span class='chip " + esc(t.status) + "'>" + esc(label) + "</span>";
+  }
+  function dates(t) { return t.start_date ? fmtDate(t.start_date) + " – " + fmtDate(t.end_date) : ""; }
+
   function loadTrips() {
     Promise.all([api("GET", "/api/trips"), api("GET", "/api/shares").catch(function () { return { shares: [], enabled: false }; })]).then(function (both) {
-      var r = both[0], shares = {}, sharing = both[1].enabled;
-      both[1].shares.forEach(function (x) { shares[x.trip_id] = x; });
-      if (!r.trips.length) {
+      TRIPS = both[0].trips; SHARES = {}; SHARING = both[1].enabled;
+      both[1].shares.forEach(function (x) { SHARES[x.trip_id] = x; });
+      if (!TRIPS.length) {
         $("trips").innerHTML = '<p class="empty">No trips yet. Ask your agent to "plan a trip with Waypack".</p>';
+        if (OPEN) closeListing();
         return;
       }
-      $("trips").innerHTML = '<table><thead><tr><th>Trip</th><th class="hide-sm">Dates</th><th>Status</th><th class="hide-sm">Size</th><th></th></tr></thead><tbody>' +
-        r.trips.map(function (t) {
-          var map = t.tiles_status === "not_included" ? "no offline map" : t.tiles_status === "device" ? "offline map on download" : "map " + t.tiles_status;
-          var size = t.sizes ? fmtBytes(t.sizes.bundle_bytes + t.sizes.tiles_bytes) : "";
-          var sh = shares[t.id];
-          var shareCell = !sharing ? "" : sh
-            ? "<div class='muted small' style='margin-top:6px'>Shared publicly (v" + esc(sh.version) + ")" + (sh.remix_count ? " · planned again " + esc(sh.remix_count) + "×" : "") +
-              " · <a href='" + esc(sh.share_url) + "' target='_blank' rel='noopener noreferrer'>public page</a> · <a href='#' data-copy-link='" + esc(sh.remix_url) + "'>copy link</a>" +
-              (sh.version < t.current_version ? " · <a href='#' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>update to v" + esc(t.current_version) + "</a>" : "") +
-              " · <a href='#' data-unshare-trip='" + esc(t.id) + "'>stop sharing</a></div>"
-            : "";
-          var member = t.role === "member";
-          if (member) shareCell = "<div class='muted small' style='margin-top:6px'>Shared with you" + (t.owner_email ? " by " + esc(t.owner_email) : "") + "</div>";
-          return "<tr><td><b>" + esc(t.title) + "</b><div class='muted small'>v" + esc(t.current_version) + "</div>" + shareCell + "</td>" +
-            "<td class='hide-sm'>" + esc(fmtDate(t.start_date)) + " – " + esc(fmtDate(t.end_date)) + "</td>" +
-            "<td><span class='status-" + esc(t.status) + "'>" + esc(t.status) + "</span><div class='muted small'>" + esc(map) + "</div></td>" +
-            "<td class='hide-sm'>" + esc(size) + "</td>" +
-            "<td><div class='row' style='justify-content:flex-end'>" +
-            (member
-              ? "<button class='secondary' data-leave-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Leave</button>"
-              : "<button class='secondary' data-companions='" + esc(t.id) + "'>Companions</button>" +
-                (sharing && !sh ? "<button class='secondary' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Share</button>" : "") +
-                "<button class='danger' data-delete-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Delete</button>") +
-            "</div></td></tr>" +
-            (member ? "" : "<tr class='sub' id='comp-" + esc(t.id) + "' hidden><td colspan='5'></td></tr>");
-        }).join("") + "</tbody></table>";
+      $("trips").innerHTML = "<div class='listings'>" + TRIPS.map(function (t) {
+        var l = t.listing || {};
+        return "<button type='button' class='lcard' data-open-trip='" + esc(t.id) + "' aria-label='" + esc(t.title) + "'>" +
+          "<span class='lcover'>" + cover(t, 480, 270) + "</span>" +
+          "<span class='lbody'><span class='lt' style='display:block'>" + esc(t.title) + "</span>" +
+          (l.tagline ? "<span class='ls'>" + esc(l.tagline) + "</span>" : "") +
+          "<span class='lm'><span>" + esc(dates(t)) + "</span>" + chip(t) + (t.role === "member" ? "<span class='chip shared'>Shared with you</span>" : SHARES[t.id] ? "<span class='chip shared'>Public</span>" : "") + "</span></span></button>";
+      }).join("") + "</div>";
+      if (OPEN) { if (byId(OPEN)) renderListing(OPEN); else closeListing(); }
+      else { var m = /^#trip=([0-9a-f-]{36})$/.exec(location.hash); if (m && byId(m[1])) openListing(m[1]); }
     }).catch(function (err) { $("trips").innerHTML = '<p class="error">' + esc(err.message) + "</p>"; });
   }
+
+  function renderListing(id) {
+    var t = byId(id); if (!t) return;
+    var l = t.listing || {}, member = t.role === "member", sh = SHARES[t.id];
+    var map = t.tiles_status === "not_included" ? "Online" : t.tiles_status === "device" ? "On download" : t.tiles_status === "ready" ? "Offline" : (t.tiles_status || "—");
+    var size = t.sizes ? fmtBytes(t.sizes.bundle_bytes + t.sizes.tiles_bytes) : "—";
+    var who = [];
+    if (l.travelers) {
+      if (l.travelers.adults) who.push(l.travelers.adults + (l.travelers.adults === 1 ? " adult" : " adults"));
+      if (l.travelers.children) who.push(l.travelers.children + (l.travelers.children === 1 ? " kid" : " kids"));
+      if (l.travelers.pets) who.push(l.travelers.pets + (l.travelers.pets === 1 ? " pet" : " pets"));
+    }
+    var facts = [["Days", l.days || "—"], ["Places", l.places || "—"], ["Map", map], ["Size", size], ["Version", "v" + t.current_version]];
+    var shots = l.screenshots || [];
+    var shareLine = !SHARING || member ? "" : sh
+      ? "<p class='muted small' style='margin:10px 0 0'>Shared publicly (v" + esc(sh.version) + ")" + (sh.remix_count ? " · planned again " + esc(sh.remix_count) + "×" : "") +
+        " · <a href='" + esc(sh.share_url) + "' target='_blank' rel='noopener noreferrer'>public page</a> · <a href='#' data-copy-link='" + esc(sh.remix_url) + "'>copy link</a>" +
+        (sh.version < t.current_version ? " · <a href='#' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>update to v" + esc(t.current_version) + "</a>" : "") +
+        " · <a href='#' data-unshare-trip='" + esc(t.id) + "'>stop sharing</a></p>"
+      : "";
+    $("listing").innerHTML =
+      "<div class='lhero'>" + cover(t, 860, 376) + "<button type='button' class='lclose' data-close-listing aria-label='Close'>×</button></div>" +
+      "<div class='lhead'><div class='licon'>" + cover(t, 168, 168) + "</div><div class='lwho'>" +
+        "<h3 id='l-title'>" + esc(t.title) + "</h3>" +
+        (l.tagline ? "<div class='ltag'>" + esc(l.tagline) + "</div>" : "") +
+        "<div class='muted small' style='margin-top:4px'>" + esc([dates(t), who.join(", ")].filter(Boolean).join(" · ")) + " " + chip(t) + "</div>" +
+        (member ? "<div class='muted small'>Shared with you" + (t.owner_email ? " by " + esc(t.owner_email) : "") + "</div>" : "") +
+      "</div></div>" +
+      "<div class='lacts'>" + (member
+        ? "<button class='secondary' data-leave-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Leave</button>"
+        : "<button class='secondary' data-companions='" + esc(t.id) + "'>Companions</button>" +
+          (SHARING && !sh ? "<button class='secondary' data-share-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Share publicly</button>" : "") +
+          "<button class='danger' data-delete-trip='" + esc(t.id) + "' data-title='" + esc(t.title) + "'>Delete</button>") + "</div>" +
+      "<div class='lsec' style='padding-top:6px'>" + shareLine + (member ? "" : "<div id='comp-" + esc(t.id) + "' hidden><div></div></div>") + "</div>" +
+      "<div class='lfacts'>" + facts.map(function (f) { return "<div><small>" + f[0] + "</small><b>" + esc(f[1]) + "</b></div>"; }).join("") + "</div>" +
+      (shots.length ? "<div class='lsec'><h4>Screenshots</h4><div class='shots'>" + shots.map(function (x, i) {
+        return "<button type='button' class='shot' data-shot='" + i + "' aria-label='" + esc(x.caption || "Screenshot " + (i + 1)) + "'><span class='frame'><img src='" + esc(x.url) + "' alt='' loading='lazy'></span>" + (x.caption ? "<span>" + esc(x.caption) + "</span>" : "") + "</button>";
+      }).join("") + "</div></div>" : "") +
+      (l.summary ? "<div class='lsec'><h4>About this trip</h4><div class='labout" + (l.summary.length > 420 ? " clamped" : "") + "' id='l-about'>" + esc(l.summary) + "</div>" +
+        (l.summary.length > 420 ? "<button type='button' class='lmore' data-more>more</button>" : "") + "</div>" : "") +
+      (l.lodging && l.lodging.length ? "<div class='lsec'><h4>Where you're staying</h4><p style='margin:0'>" + l.lodging.map(esc).join(" · ") + "</p></div>" : "") +
+      "<div class='lsec'><p class='muted small' style='margin:0'>Open the Waypack app on your phone or Mac and tap <b>Download</b> before you lose signal.</p></div>";
+  }
+  function openListing(id) {
+    OPEN = id;
+    renderListing(id);
+    var d = $("listing");
+    if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+    d.scrollTop = 0;
+    if (location.hash !== "#trip=" + id) history.replaceState(null, "", "#trip=" + id);
+  }
+  function closeListing() {
+    OPEN = null; closeLightbox();
+    var d = $("listing");
+    if (d.open) { if (d.close) d.close(); else d.removeAttribute("open"); }
+    if (/^#trip=/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
+  }
+  $("listing").addEventListener("close", function () { if (OPEN) closeListing(); });
+  window.addEventListener("hashchange", function () {
+    var m = /^#trip=([0-9a-f-]{36})$/.exec(location.hash);
+    if (m && byId(m[1]) && OPEN !== m[1]) openListing(m[1]);
+  });
+  $("listing").addEventListener("click", function (e) { if (e.target === $("listing")) closeListing(); }); // backdrop
+
+  // Lightbox for screenshots: its own modal dialog above the listing (← / →; Esc closes just it).
+  var BOX = null;
+  function showShot(i) {
+    var t = byId(OPEN), shots = (t && t.listing && t.listing.screenshots) || [];
+    if (!shots.length) return;
+    i = (i + shots.length) % shots.length;
+    if (!BOX) {
+      BOX = document.createElement("dialog"); BOX.className = "lbox"; BOX.setAttribute("aria-label", "Screenshot");
+      document.body.appendChild(BOX);
+      BOX.addEventListener("close", function () { if (BOX) { BOX.remove(); BOX = null; } });
+      BOX.addEventListener("click", function (e) { if (e.target === BOX) closeLightbox(); });
+      BOX.showModal();
+    }
+    BOX.setAttribute("data-i", i);
+    BOX.innerHTML = "<button type='button' class='prev' data-shot-step='-1' aria-label='Previous'>‹</button>" +
+      "<figure><img src='" + esc(shots[i].url) + "' alt='" + esc(shots[i].caption || "") + "'>" + (shots[i].caption ? "<figcaption>" + esc(shots[i].caption) + "</figcaption>" : "") + "</figure>" +
+      "<button type='button' class='next' data-shot-step='1' aria-label='Next'>›</button><button type='button' class='x' data-close-shot aria-label='Close'>×</button>";
+  }
+  function closeLightbox() { if (BOX) { var b = BOX; BOX = null; if (b.open) b.close(); b.remove(); } }
+  document.addEventListener("keydown", function (e) {
+    if (!BOX) return;
+    if (e.key === "ArrowRight") showShot(+BOX.getAttribute("data-i") + 1);
+    if (e.key === "ArrowLeft") showShot(+BOX.getAttribute("data-i") - 1);
+  }, true);
+  document.addEventListener("click", function (e) {
+    var o = e.target.closest("[data-open-trip]"); if (o) { openListing(o.getAttribute("data-open-trip")); return; }
+    if (e.target.closest("[data-close-listing]")) { closeListing(); return; }
+    var sh = e.target.closest("[data-shot]"); if (sh) { showShot(+sh.getAttribute("data-shot")); return; }
+    var st = e.target.closest("[data-shot-step]"); if (st) { showShot(+BOX.getAttribute("data-i") + +st.getAttribute("data-shot-step")); return; }
+    if (e.target.closest("[data-close-shot]")) { closeLightbox(); return; }
+    if (e.target.closest("[data-more]")) { $("l-about").classList.remove("clamped"); e.target.remove(); }
+  });
 
   function showCompanions(tripId, toggle) {
     var row = $("comp-" + tripId);

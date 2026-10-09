@@ -60,6 +60,7 @@ export interface Manifest {
   title: string;
   summary?: string;
   cover_image?: string;
+  listing?: Listing;
   timezone: string;
   start_date: string;
   end_date: string;
@@ -74,6 +75,13 @@ export interface Manifest {
   nav_app?: "google" | "apple";
   theme?: ManifestTheme;
   [k: string]: unknown;
+}
+
+/** Store-style listing for the web portal (files under `listing/`, stored apart from the offline bundle). */
+export interface Listing {
+  tagline?: string;
+  cover?: string;
+  screenshots?: { src: string; caption?: string }[];
 }
 
 export interface ManifestTheme {

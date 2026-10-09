@@ -84,6 +84,18 @@ Start from the template: CLI agents run `npx @waypack/cli init ./waypack/<slug>`
 
 SDK reference: `reference/sdk.md`.
 
+### Optional: a store listing for the web portal
+
+The user's account page shows each trip like an app-store listing: a wide cover, a tagline, a strip of phone screenshots, the summary and key facts. You can supply the media; **it's optional**. Skip it if you can't make images and the portal draws a cover from `theme` instead, so nothing looks broken.
+
+- Put files under `listing/` and declare them in `manifest.json`:
+  `"listing": { "tagline": "Snow, sequoias and a lodge by the fire", "cover": "listing/cover.webp", "screenshots": [{ "src": "listing/screen-1-today.jpg", "caption": "What's next" }] }`
+- **Screenshots** (up to 6, portrait, about 390×844 or 780×1688): with a shell, run `npx @waypack/cli screenshot ./waypack/<slug> --manifest` after the bundle is finished. It captures the template's sections at phone size into `listing/` and records them in the manifest. Check them; re-run after big changes so they match the trip.
+- **Cover** (about 16:9, e.g. 1600×900): any visualization that sells the trip: illustrated artwork, a composed poster, or a screenshot. PNG, JPEG, WebP, or **SVG**, which chat agents can write as text (plain, self-contained shapes; no scripts, event handlers or remote URLs). A raster cover also becomes the app's card cover if you don't set `cover_image`.
+- **Honest and private:** illustrations, not fake photos of the real place or of people; no confirmation numbers, names or other private details in promotional images; screenshots show the real trip.
+- Limits: each image ≤ 1.5 MB, ≤ 5 MB total. Listing files are stored separately and never downloaded to the phone, so they don't cost the traveller offline space.
+- **Chat agents without a shell:** an SVG cover and a tagline are plenty. Don't send large base64 images just for the listing.
+
 ## Phase 4 — Validate (required)
 
 - CLI: `npx @waypack/cli validate ./waypack/<slug>` — fix **all errors**; fix warnings unless you have a reason (state it to the user).

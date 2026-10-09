@@ -1,4 +1,4 @@
-import { formatResult, mapAreas, unzipBundle, validateZip, zipBundle, type BundleFile, type Issue, type Manifest } from "@waypack/bundle-schema";
+import { formatResult, isListingPath, LISTING_CONTENT_TYPES, listingPaths, mapAreas, sniffImage, unzipBundle, validateZip, zipBundle, type BundleFile, type Issue, type Manifest } from "@waypack/bundle-schema";
 import type { Env } from "../env.js";
 import { sha256 } from "./crypto.js";
 import { Db, eq } from "./db.js";
@@ -76,7 +76,7 @@ export async function publishBundle(
   input: { zip: Uint8Array } | { files: BundleFile[] },
   tripIdArg?: string | null,
 ): Promise<PublishResult> {
-  const zip = "zip" in input ? input.zip : zipBundle(input.files);
+  let zip = "zip" in input ? input.zip : zipBundle(input.files);
   const v = validateZip(zip);
   if (!v.ok || !v.manifest) {
     return { ok: false, errors: v.errors, warnings: v.warnings, message: formatResult(v) };
@@ -130,21 +130,64 @@ export async function publishBundle(
   const version = trip.current_version + 1;
   const stored: Manifest = { ...manifest, trip_id: tripId };
 
+  // Store-listing media (listing/…) goes next to the bundle, not in it: the app never downloads it.
+  const filesList = "files" in input ? input.files : unzipBundle(zip).files;
+  const wanted = new Set(listingPaths(manifest));
+  for (const f of filesList) {
+    if (!wanted.has(f.path)) continue;
+    const type = sniffImage(f.data);
+    if (!type) continue; // the validator already rejected these
+    await env.BUCKET.put(keys.listing(userId, tripId, version, f.path), f.data, { httpMetadata: { contentType: LISTING_CONTENT_TYPES[type] } });
+  }
+  // Updates built from get_trip don't carry listing files: keep the previous version's copy, or drop the entry.
+  const present = new Set(filesList.map((f) => f.path));
+  const kept = new Set(present);
+  for (const path of wanted) {
+    if (present.has(path)) continue;
+    const prev = trip.current_version > 0 ? await env.BUCKET.get(keys.listing(userId, tripId, trip.current_version, path)) : null;
+    if (!prev) continue;
+    const data = new Uint8Array(await prev.arrayBuffer());
+    const type = sniffImage(data);
+    if (!type) continue;
+    await env.BUCKET.put(keys.listing(userId, tripId, version, path), data, { httpMetadata: { contentType: LISTING_CONTENT_TYPES[type] } });
+    kept.add(path);
+  }
+  if (stored.listing) {
+    const l = stored.listing;
+    const screenshots = (l.screenshots ?? []).filter((x) => kept.has(x.src));
+    stored.listing = {
+      ...(l.tagline ? { tagline: l.tagline } : {}),
+      ...(l.cover && kept.has(l.cover) ? { cover: l.cover } : {}),
+      ...(screenshots.length ? { screenshots } : {}),
+    };
+  }
+  if (filesList.some((f) => isListingPath(f.path))) zip = zipBundle(filesList.filter((f) => !isListingPath(f.path)));
+
   // Store the bundle and manifest.
   const bundleSha = await sha256(zip);
   const bundleKey = keys.bundle(userId, tripId, version);
   await env.BUCKET.put(bundleKey, zip, { httpMetadata: { contentType: "application/zip" } });
   await env.BUCKET.put(keys.manifest(userId, tripId, version), JSON.stringify(stored), { httpMetadata: { contentType: "application/json" } });
 
-  // Store cover image separately if present, for fast card preview.
-  const coverPath = manifest.cover_image ?? manifest.theme?.cover_image;
-  const filesList = "files" in input ? input.files : unzipBundle(zip).files;
-  const coverFile = filesList.find((f) => f.path === coverPath || (!coverPath && /(^|\/)cover\.(jpg|jpeg|png|webp)$/i.test(f.path)));
+  // Store cover image separately if present, for fast card preview. With no cover_image, a raster
+  // listing cover doubles as the app's card cover.
+  const listingCover = manifest.listing?.cover && !/\.svg$/i.test(manifest.listing.cover) ? manifest.listing.cover : undefined;
+  const coverPath = manifest.cover_image ?? manifest.theme?.cover_image ?? listingCover;
+  const coverFile = filesList.find((f) => f.path === coverPath || (!coverPath && !isListingPath(f.path) && /(^|\/)cover\.(jpg|jpeg|png|webp)$/i.test(f.path)));
   if (coverFile) {
     const ext = coverFile.path.split(".").pop()?.toLowerCase() || "jpg";
     await env.BUCKET.put(keys.cover(userId, tripId, version, ext), coverFile.data, {
       httpMetadata: { contentType: ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg" },
     });
+  } else if (listingCover && coverPath === listingCover && stored.listing?.cover === listingCover) {
+    // The listing cover was carried forward from the previous version: it stays the card cover.
+    const kept = await env.BUCKET.get(keys.listing(userId, tripId, version, listingCover));
+    if (kept) {
+      const ext = listingCover.split(".").pop()!.toLowerCase();
+      await env.BUCKET.put(keys.cover(userId, tripId, version, ext), new Uint8Array(await kept.arrayBuffer()), {
+        httpMetadata: { contentType: ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg" },
+      });
+    }
   }
 
   // Map extracts.
@@ -308,7 +351,7 @@ export async function refreshTripStatus(db: Db, tripId: string): Promise<void> {
 }
 
 /** `userId` is the trip's owner: maps follow the owner's plan. */
-export async function tripStatus(env: Env, db: Db, userId: string, tripId: string) {
+export async function tripStatus(env: Env, db: Db, userId: string, tripId: string, opts: { portal?: boolean } = {}) {
   const trip = await db.one<TripRow>("trips", `select=*&id=${eq(tripId)}&user_id=${eq(userId)}&deleted_at=is.null`);
   if (!trip) return null;
   const [ver] = await db.select<{ bundle_bytes: number; created_at: string; manifest: Manifest }>(
@@ -324,7 +367,8 @@ export async function tripStatus(env: Env, db: Db, userId: string, tripId: strin
         : ex.some((e) => e.status === "pending" || e.status === "processing") ? "processing"
           : "ready";
 
-  const coverPath = ver?.manifest?.cover_image ?? ver?.manifest?.theme?.cover_image ?? null;
+  const listingCover = ver?.manifest?.listing?.cover && !/\.svg$/i.test(ver.manifest.listing.cover) ? ver.manifest.listing.cover : null;
+  const coverPath = ver?.manifest?.cover_image ?? ver?.manifest?.theme?.cover_image ?? listingCover;
   let cover_image_url: string | null = null;
   if (ver?.manifest) {
     const exts = [coverPath?.split(".").pop()?.toLowerCase(), "jpg", "jpeg", "png", "webp"].filter(Boolean) as string[];
@@ -347,5 +391,29 @@ export async function tripStatus(env: Env, db: Db, userId: string, tripId: strin
     cover_image_url,
     sizes: { bundle_bytes: ver?.bundle_bytes ?? 0, tiles_bytes: ex.reduce((n, e) => n + (e.tiles_bytes ?? 0), 0) },
     extracts: ex.map((e) => ({ area_index: e.area_index, status: e.status, bbox: e.bbox, max_zoom: e.max_zoom, bytes: e.tiles_bytes, error: e.error })),
+    ...(opts.portal && ver?.manifest ? { listing: await portalListing(env, userId, trip.id, trip.current_version, ver.manifest) } : {}),
+  };
+}
+
+/**
+ * What the web portal's store-style listing needs: the agent's listing media (signed, short-lived
+ * URLs; images only ever shown with <img>) plus a digest of the manifest for the description,
+ * "at a glance" facts and the drawn fallback cover.
+ */
+export async function portalListing(env: Env, userId: string, tripId: string, version: number, m: Manifest) {
+  const sign = (path: string) => signedFileUrl(env, keys.listing(userId, tripId, version, path), 6 * 3600);
+  const l = m.listing ?? {};
+  const lodging = (m.places ?? []).filter((p) => p.category === "lodging").map((p) => p.name).slice(0, 3);
+  return {
+    tagline: l.tagline ?? null,
+    cover_url: l.cover ? await sign(l.cover) : null,
+    screenshots: await Promise.all((l.screenshots ?? []).map(async (x) => ({ url: await sign(x.src), caption: x.caption ?? null }))),
+    summary: m.summary ?? null,
+    days: m.days?.length ?? 0,
+    places: m.places?.length ?? 0,
+    routes: m.routes?.length ?? 0,
+    lodging,
+    travelers: m.travelers ? { adults: m.travelers.adults ?? null, children: m.travelers.children?.length ?? 0, pets: m.travelers.pets?.length ?? 0 } : null,
+    theme: { accent: m.theme?.accent ?? null, preset: m.theme?.preset ?? null, scene: m.theme?.scene ?? null },
   };
 }

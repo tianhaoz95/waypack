@@ -10,6 +10,11 @@ Authoritative JSON Schema: `packages/bundle-schema/manifest.v1.schema.json` (als
   "title": "Sequoia Winter Weekend", // ≤ 120 chars
   "summary": "3 days in Sequoia with a toddler…",
   "cover_image": "assets/cover.jpg", // optional relative path to trip card cover image in bundle (JPEG/PNG/WebP)
+  "listing": {                       // optional store listing for the web portal (files under listing/, never downloaded by the app)
+    "tagline": "Snow, sequoias and a lodge by the fire",  // ≤ 120 chars
+    "cover": "listing/cover.webp",                         // ~16:9; PNG/JPEG/WebP/SVG, ≤ 1.5 MB
+    "screenshots": [{ "src": "listing/screen-1-today.jpg", "caption": "What's next" }] // ≤ 6, portrait; `waypack screenshot`
+  },
   "timezone": "America/Los_Angeles", // IANA; all times are local to it
   "start_date": "2026-12-24",        // YYYY-MM-DD
   "end_date": "2026-12-26",

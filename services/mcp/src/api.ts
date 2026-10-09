@@ -199,12 +199,13 @@ async function handleApi(req: Request, env: Env, url: URL): Promise<Response> {
     rows.sort((a, b) => String(b.start_date ?? "").localeCompare(String(a.start_date ?? "")));
     const out = await Promise.all(
       rows.map(({ user_id, ...t }) =>
-        tripStatus(env, db, user_id, t.id).then((s) => ({
+        tripStatus(env, db, user_id, t.id, { portal: true }).then((s) => ({
           ...t,
           sizes: s?.sizes,
           tiles_status: s?.tiles_status,
           cover_image: s?.cover_image ?? null,
           cover_image_url: s?.cover_image_url ?? null,
+          listing: s?.listing ?? null,
         }))
       )
     );

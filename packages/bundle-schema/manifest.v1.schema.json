@@ -44,6 +44,45 @@
       "type": "string",
       "description": "Cover image for the trip card (path to image file in bundle, e.g. assets/cover.jpg or cover.jpg)"
     },
+    "listing": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional store-style listing shown in the web portal: a promotional cover and/or screenshots, like an app store page. Files must live under listing/ in the bundle; they are stored separately and never downloaded by the app. Leave it out if you can't make images: the portal draws a cover from theme instead.",
+      "properties": {
+        "tagline": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "One line under the title, e.g. \"Snow, sequoias and a lodge by the fire\"."
+        },
+        "cover": {
+          "type": "string",
+          "pattern": "^listing/[A-Za-z0-9._/-]+\\.(png|jpe?g|webp|svg)$",
+          "description": "Wide promotional image (about 16:9, e.g. 1600×900): artwork, illustration or a composed screenshot. PNG, JPEG, WebP or SVG."
+        },
+        "screenshots": {
+          "type": "array",
+          "maxItems": 6,
+          "description": "Up to 6 portrait phone screenshots of the trip (about 9:19.5, e.g. 390×844 or 780×1688), in reading order. `waypack screenshot <dir>` makes them.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "src"
+            ],
+            "properties": {
+              "src": {
+                "type": "string",
+                "pattern": "^listing/[A-Za-z0-9._/-]+\\.(png|jpe?g|webp|svg)$"
+              },
+              "caption": {
+                "type": "string",
+                "maxLength": 80
+              }
+            }
+          }
+        }
+      }
+    },
     "timezone": {
       "type": "string",
       "minLength": 1,

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { formatResult, validateFiles, validateZip, zipBundle, type ValidationResult } from "@waypack/bundle-schema";
 import { isDir, readBundleDir } from "./files.js";
 import { startPreview } from "./preview.js";
+import { DEFAULT_SECTIONS, takeScreenshots } from "./screenshot.js";
 
 const HELP = `waypack — build offline trip bundles
 
@@ -14,6 +15,9 @@ Usage:
   waypack zip <dir> [-o bundle.zip]             Validate and zip a bundle for upload
   waypack preview <dir> [--port 4173] [--tiles extract.pmtiles] [--no-online] [--host 127.0.0.1]
                                                 Serve the bundle like the app does (CSP, SDK, tiles)
+  waypack screenshot <dir> [--sections today,plan,places,guide] [--manifest]
+                                                Phone screenshots for the portal listing (into <dir>/listing/);
+                                                --manifest records them in manifest.listing.screenshots
   waypack init <dir> [--title "My Trip"]        Start a bundle from the base template
   waypack skill install [--dir ~/.claude/skills] Install the Waypack Agent Skill (SKILL.md + references + template)
 
@@ -62,6 +66,9 @@ async function main(argv: string[]): Promise<number> {
       title: { type: "string" },
       dir: { type: "string" },
       force: { type: "boolean" },
+      sections: { type: "string" },
+      manifest: { type: "boolean" },
+      wait: { type: "string" },
     },
   });
   const target = positionals[0];
@@ -99,6 +106,14 @@ async function main(argv: string[]): Promise<number> {
       });
       console.log(`Previewing ${target}\n  → ${p.url}\nOpen on your phone (same Wi-Fi) with --host 0.0.0.0. Ctrl+C to stop.`);
       await new Promise(() => undefined);
+      return 0;
+    }
+    case "screenshot": {
+      if (!target || !isDir(target)) throw new Error("usage: waypack screenshot <dir> [--sections today,plan,places,guide] [--manifest]");
+      const sections = values.sections ? values.sections.split(",").map((x) => x.trim()).filter(Boolean) : DEFAULT_SECTIONS;
+      console.log(`Capturing ${sections.join(", ")} at 390×844…`);
+      await takeScreenshots({ dir: target, sections, manifest: values.manifest, wait: values.wait ? Number(values.wait) : undefined });
+      if (!values.manifest) console.log("Add them to manifest.listing.screenshots (or rerun with --manifest).");
       return 0;
     }
     case "init": {

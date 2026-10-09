@@ -1,5 +1,6 @@
 import type { BundleFile, InlineFile, Issue, ValidationResult } from "./types.js";
 import { LIMITS, SDK_SCRIPT_PATH } from "./limits.js";
+import { checkListing } from "./listing.js";
 import { checkManifest, parseManifestText } from "./manifest.js";
 import { scanCss, scanHtml, scanJs, type ScanCtx } from "./html.js";
 import { mb, unsafePathReason, unzipBundle } from "./zip.js";
@@ -7,6 +8,7 @@ import { mb, unsafePathReason, unzipBundle } from "./zip.js";
 export * from "./types.js";
 export * from "./limits.js";
 export * from "./geo.js";
+export * from "./listing.js";
 export { checkManifest, pointerToPath } from "./manifest.js";
 export { classifyUrl, resolveRelative } from "./html.js";
 export { unzipBundle, zipBundle, readCentralDirectory, unsafePathReason } from "./zip.js";
@@ -78,6 +80,13 @@ export function validateFiles(input: BundleFile[]): ValidationResult {
       warnings.push(...r.warnings);
       manifest = r.manifest;
     }
+  }
+
+  // Store-style listing (portal only): cover and screenshots under listing/.
+  if (manifest) {
+    const l = checkListing(manifest, files);
+    errors.push(...l.errors);
+    warnings.push(...l.warnings);
   }
 
   // index.html + resource scan

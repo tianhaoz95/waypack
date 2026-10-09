@@ -81,6 +81,7 @@ The `@waypack/cli` npm package provides local development workflows:
 * `waypack init <dir>`: Scaffolds a new trip bundle from starter templates.
 * `waypack preview <dir>`: Launches a phone-sized local preview server with authentic Content Security Policy and live tile proxying.
 * `waypack validate <dir>`: Verifies structural and schema compliance before publishing.
+* `waypack screenshot <dir> [--manifest]`: Captures phone-sized screenshots of the trip into `listing/` for its store-style listing in the account portal.
 * `waypack skill install`: Installs the agent skill directly to Claude Code and Cursor.
 
 ### 4. Remote MCP Server (`services/mcp`)

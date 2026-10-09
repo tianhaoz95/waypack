@@ -7,6 +7,8 @@ export const keys = {
   manifest: (userId: string, tripId: string, version: number) => `bundles/${userId}/${tripId}/v${version}/manifest.json`,
   cover: (userId: string, tripId: string, version: number, ext = "jpg") => `bundles/${userId}/${tripId}/v${version}/cover.${ext}`,
   tiles: (userId: string, tripId: string, hash: string) => `tiles/${userId}/${tripId}/${hash}.pmtiles`,
+  /** Store-listing media (`listing/…` in the bundle), kept outside bundle.zip so the app never downloads it. */
+  listing: (userId: string, tripId: string, version: number, path: string) => `bundles/${userId}/${tripId}/v${version}/${path}`,
 };
 
 /** Short-lived URL served by this Worker (`GET /files/<key>`), with Range support. */
@@ -33,12 +35,16 @@ export async function serveStored(env: Env, key: string, req: Request, extra: Re
           ? "image/png"
           : key.endsWith(".webp")
             ? "image/webp"
+            : key.endsWith(".svg")
+              ? "image/svg+xml"
             : key.endsWith(".jpg") || key.endsWith(".jpeg")
               ? "image/jpeg"
               : key.endsWith(".dmg")
                 ? "application/x-apple-diskimage"
                 : "application/octet-stream",
     ETag: head.httpEtag,
+    // Agent-made SVGs are only meant for <img>; opened directly they can't run anything.
+    ...(key.endsWith(".svg") ? { "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'", "X-Content-Type-Options": "nosniff" } : {}),
     "Cache-Control": "private, max-age=3600",
     ...extra,
   });
