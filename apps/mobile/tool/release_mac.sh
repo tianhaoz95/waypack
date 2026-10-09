@@ -19,6 +19,10 @@
 # Upload: a GitHub release `mac-v<version>` on WAYPACK_RELEASE_REPO (default tianhaoz95/waypack) with
 #   the DMG as `Waypack.dmg`, via `gh` (logged in with write access). The site's /download/mac
 #   redirects to .../releases/latest/download/Waypack.dmg.
+# Auto-updates (Sparkle, docs/DECISIONS.md #65): with --notarize, also writes Waypack.zip (from the
+#   stapled app) and appcast.xml signed with the EdDSA key: SPARKLE_PRIVATE_KEY (CI secret) or
+#   SPARKLE_KEY_FILE (default ~/Credentials/waypack-sparkle-ed25519.key). Uploading requires it: the
+#   installed apps read releases/latest/download/appcast.xml (Info.plist SUFeedURL).
 #
 # Why sign by hand instead of `codesign --deep`: --deep applies the app's entitlements to every nested
 # framework. Sign innermost-first: each framework with no entitlements, then the app with its own.
@@ -31,6 +35,10 @@ ENTITLEMENTS="$MOBILE/macos/Runner/Release.entitlements"
 APP="$MOBILE/build/macos/Build/Products/Release/Waypack.app"
 OUT="$MOBILE/build/release"
 REPO="${WAYPACK_RELEASE_REPO:-tianhaoz95/waypack}"   # keep in sync with MAC_RELEASES_REPO in services/mcp
+# Sparkle command-line tools (sign_update), pinned to the framework version in the Xcode project.
+SPARKLE_VERSION="2.9.6"
+SPARKLE_SHA256="52bf9e88cdd972fc0c81501377a880e90d47031bd8ca5462488f843e2609e192"
+SPARKLE_KEY_FILE="${SPARKLE_KEY_FILE:-$HOME/Credentials/waypack-sparkle-ed25519.key}"
 
 CHECK=0 NOTARIZE=0 UPLOAD="" ATTACH="" SKIP_BUILD=0 DEV=0
 while [ $# -gt 0 ]; do
@@ -41,7 +49,7 @@ while [ $# -gt 0 ]; do
     --attach) UPLOAD=1 ATTACH="${2:?--attach needs a release tag}"; shift ;;
     --skip-build) SKIP_BUILD=1 ;;
     --dev) DEV=1 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
     *) echo "!! unknown argument: $1" >&2; exit 2 ;;
   esac
   shift
@@ -95,6 +103,12 @@ elif [ -n "${FA_ASC_KEY_ID:-}" ] && [ -n "${FA_ASC_ISSUER_ID:-}" ]; then
 fi
 if [ ${#NOTARY[@]} -gt 0 ]; then echo "==> notary credentials: found"; else echo "==> notary credentials: none (needed for --notarize)"; fi
 
+# ------------------------------------------------------------- sparkle key
+
+HAVE_SPARKLE_KEY=0
+if [ -n "${SPARKLE_PRIVATE_KEY:-}" ] || [ -f "$SPARKLE_KEY_FILE" ]; then HAVE_SPARKLE_KEY=1; fi
+if [ "$HAVE_SPARKLE_KEY" -eq 1 ]; then echo "==> sparkle update key: found"; else echo "==> sparkle update key: none (needed to publish updates)"; fi
+
 if [ "$CHECK" -eq 1 ]; then
   if gh auth status >/dev/null 2>&1; then echo "==> gh: logged in (for --upload / --attach)"; else echo "==> gh: not logged in (needed for --upload / --attach)"; fi
   echo "==> would build Waypack $VERSION ($BUILD) → $DMG"
@@ -102,6 +116,10 @@ if [ "$CHECK" -eq 1 ]; then
 fi
 if [ "$NOTARIZE" -eq 1 ] && [ ${#NOTARY[@]} -eq 0 ]; then
   echo "!! --notarize needs WAYPACK_NOTARY_PROFILE or FA_ASC_KEY_ID + FA_ASC_ISSUER_ID (see the header)" >&2
+  exit 1
+fi
+if [ -n "$UPLOAD" ] && [ "$HAVE_SPARKLE_KEY" -eq 0 ]; then
+  echo "!! uploading needs the Sparkle update key (SPARKLE_PRIVATE_KEY or $SPARKLE_KEY_FILE): installed apps update from it" >&2
   exit 1
 fi
 if [ -n "$UPLOAD" ] && [ "$NOTARIZE" -eq 0 ]; then
@@ -129,6 +147,18 @@ fi
 [ -d "$APP" ] || { echo "!! no app at $APP — build first" >&2; exit 1; }
 
 # ------------------------------------------------------------------- sign
+
+# Sparkle ships helpers inside its framework (XPC services, Autoupdate, Updater.app). Sign them first,
+# keeping their own entitlements (the Downloader service has some), then the framework below.
+SP="$APP/Contents/Frameworks/Sparkle.framework/Versions/Current"
+if [ -d "$SP" ]; then
+  echo "==> signing Sparkle helpers"
+  for f in "$SP/XPCServices/Installer.xpc" "$SP/XPCServices/Downloader.xpc" "$SP/Autoupdate" "$SP/Updater.app"; do
+    [ -e "$f" ] || continue
+    codesign --force --sign "$IDENTITY" --timestamp --options runtime --preserve-metadata=entitlements "$f"
+    echo "    ${f#"$APP/Contents/"}"
+  done
+fi
 
 echo "==> signing frameworks (innermost first)"
 while IFS= read -r f; do
@@ -177,6 +207,82 @@ else
   echo "    (not notarized: fine on this Mac; other Macs will refuse to open it)"
 fi
 
+# ---------------------------------------------------------------- updates
+
+# Sparkle needs the update as an archive of the notarized, stapled app, signed with our EdDSA key, plus
+# an appcast describing it. Only notarized builds are published as updates.
+ZIP="$OUT/Waypack.zip"
+APPCAST="$OUT/appcast.xml"
+if [ "$NOTARIZE" -eq 1 ] && [ "$HAVE_SPARKLE_KEY" -eq 1 ]; then
+  echo "==> update archive + appcast"
+  TOOLS="$MOBILE/build/sparkle-$SPARKLE_VERSION"
+  if [ ! -x "$TOOLS/bin/sign_update" ]; then
+    mkdir -p "$TOOLS"
+    curl -fsSL -o "$TOOLS.tar.xz" "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz"
+    echo "$SPARKLE_SHA256  $TOOLS.tar.xz" | shasum -a 256 -c - >/dev/null || { echo "!! Sparkle tools checksum mismatch" >&2; exit 1; }
+    tar -xJf "$TOOLS.tar.xz" -C "$TOOLS" bin
+    rm -f "$TOOLS.tar.xz"
+  fi
+  rm -f "$ZIP"
+  COPYFILE_DISABLE=1 ditto -c -k --keepParent "$APP" "$ZIP"
+  KEYFILE="$SPARKLE_KEY_FILE"
+  if [ -n "${SPARKLE_PRIVATE_KEY:-}" ]; then
+    KEYFILE="$(mktemp)"; chmod 600 "$KEYFILE"
+    printf '%s' "$SPARKLE_PRIVATE_KEY" > "$KEYFILE"
+  fi
+  SIG="$("$TOOLS/bin/sign_update" --ed-key-file "$KEYFILE" "$ZIP")"   # sparkle:edSignature="…" length="…"
+  [ -n "${SPARKLE_PRIVATE_KEY:-}" ] && rm -f "$KEYFILE"
+  echo "$SIG" | grep -q 'sparkle:edSignature=' || { echo "!! sign_update failed: $SIG" >&2; exit 1; }
+
+  TAG_FOR_FEED="${ATTACH:-mac-v$VERSION}"
+  NOTES=""
+  if [ -n "$ATTACH" ]; then NOTES="$(gh release view "$ATTACH" --repo "$REPO" --json body -q .body 2>/dev/null || true)"; fi
+  [ -n "$NOTES" ] || NOTES="Waypack for Mac $VERSION."
+  NOTES="$NOTES" VERSION="$VERSION" BUILD="$BUILD" SIG="$SIG" APPCAST="$APPCAST" \
+    URL="https://github.com/$REPO/releases/download/$TAG_FOR_FEED/Waypack.zip" \
+    PAGE="https://github.com/$REPO/releases/tag/$TAG_FOR_FEED" python3 - <<'PY'
+import html, os, re
+from email.utils import formatdate
+# Release notes (Markdown-ish) as simple HTML for Sparkle's update window.
+blocks, items = [], []
+for line in os.environ["NOTES"].splitlines():
+    t = line.strip()
+    if re.match(r"^[-*] ", t):
+        items.append("<li>%s</li>" % html.escape(t[2:]))
+        continue
+    if items:
+        blocks.append("<ul>%s</ul>" % "".join(items)); items = []
+    if t.startswith("#"):
+        blocks.append("<h3>%s</h3>" % html.escape(t.lstrip("# ")))
+    elif t:
+        blocks.append("<p>%s</p>" % html.escape(t))
+if items:
+    blocks.append("<ul>%s</ul>" % "".join(items))
+e = os.environ
+xml = f"""<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>Waypack for Mac</title>
+    <item>
+      <title>Version {html.escape(e["VERSION"])}</title>
+      <pubDate>{formatdate(usegmt=True)}</pubDate>
+      <sparkle:version>{html.escape(e["BUILD"])}</sparkle:version>
+      <sparkle:shortVersionString>{html.escape(e["VERSION"])}</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <sparkle:fullReleaseNotesLink>{html.escape(e["PAGE"])}</sparkle:fullReleaseNotesLink>
+      <description><![CDATA[{"".join(blocks).replace("]]>", "]]&gt;")}]]></description>
+      <enclosure url="{html.escape(e["URL"])}" type="application/octet-stream" {e["SIG"].strip()} />
+    </item>
+  </channel>
+</rss>
+"""
+open(e["APPCAST"], "w").write(xml)
+PY
+  echo "    $ZIP ($(( $(stat -f %z "$ZIP") / 1024 / 1024 )) MB), $APPCAST"
+elif [ "$NOTARIZE" -eq 1 ]; then
+  echo "    (no Sparkle key: no update archive; installed apps won't see this version)"
+fi
+
 SHA="$(shasum -a 256 "$DMG" | awk '{print $1}')"
 SIZE="$(stat -f %z "$DMG")"
 echo "==> $DMG  ($((SIZE / 1024 / 1024)) MB, sha256 $SHA)"
@@ -187,14 +293,14 @@ if [ -n "$UPLOAD" ]; then
   # Fixed asset name, so github.com/<repo>/releases/latest/download/Waypack.dmg is always the newest.
   cp "$DMG" "$OUT/Waypack.dmg"
   if [ -n "$ATTACH" ]; then
-    echo "==> attaching Waypack.dmg to release $ATTACH on $REPO"
-    gh release upload "$ATTACH" "$OUT/Waypack.dmg" --repo "$REPO" --clobber
+    echo "==> attaching Waypack.dmg, Waypack.zip and appcast.xml to release $ATTACH on $REPO"
+    gh release upload "$ATTACH" "$OUT/Waypack.dmg" "$ZIP" "$APPCAST" --repo "$REPO" --clobber
   else
     TAG="mac-v$VERSION"
     echo "==> publishing GitHub release $TAG on $REPO (asset Waypack.dmg)"
-    gh release create "$TAG" "$OUT/Waypack.dmg" --repo "$REPO" --latest \
+    gh release create "$TAG" "$OUT/Waypack.dmg" "$ZIP" "$APPCAST" --repo "$REPO" --latest \
       --title "Waypack for Mac $VERSION" \
       --notes "Waypack for Mac $VERSION (build $BUILD). macOS 12+, Apple silicon and Intel. SHA-256 \`$SHA\`."
   fi
-  echo "==> live at /download/mac (redirects to the latest release)"
+  echo "==> live at /download/mac (redirects to the latest release); installed apps see it via appcast.xml"
 fi

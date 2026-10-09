@@ -18,6 +18,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     WaypackAssistant.register(messenger: flutterViewController.registrar(forPlugin: "WaypackAssistant").messenger)
+    WaypackUpdater.shared.start(messenger: flutterViewController.registrar(forPlugin: "WaypackUpdater").messenger)
 
     super.awakeFromNib()
   }

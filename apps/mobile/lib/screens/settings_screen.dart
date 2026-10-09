@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../config.dart';
 import '../services/handoff.dart';
+import '../services/updater.dart';
 import '../state/app_state.dart';
 import '../util/format.dart';
 import '../widgets/scrapbook.dart';
@@ -19,6 +20,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _connectKey = GlobalKey();
   int? _storage;
+  UpdaterInfo? _updates;
   List<Map<String, dynamic>>? _tokens;
 
   @override
@@ -28,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     s.store.usedBytes().then(
       (b) => mounted ? setState(() => _storage = b) : null,
     );
+    _loadUpdates();
     _loadTokens();
     if (widget.scrollToConnect) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,6 +43,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       });
     }
+  }
+
+  Future<void> _loadUpdates() async {
+    final i = await Updater.info();
+    if (mounted) setState(() => _updates = i);
   }
 
   Future<void> _loadTokens() async {
@@ -306,6 +314,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+          if (_updates != null) ...[
+            const SectionTitle('Updates', note: 'Waypack for Mac'),
+            PaperCard(
+              children: [
+                PaperRow(
+                  icon: Icons.system_update_alt,
+                  chip: ChipColor.mint,
+                  title: 'Check for updates automatically',
+                  subtitle: _updates!.enabled
+                      ? 'Waypack checks once a day and asks before installing.'
+                      : 'Not available in development builds.',
+                  enabled: _updates!.enabled,
+                  trailing: Switch.adaptive(
+                    value: _updates!.automatic,
+                    onChanged: _updates!.enabled
+                        ? (v) async {
+                            await Updater.setAutomatic(v);
+                            _loadUpdates();
+                          }
+                        : null,
+                  ),
+                ),
+                PaperRow(
+                  icon: Icons.refresh,
+                  chip: ChipColor.yellow,
+                  title: 'Check for updates now',
+                  subtitle:
+                      'Version ${_updates!.version} (${_updates!.build})'
+                      '${_updates!.lastCheck != null ? ' · last checked ${relativeTime(_updates!.lastCheck!)}' : ''}',
+                  enabled: _updates!.enabled,
+                  chevron: true,
+                  onTap: () async {
+                    await Updater.checkNow();
+                    _loadUpdates();
+                  },
+                ),
+              ],
+            ),
+          ],
           const SectionTitle('More'),
           PaperCard(
             children: [

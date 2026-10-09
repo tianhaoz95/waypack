@@ -34,5 +34,16 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<!-- Sparkle auto-updates (docs/DECISIONS.md #65). The feed is the newest GitHub release's appcast.xml,
+	     written by tool/release_mac.sh; updates must be signed with this EdDSA key. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/tianhaoz95/waypack/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>6iu9C1O6vqPnzjaCbvZE8KnTlK1QTe/P5KMYEgpzH2s=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<!-- The app is sandboxed: Sparkle's installer runs through its launcher XPC service. -->
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
 </dict>
 </plist>

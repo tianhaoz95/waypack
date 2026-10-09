@@ -15,5 +15,11 @@
 	<!-- "You are here" on the offline map. Without it the hardened runtime refuses CoreLocation silently. -->
 	<key>com.apple.security.personal-information.location</key>
 	<true/>
+	<!-- Sparkle (sandboxed apps): talk to the installer launcher and status services. Literal bundle id: tool/release_mac.sh re-signs with this file, and codesign does not expand $(PRODUCT_BUNDLE_IDENTIFIER). -->
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.hejitech.waypack-spks</string>
+		<string>com.hejitech.waypack-spki</string>
+	</array>
 </dict>
 </plist>

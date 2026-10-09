@@ -1,7 +1,8 @@
 name: Release Mac app
 
 # On a published GitHub Release tagged v<version>: builds the Mac app, signs it with Developer ID,
-# notarizes + staples it, and attaches Waypack.dmg to that release. The site's /download/mac
+# notarizes + staples it, and attaches Waypack.dmg (plus Waypack.zip + appcast.xml for Sparkle
+# auto-updates) to that release. The site's /download/mac
 # redirects to releases/latest/download/Waypack.dmg, so it serves the new DMG once attached.
 on:
   release:
@@ -68,6 +69,8 @@ jobs:
           FA_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           GH_TOKEN: ${{ github.token }}
           WAYPACK_RELEASE_REPO: ${{ github.repository }}
+          # Signs Waypack.zip for Sparkle; installed apps only accept updates signed with this key.
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: tool/release_mac.sh --notarize --attach "$TAG"
       - name: Clean up signing material
         if: always()
